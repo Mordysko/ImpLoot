@@ -204,6 +204,8 @@ function LootPanel:Initialize(mainWindowFrame, bossPanelFrame)
         scrollChild
     )
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(content)
+
     -------------------------------------------------
     -- Mouse Wheel
     -------------------------------------------------
@@ -236,6 +238,10 @@ function LootPanel:Initialize(mainWindowFrame, bossPanelFrame)
             self:SetVerticalScroll(
                 newPosition
             )
+
+            if self.UpdateScrollIndicators then
+                self:UpdateScrollIndicators()
+            end
 
         end
     )
@@ -276,19 +282,6 @@ function LootPanel:Initialize(mainWindowFrame, bossPanelFrame)
         0,
         -8
     )
-
-    -------------------------------------------------
-    -- Scrollbar
-    -------------------------------------------------
-
-    self.ScrollBar =
-        _G[
-            "ImpLootLootScrollFrameScrollBar"
-        ]
-
-    if self.ScrollBar then
-        self.ScrollBar:Hide()
-    end
 
     self.Buttons = {}
 
@@ -1618,17 +1611,8 @@ function LootPanel:UpdateScrollChildHeight(height)
         self.Content:UpdateScrollChildRect()
     end
 
-    if self.ScrollBar then
-
-        local scrollRange =
-            self.Content:GetVerticalScrollRange()
-
-        if scrollRange > 0 then
-            self.ScrollBar:Show()
-        else
-            self.ScrollBar:Hide()
-        end
-
+    if self.Content.UpdateScrollIndicators then
+        self.Content:UpdateScrollIndicators()
     end
 
 end

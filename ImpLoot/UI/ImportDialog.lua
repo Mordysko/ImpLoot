@@ -100,7 +100,7 @@ function ImportDialog:Initialize(mainWindowFrame)
     )
 
     scrollFrame:SetPoint("TOPLEFT", 8, -8)
-    scrollFrame:SetPoint("BOTTOMRIGHT", -28, 8)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -8, 8)
 
     local editBox = CreateFrame("EditBox", nil, scrollFrame)
     self.EditBox = editBox
@@ -113,6 +113,34 @@ function ImportDialog:Initialize(mainWindowFrame)
     editBox:EnableMouse(true)
 
     scrollFrame:SetScrollChild(editBox)
+
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
+    local function HandleMouseWheel(sf, delta)
+
+        local current = sf:GetVerticalScroll()
+        local step = 20
+        local maximum = sf:GetVerticalScrollRange()
+        local newPosition = current - (delta * step)
+
+        if newPosition < 0 then newPosition = 0 end
+        if newPosition > maximum then newPosition = maximum end
+
+        sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
+
+    end
+
+    scrollFrame:EnableMouseWheel(true)
+    scrollFrame:SetScript("OnMouseWheel", HandleMouseWheel)
+
+    editBox:EnableMouseWheel(true)
+    editBox:SetScript("OnMouseWheel", function(_, delta)
+        HandleMouseWheel(scrollFrame, delta)
+    end)
 
     -- Keeps the edit box's wrap width in sync with the
     -- scroll frame's own width, and its height able to
@@ -127,6 +155,10 @@ function ImportDialog:Initialize(mainWindowFrame)
 
         if textHeight < frameHeight then
             self_:SetHeight(frameHeight)
+        end
+
+        if scrollFrame.UpdateScrollIndicators then
+            scrollFrame:UpdateScrollIndicators()
         end
 
     end)

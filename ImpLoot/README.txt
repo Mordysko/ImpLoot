@@ -88,7 +88,7 @@ THIS IS A BETA
 Expect rough edges. If something breaks, behaves oddly, or you
 have a suggestion, please report it here:
 
-implootCC@gmail.com
+    implootCC@gmail.com
 
 Known things already on the radar, not yet built or intentionally
 left as-is for now:

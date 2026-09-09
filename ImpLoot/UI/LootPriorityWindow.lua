@@ -563,6 +563,8 @@ function LootPriorityWindow:BuildExistingItemsList(frame)
 
     scrollFrame:SetScrollChild(scrollChild)
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
     scrollFrame:EnableMouseWheel(true)
 
     scrollFrame:SetScript("OnMouseWheel", function(sf, delta)
@@ -576,6 +578,10 @@ function LootPriorityWindow:BuildExistingItemsList(frame)
         if newPosition > maximum then newPosition = maximum end
 
         sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
 
     end)
 
@@ -810,6 +816,11 @@ function LootPriorityWindow:RefreshItemsList()
     if not activeName or not ImpLoot.LootCouncil.DB.Lists[activeName] then
 
         self.ItemsScrollChild:SetHeight(1)
+
+        if self.ItemsScrollFrame.UpdateScrollIndicators then
+            self.ItemsScrollFrame:UpdateScrollIndicators()
+        end
+
         return
 
     end
@@ -865,6 +876,10 @@ function LootPriorityWindow:RefreshItemsList()
 
     if self.ItemsScrollFrame.UpdateScrollChildRect then
         self.ItemsScrollFrame:UpdateScrollChildRect()
+    end
+
+    if self.ItemsScrollFrame.UpdateScrollIndicators then
+        self.ItemsScrollFrame:UpdateScrollIndicators()
     end
 
 end

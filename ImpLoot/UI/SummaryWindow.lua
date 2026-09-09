@@ -118,6 +118,8 @@ function SummaryWindow:Initialize()
 
     scrollFrame:SetScrollChild(scrollChild)
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
     scrollFrame:EnableMouseWheel(true)
 
     scrollFrame:SetScript("OnMouseWheel", function(sf, delta)
@@ -131,6 +133,10 @@ function SummaryWindow:Initialize()
         if newPosition > maximum then newPosition = maximum end
 
         sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
 
     end)
 
@@ -173,6 +179,34 @@ function SummaryWindow:Initialize()
     self.ExportBox = exportBox
 
     exportScroll:SetScrollChild(exportBox)
+
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(exportScroll)
+
+    local function HandleExportMouseWheel(sf, delta)
+
+        local current = sf:GetVerticalScroll()
+        local step = 20
+        local maximum = sf:GetVerticalScrollRange()
+        local newPosition = current - (delta * step)
+
+        if newPosition < 0 then newPosition = 0 end
+        if newPosition > maximum then newPosition = maximum end
+
+        sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
+
+    end
+
+    exportScroll:EnableMouseWheel(true)
+    exportScroll:SetScript("OnMouseWheel", HandleExportMouseWheel)
+
+    exportBox:EnableMouseWheel(true)
+    exportBox:SetScript("OnMouseWheel", function(_, delta)
+        HandleExportMouseWheel(exportScroll, delta)
+    end)
 
     local exportBackButton = ImpLoot.Theme:CreateMenuButton(frame)
     exportBackButton:SetSize(70, 20)
@@ -279,6 +313,11 @@ function SummaryWindow:Refresh()
         row:Show()
 
         self.ScrollChild:SetHeight(ROW_HEIGHT)
+
+        if self.ScrollFrame.UpdateScrollIndicators then
+            self.ScrollFrame:UpdateScrollIndicators()
+        end
+
         return
 
     end
@@ -301,6 +340,10 @@ function SummaryWindow:Refresh()
 
     if self.ScrollFrame.UpdateScrollChildRect then
         self.ScrollFrame:UpdateScrollChildRect()
+    end
+
+    if self.ScrollFrame.UpdateScrollIndicators then
+        self.ScrollFrame:UpdateScrollIndicators()
     end
 
 end
@@ -352,6 +395,10 @@ function SummaryWindow:ShowExport()
     self.PostButton:Hide()
     self.ClearButton:Hide()
     self.ExportButton:Hide()
+
+    if self.ExportScroll.UpdateScrollIndicators then
+        self.ExportScroll:UpdateScrollIndicators()
+    end
 
 end
 

@@ -619,6 +619,34 @@ function DetailsWorkspace:BuildRaidPlannerView(container)
 
     raidPlannerScroll:SetScrollChild(raidPlannerScrollChild)
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(raidPlannerScroll)
+
+    raidPlannerScroll:EnableMouseWheel(true)
+
+    raidPlannerScroll:SetScript("OnMouseWheel", function(sf, delta)
+
+        local current = sf:GetVerticalScroll()
+        local step = 20
+        local maximum = sf:GetVerticalScrollRange()
+
+        local newPosition = current - (delta * step)
+
+        if newPosition < 0 then
+            newPosition = 0
+        end
+
+        if newPosition > maximum then
+            newPosition = maximum
+        end
+
+        sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
+
+    end)
+
     local raidPlannerText = raidPlannerScrollChild:CreateFontString(
         nil, "OVERLAY", "GameFontHighlightSmall"
     )
@@ -735,6 +763,8 @@ function DetailsWorkspace:BuildWishlistScrollArea()
         itemsFrame
     )
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
     -------------------------------------------------
     -- Mouse Wheel Scrolling
     -------------------------------------------------
@@ -768,21 +798,12 @@ function DetailsWorkspace:BuildWishlistScrollArea()
                 newPosition
             )
 
+            if self.UpdateScrollIndicators then
+                self:UpdateScrollIndicators()
+            end
+
         end
     )
-
-    -------------------------------------------------
-    -- Scrollbar
-    -------------------------------------------------
-
-    self.WishlistScrollBar =
-        _G[
-            "ImpLootWishlistScrollFrameScrollBar"
-        ]
-
-    if self.WishlistScrollBar then
-        self.WishlistScrollBar:Hide()
-    end
 
 
 end
@@ -1464,6 +1485,10 @@ function DetailsWorkspace:RefreshRaidPlanner()
         self.RaidPlannerText:SetText("No character selected.")
         self.RaidPlannerScrollChild:SetHeight(20)
 
+        if self.RaidPlannerScroll.UpdateScrollIndicators then
+            self.RaidPlannerScroll:UpdateScrollIndicators()
+        end
+
         return
 
     end
@@ -1494,6 +1519,10 @@ function DetailsWorkspace:RefreshRaidPlanner()
 
         self.RaidPlannerText:SetText("No wishlist items yet -- add some from any boss's loot.")
         self.RaidPlannerScrollChild:SetHeight(20)
+
+        if self.RaidPlannerScroll.UpdateScrollIndicators then
+            self.RaidPlannerScroll:UpdateScrollIndicators()
+        end
 
         return
 
@@ -1579,6 +1608,10 @@ function DetailsWorkspace:RefreshRaidPlanner()
     self.RaidPlannerScrollChild:SetWidth(textWidth + 10)
     self.RaidPlannerScrollChild:SetHeight(#lines * 16 + 20)
 
+    if self.RaidPlannerScroll.UpdateScrollIndicators then
+        self.RaidPlannerScroll:UpdateScrollIndicators()
+    end
+
 end
 
 
@@ -1607,6 +1640,10 @@ function DetailsWorkspace:RefreshWishlist()
             self.WishlistItemCount:SetText("0 Items")
         end
 
+        if self.WishlistScrollFrame.UpdateScrollIndicators then
+            self.WishlistScrollFrame:UpdateScrollIndicators()
+        end
+
         return
 
     end
@@ -1631,6 +1668,10 @@ function DetailsWorkspace:RefreshWishlist()
 
         if self.WishlistItemCount then
             self.WishlistItemCount:SetText("0 Items")
+        end
+
+        if self.WishlistScrollFrame.UpdateScrollIndicators then
+            self.WishlistScrollFrame:UpdateScrollIndicators()
         end
 
         return
@@ -1696,6 +1737,10 @@ function DetailsWorkspace:RefreshWishlist()
 
         if self.WishlistItemCount then
             self.WishlistItemCount:SetText("0 Items")
+        end
+
+        if self.WishlistScrollFrame.UpdateScrollIndicators then
+            self.WishlistScrollFrame:UpdateScrollIndicators()
         end
 
         return
@@ -1816,6 +1861,10 @@ function DetailsWorkspace:RefreshWishlist()
     -------------------------------------------------
 
     self.ItemsFrame:SetHeight(math.max(totalHeight, 1))
+
+    if self.WishlistScrollFrame.UpdateScrollIndicators then
+        self.WishlistScrollFrame:UpdateScrollIndicators()
+    end
 
 end
 

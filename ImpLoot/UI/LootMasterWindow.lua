@@ -221,6 +221,8 @@ function LootMasterWindow:Initialize()
 
     scrollFrame:SetScrollChild(scrollChild)
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
     scrollFrame:EnableMouseWheel(true)
 
     scrollFrame:SetScript("OnMouseWheel", function(sf, delta)
@@ -240,6 +242,10 @@ function LootMasterWindow:Initialize()
         end
 
         sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
 
     end)
 
@@ -866,6 +872,10 @@ function LootMasterWindow:Refresh()
 
     if self.ScrollFrame.UpdateScrollChildRect then
         self.ScrollFrame:UpdateScrollChildRect()
+    end
+
+    if self.ScrollFrame.UpdateScrollIndicators then
+        self.ScrollFrame:UpdateScrollIndicators()
     end
 
 end

@@ -506,6 +506,28 @@ function OptionsPanel:BuildAnnouncementsPanel()
 
     scrollFrame:SetScrollChild(scrollChild)
 
+    ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
+
+    scrollFrame:EnableMouseWheel(true)
+
+    scrollFrame:SetScript("OnMouseWheel", function(sf, delta)
+
+        local current = sf:GetVerticalScroll()
+        local step = 20
+        local maximum = sf:GetVerticalScrollRange()
+        local newPosition = current - (delta * step)
+
+        if newPosition < 0 then newPosition = 0 end
+        if newPosition > maximum then newPosition = maximum end
+
+        sf:SetVerticalScroll(newPosition)
+
+        if sf.UpdateScrollIndicators then
+            sf:UpdateScrollIndicators()
+        end
+
+    end)
+
     local y = 0
 
     for _, typeName in ipairs(ANNOUNCEMENT_ORDER) do
@@ -603,6 +625,10 @@ function OptionsPanel:BuildAnnouncementsPanel()
 
     scrollChild:SetWidth(340)
     scrollChild:SetHeight(math.abs(y) + 10)
+
+    if scrollFrame.UpdateScrollIndicators then
+        scrollFrame:UpdateScrollIndicators()
+    end
 
     self.AnnouncementsPanel = panel
 

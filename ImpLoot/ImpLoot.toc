@@ -2,7 +2,7 @@
 ## Title: ImpLoot
 ## Notes: Loot management with Soft Reserve support.
 ## Author: Mordy
-## Version: 1.0.0-beta.2
+## Version: 1.0.0-beta.3
 
 ## SavedVariables: ImpLootDB
 

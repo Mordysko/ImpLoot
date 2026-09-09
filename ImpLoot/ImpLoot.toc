@@ -1,0 +1,61 @@
+## Interface: 30300
+## Title: ImpLoot
+## Notes: Loot management with Soft Reserve support.
+## Author: Mordy
+## Version: 1.0.0-beta.2
+
+## SavedVariables: ImpLootDB
+
+bindings.xml
+
+Core.lua
+Commands.lua
+Events.lua
+
+Modules\Database.lua
+Modules\ItemCache.lua
+Modules\Player.lua
+Modules\Character.lua
+Modules\SoftReserve.lua
+Modules\LootCouncil.lua
+Modules\LootMaster.lua
+Modules\Announcements.lua
+Modules\Comms.lua
+Modules\Wishlist.lua
+Modules\RaidNotes.lua
+Modules\Workspace.lua
+Modules\Compare.lua
+
+Data\Raids\IcecrownCitadel.lua
+Data\Raids\Naxxramas.lua
+Data\Raids\ObsidianSanctum.lua
+Data\Raids\TheEyeOfEternity.lua
+Data\Raids\Ulduar.lua
+Data\Raids\TrialOfTheCrusader.lua
+Data\Raids\OnyxiasLair.lua
+Data\Raids\VaultOfArchavon.lua
+Data\Raids\RubySanctum.lua
+
+UI\Theme.lua
+UI\MainWindow.lua
+UI\LootMasterWindow.lua
+UI\ReservePopup.lua
+UI\VotePopup.lua
+UI\SummaryWindow.lua
+UI\OptionsPanel.lua
+UI\MinimapButton.lua
+UI\LootPriorityWindow.lua
+UI\PopulateModeBar.lua
+
+UI\PlanningNavigation.lua
+UI\PlanningDrawer.lua
+UI\CompareDrawer.lua
+
+UI\BossPanel.lua
+UI\LootPanel.lua
+UI\DetailsWorkspace.lua
+
+UI\ImportDialog.lua
+UI\WishlistDialog.lua
+UI\RaidNoteDialog.lua
+UI\RaidNotesPopup.lua

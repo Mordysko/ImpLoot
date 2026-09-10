@@ -427,6 +427,11 @@ function OptionsPanel:BuildLootMasterPanel()
         function(v) Settings.AutoAssignToRollWinner = v end)
     table.insert(panel.Widgets, widget)
 
+    widget, y = CreateCheckboxRow(panel, "Auto-clear the queue when the next boss is looted", y,
+        function() return Settings.AutoClearOnNewBoss end,
+        function(v) Settings.AutoClearOnNewBoss = v end)
+    table.insert(panel.Widgets, widget)
+
     self.LootMasterPanel = panel
 
     return panel
@@ -476,11 +481,12 @@ local ANNOUNCEMENT_LABELS = {
     RollTimeRemaining = "Roll Time Remaining",
     RollCountdown = "Roll Countdown",
     LCVoteCalled = "Loot Council Vote Called",
+    FunnelAssigned = "Funnel Assigned",
 }
 
 local ANNOUNCEMENT_ORDER = {
     "OpenRollAnnounced", "SoftReserveAnnounced", "WinnerAnnounced", "EligibleClasses",
-    "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled",
+    "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled", "FunnelAssigned",
 }
 
 function OptionsPanel:BuildAnnouncementsPanel()
@@ -928,7 +934,13 @@ function OptionsPanel:BuildAboutPanel()
         "resolves to whichever specific player the loot master assigns it to -- " ..
         "the addon doesn't pick one automatically.\n\n" ..
         "To set a hotkey for opening the Loot Master window, use the Key Bindings " ..
-        "menu (Game Menu > Key Bindings) -- look for the \"ImpLoot\" category."
+        "menu (Game Menu > Key Bindings) -- look for the \"ImpLoot\" category.\n\n" ..
+        "Wishlists, priority lists, and everything else ImpLoot saves are only " ..
+        "written to disk on a proper logout, /reload, or exiting normally through " ..
+        "the game menu. Alt-F4 or a crash skips that step entirely, same as any " ..
+        "other addon or Blizzard's own UI settings -- so anything created since " ..
+        "your last logout/reload won't be there next time. A quick /reload after " ..
+        "finishing something you don't want to risk losing is a cheap safety net."
     )
 
     self.AboutPanel = panel

@@ -212,7 +212,7 @@ function ImpLoot.LootCouncil:SetItem(listName, itemID, itemName, mode, candidate
         return false
     end
 
-    if mode ~= "Vote" and mode ~= "Priority" then
+    if mode ~= "Vote" and mode ~= "Priority" and mode ~= "Funnel" then
         return false
     end
 
@@ -345,15 +345,31 @@ end
 
 function ImpLoot.LootCouncil:RecordWin(listName, itemID, winnerType, winnerValue, winnerPlayerName)
 
-    local remaining = self:GetRemainingCandidates(listName, itemID)
+    -------------------------------------------------
+    -- Funnel Mode Never Removes The Candidate
+    --
+    -- The whole point of Funnel is that every drop
+    -- keeps going to the same slot-1 candidate until
+    -- the loot master manually reconfigures the item's
+    -- candidates -- unlike Priority, a win here never
+    -- shrinks the remaining list.
+    -------------------------------------------------
 
-    for i, candidate in ipairs(remaining) do
+    local item = self:GetItem(listName, itemID)
 
-        if candidate.Type == winnerType and candidate.Value == winnerValue then
+    if not (item and item.Mode == "Funnel") then
 
-            table.remove(remaining, i)
+        local remaining = self:GetRemainingCandidates(listName, itemID)
 
-            break
+        for i, candidate in ipairs(remaining) do
+
+            if candidate.Type == winnerType and candidate.Value == winnerValue then
+
+                table.remove(remaining, i)
+
+                break
+
+            end
 
         end
 

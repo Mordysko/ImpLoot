@@ -106,6 +106,10 @@ function BossPanel:Initialize(mainWindowFrame, header)
 
             ImpLoot.UI.LootPanel:PopulateTrash()
 
+        elseif self.ExtraDropsButton and self.ExtraDropsButton.Selected then
+
+            ImpLoot.UI.LootPanel:PopulateExtraDrops()
+
         end
     end)
 
@@ -166,6 +170,10 @@ function BossPanel:Initialize(mainWindowFrame, header)
         elseif self.TrashButton and self.TrashButton.Selected then
 
             ImpLoot.UI.LootPanel:PopulateTrash()
+
+        elseif self.ExtraDropsButton and self.ExtraDropsButton.Selected then
+
+            ImpLoot.UI.LootPanel:PopulateExtraDrops()
 
         end
     end)
@@ -472,6 +480,93 @@ function BossPanel:SelectTrash(raid, difficulty)
 end
 
 -------------------------------------------------
+-- Select Extra Drops
+--
+-- Mirrors SelectTrash, for navigating straight to a
+-- raid's Extra Drops view (e.g. clicking one of those
+-- items from the wishlist).
+-------------------------------------------------
+
+function BossPanel:SelectExtraDrops(raid, difficulty)
+
+    if not raid then
+        return
+    end
+
+    if difficulty == "10"
+    or difficulty == "10 Heroic" then
+
+        self.RaidSize = 10
+
+    elseif difficulty == "25"
+    or difficulty == "25 Heroic" then
+
+        self.RaidSize = 25
+
+    else
+
+        return
+
+    end
+
+    if difficulty == "10 Heroic"
+    or difficulty == "25 Heroic" then
+
+        self.Difficulty = "Heroic"
+
+    else
+
+        self.Difficulty = "Normal"
+
+    end
+
+    if self.RaidSizeToggle then
+
+        if self.RaidSize == 10 then
+            self.RaidSizeToggle:SetText("10 Man")
+        else
+            self.RaidSizeToggle:SetText("25 Man")
+        end
+
+    end
+
+    ImpLoot.SelectedRaid = raid
+    ImpLoot.SelectedBoss = nil
+
+    local pendingLootSelection = ImpLoot.PendingLootSelection
+    ImpLoot.PendingLootSelection = nil
+
+    -- rebuild the boss list for this raid (we may have
+    -- just switched raids entirely), so self.ExtraDropsButton
+    -- below actually refers to THIS raid's Extra Drops button
+    self:Populate()
+
+    if self.DifficultyToggle then
+
+        if self.Difficulty == "Heroic" then
+            self.DifficultyToggle:SetText("Heroic")
+        else
+            self.DifficultyToggle:SetText("Normal")
+        end
+
+    end
+
+    self:UpdateDifficultyToggle()
+
+    if self.ExtraDropsButton then
+        self:Highlight(self.ExtraDropsButton)
+    end
+
+    ImpLoot.UI.LootPanel:ClearSelection()
+    ImpLoot.UI.LootPanel:ClearSearchFocus()
+
+    ImpLoot.SelectedLoot = pendingLootSelection
+
+    ImpLoot.UI.LootPanel:PopulateExtraDrops()
+
+end
+
+-------------------------------------------------
 -- Clear Content
 -------------------------------------------------
 
@@ -723,6 +818,72 @@ function BossPanel:Populate()
         self.TrashButton = trashButton
 
         table.insert(self.Buttons, trashButton)
+
+    end
+
+    -------------------------------------------------
+    -- Extra Drops
+    --
+    -- Same shape as Trash above, but for items that can
+    -- drop from any boss in the raid (currency like
+    -- Runed Orb, eventually recipes/formulas) rather
+    -- than genuine trash-mob loot -- kept as its own
+    -- button since the two mean different things to a
+    -- player browsing for where an item comes from.
+    -------------------------------------------------
+
+    self.ExtraDropsButton = nil
+
+    if raid.ExtraDrops and #raid.ExtraDrops > 0 then
+
+        y = y - 20
+
+        local extraDropsButton = CreateFrame("Button", nil, self.Content)
+
+        extraDropsButton:SetWidth(Layout.BossPanelWidth - 12)
+        extraDropsButton:SetHeight(Layout.ListButtonHeight)
+        extraDropsButton:SetPoint("TOPLEFT", 6, y)
+
+        local extraDropsBackground = extraDropsButton:CreateTexture(nil, "BACKGROUND")
+        extraDropsBackground:SetAllPoints()
+        extraDropsBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
+        extraDropsBackground:SetVertexColor(0, 0, 0, 0)
+        extraDropsButton.Background = extraDropsBackground
+
+        extraDropsButton.Selected = false
+        extraDropsButton.IsExtraDrops = true
+
+        local extraDropsText = extraDropsButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        extraDropsText:SetAllPoints()
+        extraDropsText:SetJustifyH("CENTER")
+        extraDropsText:SetText("Extra Drops")
+
+        extraDropsButton:SetScript("OnEnter", function()
+            if not extraDropsButton.Selected then
+                extraDropsButton.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
+            end
+        end)
+
+        extraDropsButton:SetScript("OnLeave", function()
+            if not extraDropsButton.Selected then
+                extraDropsButton.Background:SetVertexColor(0, 0, 0, 0)
+            end
+        end)
+
+        extraDropsButton:SetScript("OnClick", function()
+
+            self:Highlight(extraDropsButton)
+
+            ImpLoot.SelectedBoss = nil
+            ImpLoot.SelectedLoot = nil
+
+            ImpLoot.UI.LootPanel:PopulateExtraDrops()
+
+        end)
+
+        self.ExtraDropsButton = extraDropsButton
+
+        table.insert(self.Buttons, extraDropsButton)
 
     end
 

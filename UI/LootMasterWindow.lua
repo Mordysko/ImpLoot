@@ -588,7 +588,122 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     if entry.Mode == "LootCouncil" then
 
-        if entry.State == "Voting" then
+        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+
+        if councilItem and councilItem.Mode == "Funnel" then
+
+            -------------------------------------------------
+            -- Funnel Mode
+            --
+            -- Every drop goes to whoever's in candidate slot
+            -- 1 -- no voting, and unlike Priority, a win never
+            -- removes them. The only way the recipient changes
+            -- is the loot master manually editing this item's
+            -- candidates in the Loot Priority window.
+            -------------------------------------------------
+
+            local candidates = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+            local first = candidates[1]
+
+            if not first then
+
+                row.InfoText:SetText("No one assigned to funnel this to -- set slot 1 in Loot Priority.")
+                row.ActionButton:Hide()
+
+            elseif first.Type == "Class" then
+
+                row.InfoText:SetText("Funneling to: Any " .. first.Value)
+                row.ActionButton:Hide()
+
+            else
+
+                row.InfoText:SetText("Funneling to: " .. first.Value)
+
+                row.ActionButton:SetText("Assign")
+                row.ActionButton:Show()
+
+                row.ActionButton:SetScript("OnClick", function()
+
+                    local currentCandidates = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+                    local currentFirst = currentCandidates[1]
+
+                    if not currentFirst or currentFirst.Type ~= "Player" then
+                        ImpLoot:Print("No player assigned to funnel " .. displayName .. " to.")
+                        return
+                    end
+
+                    ImpLoot.LootMaster:Assign(entry.QueueID, currentFirst.Value)
+
+                end)
+
+            end
+
+        elseif councilItem and councilItem.Mode == "Priority" then
+
+            -------------------------------------------------
+            -- Priority Mode
+            --
+            -- No voting involved -- the list's own order
+            -- already decides who's next. Show that order
+            -- and let the loot master assign straight to
+            -- the top remaining candidate, same one-click
+            -- pattern as the Vote mode's own Assign button
+            -- once a winner's decided.
+            -------------------------------------------------
+
+            local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+
+            if #remaining == 0 then
+
+                row.InfoText:SetText("Priority list exhausted -- assign manually via /il or trade.")
+                row.ActionButton:Hide()
+
+            else
+
+                local names = {}
+
+                for _, candidate in ipairs(remaining) do
+
+                    if candidate.Type == "Class" then
+                        table.insert(names, "Any " .. candidate.Value)
+                    else
+                        table.insert(names, candidate.Value)
+                    end
+
+                end
+
+                row.InfoText:SetText("Priority: " .. table.concat(names, " > "))
+
+                row.ActionButton:SetText("Assign")
+                row.ActionButton:Show()
+
+                row.ActionButton:SetScript("OnClick", function()
+
+                    local currentRemaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+
+                    if #currentRemaining == 0 then
+                        ImpLoot:Print("Priority list exhausted for " .. displayName .. ".")
+                        return
+                    end
+
+                    local top = currentRemaining[1]
+
+                    if top.Type == "Class" then
+                        ImpLoot:Print(
+                            "Any " .. top.Value .. " is next in priority for " .. displayName ..
+                            " -- assign it to a specific player via /il or trade."
+                        )
+                        return
+                    end
+
+                    ImpLoot.LootMaster:Assign(entry.QueueID, top.Value)
+
+                end)
+
+            end
+
+        elseif entry.State == "Voting" then
 
             local tally = ImpLoot.LootMaster:GetVoteTally(entry.QueueID)
             local lines = {}

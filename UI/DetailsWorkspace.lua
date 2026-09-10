@@ -279,15 +279,30 @@ function DetailsWorkspace:CreateWishlistRow(parent, index)
         and not row.Entry.Boss then
 
             -------------------------------------------------
-            -- Trash Item -- No Specific Boss, Just A Raid
+            -- No Specific Boss, Just A Raid -- Trash or
+            -- Extra Drops. Both leave row.Entry.Boss nil,
+            -- so the item's own IsExtraDrops flag (set in
+            -- Database.lua) is what actually distinguishes
+            -- them here.
             -------------------------------------------------
 
             ImpLoot.PendingLootSelection = item
 
-            ImpLoot.UI.BossPanel:SelectTrash(
-                row.Entry.Raid,
-                row.Entry.Difficulty
-            )
+            if item.IsExtraDrops then
+
+                ImpLoot.UI.BossPanel:SelectExtraDrops(
+                    row.Entry.Raid,
+                    row.Entry.Difficulty
+                )
+
+            else
+
+                ImpLoot.UI.BossPanel:SelectTrash(
+                    row.Entry.Raid,
+                    row.Entry.Difficulty
+                )
+
+            end
 
         else
 
@@ -1541,7 +1556,9 @@ function DetailsWorkspace:RefreshRaidPlanner()
         if item and item.Raid then
 
             local raidName = item.Raid.Name
-            local bossName = (item.Boss and item.Boss.Name) or "Trash"
+            local bossName = item.Boss and item.Boss.Name
+                or (item.IsExtraDrops and "Extra Drops")
+                or "Trash"
 
             raidGroups[raidName] = raidGroups[raidName] or {}
 

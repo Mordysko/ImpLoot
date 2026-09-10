@@ -1,5 +1,5 @@
-ImpLoot v1.0.0-beta
-====================
+ImpLoot v1.0.0-beta.8
+======================
 
 A raid loot management addon for World of Warcraft: Wrath of the
 Lich King (client 3.3.5a), with built-in Soft Reserve support.
@@ -41,6 +41,22 @@ other addon action, it's set through WoW's own Key Bindings menu:
 
 This is entirely optional; the window also opens automatically
 for the Master Looter when loot drops.
+
+
+BEFORE YOU START: HOW YOUR DATA GETS SAVED
+---------------------------------------------
+
+Wishlists, priority lists, and everything else ImpLoot saves are
+only written to disk on a proper logout, /reload, or exiting
+normally through the game menu. This is how WoW's SavedVariables
+system works for every addon (including Blizzard's own UI
+settings), not something specific to ImpLoot.
+
+Alt-F4 or a crash skips that save step entirely -- so anything
+created since your last logout/reload won't be there next time
+you log in. A quick /reload after finishing something you don't
+want to risk losing (like building out a priority list) is a
+cheap safety net.
 
 
 A TYPICAL RAID NIGHT, START TO FINISH

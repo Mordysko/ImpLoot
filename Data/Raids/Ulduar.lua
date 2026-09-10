@@ -6796,6 +6796,49 @@ local ULD = {
             Difficulty = "25",
         },
     },
+
+    -------------------------------------------------
+    -- Extra Drops
+    --
+    -- Items that can drop from any boss in the raid
+    -- rather than one specific boss's table -- Ulduar's
+    -- crafting currencies. More may be added here later
+    -- (recipes/formulas).
+    -------------------------------------------------
+
+    ExtraDrops = {
+
+        {
+            Name = "Runed Orb",
+            IDs = {
+                Normal = 45087,
+                Heroic = nil,
+            },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Can drop from any boss, 10 or 25 man.",
+            AvailableIn = {
+                ["10"] = true,
+                ["25"] = true,
+            },
+        },
+
+        {
+            Name = "Fragment of Val'anyr",
+            IDs = {
+                Normal = 45038,
+                Heroic = nil,
+            },
+            Quality = 5,
+            Slot = nil,
+            Token = false,
+            Classes = { "Paladin", "Priest", "Shaman", "Druid" },
+            Notes = "Can drop from any boss, 25 man only.",
+            Difficulty = "25",
+        },
+    },
 }
 
 ImpLoot.Database:RegisterRaid(ULD)

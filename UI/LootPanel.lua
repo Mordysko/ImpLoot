@@ -1459,6 +1459,75 @@ function LootPanel:PopulateTrash()
 end
 
 -------------------------------------------------
+-- Populate Extra Drops
+-------------------------------------------------
+
+function LootPanel:PopulateExtraDrops()
+
+    self.Buttons = {}
+    self:Clear()
+    self:ResetLootHeaders()
+
+    local raid = ImpLoot.SelectedRaid
+
+    if not raid or not raid.ExtraDrops then
+        return
+    end
+
+    local selectedDifficulty =
+        ImpLoot.UI.BossPanel:GetSelectedDifficulty()
+
+    local Layout = ImpLoot.UI.Layout
+
+    local displayIndex = 0
+
+    for _, item in ipairs(raid.ExtraDrops) do
+
+        local availableIn = item.AvailableIn
+
+        if availableIn
+        and availableIn[selectedDifficulty] then
+
+            displayIndex = displayIndex + 1
+
+            local column =
+                (displayIndex - 1) % Layout.GridColumns
+
+            local row =
+                math.floor(
+                    (displayIndex - 1) /
+                    Layout.GridColumns
+                )
+
+            local x = column * (
+                Layout.GridButtonWidth +
+                Layout.GridColumnGap
+            )
+
+            local y = row * (
+                46 +
+                Layout.GridRowGap
+            )
+
+            local button =
+                self:CreateLootButton(item, x, y)
+
+            table.insert(
+                self.Buttons,
+                button
+            )
+
+            if ImpLoot.SelectedLoot == item then
+                self:HighlightButton(button)
+            end
+
+        end
+
+    end
+
+end
+
+-------------------------------------------------
 -- Populate Search Results
 -------------------------------------------------
 

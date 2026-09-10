@@ -65,6 +65,12 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    FunnelAssigned = {
+        Enabled = true,
+        Text = "{item} assigned to {player}",
+        Channel = "Auto",
+    },
+
 }
 
 -------------------------------------------------

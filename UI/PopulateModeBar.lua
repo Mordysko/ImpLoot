@@ -48,6 +48,10 @@ function PopulateModeBar:Initialize()
 
         self:Hide()
 
+        if ImpLoot.UI.MainWindow and ImpLoot.UI.MainWindow.Frame then
+            ImpLoot.UI.MainWindow.Frame:Hide()
+        end
+
         if ImpLoot.UI.LootPriorityWindow then
             ImpLoot.UI.LootPriorityWindow:Show()
         end
@@ -63,6 +67,14 @@ function PopulateModeBar:Initialize()
 
         ImpLoot.LootCouncil:StopPopulateMode()
         self:Hide()
+
+        if ImpLoot.UI.MainWindow and ImpLoot.UI.MainWindow.Frame then
+            ImpLoot.UI.MainWindow.Frame:Hide()
+        end
+
+        if ImpLoot.UI.LootPriorityWindow then
+            ImpLoot.UI.LootPriorityWindow:Show()
+        end
 
     end)
 

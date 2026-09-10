@@ -75,6 +75,42 @@ function ImpLoot.Database:RegisterRaid(raid)
     end
 
     -------------------------------------------------
+    -- Link Extra Drops Loot
+    --
+    -- Same shape and purpose as Trash above, but for a
+    -- conceptually different bucket: items that can drop
+    -- from any boss in the raid rather than one specific
+    -- boss's table (currency items like Runed Orb, and
+    -- eventually recipes/formulas), not genuine trash-mob
+    -- loot. Kept as its own raid.ExtraDrops table and its
+    -- own boss-list button rather than merged into Trash,
+    -- since the two mean different things to a player
+    -- browsing for where an item comes from.
+    -------------------------------------------------
+
+    if raid.ExtraDrops then
+
+        for _, item in ipairs(raid.ExtraDrops) do
+
+            item.Raid = raid
+            item.Boss = nil
+            item.IsExtraDrops = true
+
+            item.AvailableIn = item.AvailableIn or {}
+
+            if item.Difficulty then
+                item.AvailableIn[item.Difficulty] = true
+            end
+
+            if not next(item.AvailableIn) then
+                item.AvailableIn["10"] = true
+            end
+
+        end
+
+    end
+
+    -------------------------------------------------
     -- Store Raid
     -------------------------------------------------
 
@@ -209,6 +245,25 @@ function ImpLoot.Database:FindItemByID(itemID)
         if raid.Trash then
 
             for _, item in ipairs(raid.Trash) do
+
+                if item.IDs then
+
+                    if item.IDs.Normal == itemID
+                    or item.IDs.Heroic == itemID then
+
+                        return item
+
+                    end
+
+                end
+
+            end
+
+        end
+
+        if raid.ExtraDrops then
+
+            for _, item in ipairs(raid.ExtraDrops) do
 
                 if item.IDs then
 
@@ -533,6 +588,14 @@ function ImpLoot.Database:Search(text, raidFilter)
             if raid.Trash then
 
                 for _, item in ipairs(raid.Trash) do
+                    TryAddResult(item, raid, nil)
+                end
+
+            end
+
+            if raid.ExtraDrops then
+
+                for _, item in ipairs(raid.ExtraDrops) do
                     TryAddResult(item, raid, nil)
                 end
 

@@ -237,7 +237,9 @@ end
 
 function ImpLoot.Theme:GetQualityColor(quality)
 
-    if quality == 4 then
+    if quality == 5 then
+        return 1.00, 0.50, 0.00
+    elseif quality == 4 then
         return 0.64, 0.21, 0.93
     elseif quality == 3 then
         return 0.00, 0.44, 0.87

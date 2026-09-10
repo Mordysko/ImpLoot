@@ -287,7 +287,14 @@ function LootPriorityWindow:BuildItemEditor(frame)
 
     modeButton:SetScript("OnClick", function()
 
-        LootPriorityWindow.Mode = (LootPriorityWindow.Mode == "Priority") and "Vote" or "Priority"
+        if LootPriorityWindow.Mode == "Priority" then
+            LootPriorityWindow.Mode = "Vote"
+        elseif LootPriorityWindow.Mode == "Vote" then
+            LootPriorityWindow.Mode = "Funnel"
+        else
+            LootPriorityWindow.Mode = "Priority"
+        end
+
         LootPriorityWindow:RefreshModeButtons()
 
     end)

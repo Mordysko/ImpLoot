@@ -35,6 +35,7 @@ ImpLoot.LootMaster.Defaults = {
 
     AutoFinalizeOnTimeout = true,
     AutoAssignToRollWinner = true,
+    AutoClearOnNewBoss = false,
 
 }
 
@@ -236,6 +237,27 @@ function ImpLoot.LootMaster:OnLootOpened()
 
     if not corpseGUID then
         corpseGUID = "session-" .. tostring(self.NextQueueID)
+    end
+
+    -------------------------------------------------
+    -- Auto-Clear On New Boss
+    --
+    -- Compares against the PREVIOUS corpse's GUID
+    -- before it gets overwritten below. Re-opening the
+    -- same corpse (closed and reopened to check for
+    -- missed items) keeps the same GUID, so that never
+    -- triggers a clear -- only a genuinely different
+    -- corpse does.
+    -------------------------------------------------
+
+    if self.Settings.AutoClearOnNewBoss
+    and self.CurrentCorpseGUID
+    and self.CurrentCorpseGUID ~= corpseGUID
+    and #self.Queue > 0 then
+
+        self:ClearQueue()
+        ImpLoot:Print("New boss detected -- loot queue cleared.")
+
     end
 
     self.CurrentCorpseGUID = corpseGUID
@@ -1399,31 +1421,53 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName)
 
     if entry.Mode == "LootCouncil" then
 
-        local winnerRoll = nil
+        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
 
-        for _, roll in ipairs(entry.Rolls) do
+        if councilItem and councilItem.Mode == "Funnel" then
 
-            if roll.Player == winnerName then
-                winnerRoll = roll
-                break
+            -------------------------------------------------
+            -- Funnel Assignment Announcement
+            --
+            -- No roll or vote happened here -- a plain
+            -- "assigned to" message fits better than the
+            -- roll-flavoured WinnerAnnounced text.
+            -------------------------------------------------
+
+            ImpLoot.Announcements:Announce("FunnelAssigned", {
+                item = entry.ItemLink,
+                player = winnerName,
+            })
+
+        else
+
+            local winnerRoll = nil
+
+            for _, roll in ipairs(entry.Rolls) do
+
+                if roll.Player == winnerName then
+                    winnerRoll = roll
+                    break
+                end
+
             end
 
+            local rollText = "N/A"
+            local rangeText = "N/A"
+
+            if winnerRoll then
+                rollText = tostring(winnerRoll.Roll)
+                rangeText = tostring(winnerRoll.Min) .. "-" .. tostring(winnerRoll.Max)
+            end
+
+            ImpLoot.Announcements:Announce("WinnerAnnounced", {
+                item = entry.ItemLink,
+                winner = winnerName,
+                roll = rollText,
+                range = rangeText,
+            })
+
         end
-
-        local rollText = "N/A"
-        local rangeText = "N/A"
-
-        if winnerRoll then
-            rollText = tostring(winnerRoll.Roll)
-            rangeText = tostring(winnerRoll.Min) .. "-" .. tostring(winnerRoll.Max)
-        end
-
-        ImpLoot.Announcements:Announce("WinnerAnnounced", {
-            item = entry.ItemLink,
-            winner = winnerName,
-            roll = rollText,
-            range = rangeText,
-        })
 
     end
 

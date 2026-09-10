@@ -1,0 +1,5 @@
+<Bindings>
+	<Binding name="IMPLOOT_TOGGLE_LOOTMASTER" header="IMPLOOT">
+		ImpLoot_ToggleLootMasterWindow();
+	</Binding>
+</Bindings>

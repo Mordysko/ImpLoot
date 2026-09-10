@@ -331,13 +331,14 @@ end
 
 function LootPanel:Clear()
 
-    local children = {
-        self.ScrollChild:GetChildren()
-    }
+    self.ButtonCursor = 0
 
-    for _, child in ipairs(children) do
-        child:Hide()
-        child:SetParent(nil)
+    if self.ButtonPool then
+
+        for _, button in ipairs(self.ButtonPool) do
+            button:Hide()
+        end
+
     end
 
 end
@@ -466,142 +467,61 @@ end
 -- tells the two apart.
 -------------------------------------------------
 
-function LootPanel:CreateLootButton(entry, x, y, isSearchResult)
+-------------------------------------------------
+-- Acquire Loot Button
+--
+-- Returns the pooled button at this index, creating
+-- it (once) if the pool isn't big enough yet. Fixes a
+-- real memory leak: this window is the one a raid
+-- browses through constantly (boss to boss, difficulty
+-- toggles, searches), and WoW frames created via
+-- CreateFrame are never garbage collected even once
+-- hidden and unparented -- creating a fresh set of
+-- buttons on every populate call leaked a full set of
+-- frames every single time, for the rest of the
+-- session. Every other populated window in the addon
+-- (Loot Master, Loot Priority, Summary, the wishlist)
+-- already pools its rows the same way this now does.
+-------------------------------------------------
 
-    local Layout = ImpLoot.UI.Layout
-    local item = entry.Item or entry
+function LootPanel:AcquireLootButton()
 
-    -------------------------------------------------
-    -- Determine Item ID For Current Difficulty
-    -------------------------------------------------
+    self.ButtonPool = self.ButtonPool or {}
+    self.ButtonCursor = (self.ButtonCursor or 0) + 1
 
-    local selectedDifficulty = ImpLoot.UI.BossPanel:GetSelectedDifficulty()
-
-    local itemID
-
-    if selectedDifficulty == "10 Heroic" or selectedDifficulty == "25 Heroic" then
-        itemID = item.IDs.Heroic or item.IDs.Normal
-    else
-        itemID = item.IDs.Normal or item.IDs.Heroic
+    if self.ButtonPool[self.ButtonCursor] then
+        return self.ButtonPool[self.ButtonCursor]
     end
 
-    -------------------------------------------------
-    -- Get Cached Item Information
-    -------------------------------------------------
-
-    local cached = ImpLoot.ItemCache:GetItem(itemID)
+    local Layout = ImpLoot.UI.Layout
 
     local button = CreateFrame("Button", nil, self.ScrollChild)
 
-    button.Item = item
-    button.ItemID = itemID
-
     button:SetWidth(Layout.GridButtonWidth)
     button:SetHeight(46)
-    button:SetPoint("TOPLEFT", x, -y)
 
     local bg = button:CreateTexture(nil, "BACKGROUND")
     bg:SetAllPoints()
     bg:SetTexture("Interface\\Buttons\\WHITE8X8")
     bg:SetVertexColor(0, 0, 0, 0)
-
     button.Background = bg
-    button.Selected = false
-
-    -------------------------------------------------
-    -- Item Icon
-    -------------------------------------------------
 
     local icon = button:CreateTexture(nil, "ARTWORK")
     icon:SetSize(32, 32)
     icon:SetPoint("LEFT", button, "LEFT", 3, 0)
-
-    local iconID = nil
-
-    if cached and cached.Texture then
-        iconID = cached.Texture
-    end
-
-    if iconID then
-        icon:SetTexture(iconID)
-    end
-
     button.Icon = icon
 
-    -------------------------------------------------
-    -- Item Name
-    -------------------------------------------------
-
     local text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-
-    if isSearchResult then
-        text:SetPoint("TOPLEFT", icon, "TOPRIGHT", 6, 3)
-        text:SetHeight(12)
-    else
-        text:SetPoint("TOPLEFT", icon, "TOPRIGHT", 6, -2)
-        text:SetHeight(16)
-    end
-
     text:SetPoint("RIGHT", button, "RIGHT", -4, 0)
     text:SetJustifyH("LEFT")
-
-    local displayName = item.Name
-    local displayQuality = item.Quality
-
-    if cached then
-        displayName = cached.Name
-        displayQuality = cached.Quality
-    end
-
-    local r, g, b = ImpLoot.Theme:GetQualityColor(displayQuality)
-    text:SetTextColor(r, g, b)
-    text:SetText(displayName)
-
     button.Text = text
 
-    -------------------------------------------------
-    -- Item Slot / Type
-    -------------------------------------------------
-
     local typeText = button:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-
-    typeText:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, isSearchResult and 0 or -1)
     typeText:SetPoint("RIGHT", button, "RIGHT", -4, 0)
-    typeText:SetHeight(isSearchResult and 12 or 14)
     typeText:SetJustifyH("LEFT")
-
-    local itemType = ""
-
-    if item.Token then
-
-        -- Tier tokens aren't real equippable gear, so the
-        -- client's own SubType for them is usually "Junk" --
-        -- accurate to WoW's internal classification, but
-        -- reads as if something's wrong with the item. Our
-        -- own data already knows these are tokens.
-        itemType = "Token"
-
-    elseif cached then
-        itemType = FormatItemType(cached)
-    else
-        itemType = FormatItemType(item)
-    end
-
-    typeText:SetText(itemType)
-
     button.TypeText = typeText
 
-    -------------------------------------------------
-    -- Item Link
-    -------------------------------------------------
-
-    if cached then
-        button.ItemLink = cached.Link
-    end
-
-    -------------------------------------------------
-    -- Hover Highlight + Tooltip
-    -------------------------------------------------
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
     button:SetScript("OnEnter", function()
 
@@ -627,7 +547,144 @@ function LootPanel:CreateLootButton(entry, x, y, isSearchResult)
 
     end)
 
-    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    self.ButtonPool[self.ButtonCursor] = button
+
+    return button
+
+end
+
+-------------------------------------------------
+-- Populate Loot Button
+--
+-- Fills a pooled button (from AcquireLootButton) with
+-- a specific item's data, position, and click handler.
+-- Same content this window has always shown -- just
+-- reusing the frame instead of creating a new one.
+-------------------------------------------------
+
+function LootPanel:PopulateLootButton(button, entry, x, y, isSearchResult)
+
+    local item = entry.Item or entry
+
+    -------------------------------------------------
+    -- Determine Item ID For Current Difficulty
+    -------------------------------------------------
+
+    local selectedDifficulty = ImpLoot.UI.BossPanel:GetSelectedDifficulty()
+
+    local itemID
+
+    if selectedDifficulty == "10 Heroic" or selectedDifficulty == "25 Heroic" then
+        itemID = item.IDs.Heroic or item.IDs.Normal
+    else
+        itemID = item.IDs.Normal or item.IDs.Heroic
+    end
+
+    -------------------------------------------------
+    -- Get Cached Item Information
+    -------------------------------------------------
+
+    local cached = ImpLoot.ItemCache:GetItem(itemID)
+
+    button.Item = item
+    button.ItemID = itemID
+    button.Selected = false
+    button.Background:SetVertexColor(0, 0, 0, 0)
+
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", x, -y)
+    button:Show()
+
+    -------------------------------------------------
+    -- Item Icon
+    -------------------------------------------------
+
+    local iconID = nil
+
+    if cached and cached.Texture then
+        iconID = cached.Texture
+    end
+
+    if iconID then
+        button.Icon:SetTexture(iconID)
+    else
+        button.Icon:SetTexture(nil)
+    end
+
+    -------------------------------------------------
+    -- Item Name
+    -------------------------------------------------
+
+    local text = button.Text
+
+    text:ClearAllPoints()
+
+    if isSearchResult then
+        text:SetPoint("TOPLEFT", button.Icon, "TOPRIGHT", 6, 3)
+        text:SetHeight(12)
+    else
+        text:SetPoint("TOPLEFT", button.Icon, "TOPRIGHT", 6, -2)
+        text:SetHeight(16)
+    end
+
+    text:SetPoint("RIGHT", button, "RIGHT", -4, 0)
+
+    local displayName = item.Name
+    local displayQuality = item.Quality
+
+    if cached then
+        displayName = cached.Name
+        displayQuality = cached.Quality
+    end
+
+    local r, g, b = ImpLoot.Theme:GetQualityColor(displayQuality)
+    text:SetTextColor(r, g, b)
+    text:SetText(displayName)
+
+    -------------------------------------------------
+    -- Item Slot / Type
+    -------------------------------------------------
+
+    local typeText = button.TypeText
+
+    typeText:ClearAllPoints()
+    typeText:SetPoint("TOPLEFT", text, "BOTTOMLEFT", 0, isSearchResult and 0 or -1)
+    typeText:SetPoint("RIGHT", button, "RIGHT", -4, 0)
+    typeText:SetHeight(isSearchResult and 12 or 14)
+
+    local itemType = ""
+
+    if item.Token then
+
+        -- Tier tokens aren't real equippable gear, so the
+        -- client's own SubType for them is usually "Junk" --
+        -- accurate to WoW's internal classification, but
+        -- reads as if something's wrong with the item. Our
+        -- own data already knows these are tokens.
+        itemType = "Token"
+
+    elseif cached then
+        itemType = FormatItemType(cached)
+    else
+        itemType = FormatItemType(item)
+    end
+
+    typeText:SetText(itemType)
+
+    -------------------------------------------------
+    -- Item Link
+    -------------------------------------------------
+
+    button.ItemLink = cached and cached.Link or nil
+
+    -------------------------------------------------
+    -- Click Handler
+    --
+    -- Reassigned each time, since this button may now
+    -- be displaying a different item than it was the
+    -- last time it was populated -- the closure needs
+    -- to capture THIS item's data, not a stale one.
+    -------------------------------------------------
 
     button:SetScript("OnClick", function(clickedButton, mouseButton)
         self:HandleLootButtonClick(button, entry, item, itemID, selectedDifficulty, isSearchResult, mouseButton)
@@ -637,10 +694,11 @@ function LootPanel:CreateLootButton(entry, x, y, isSearchResult)
 
 end
 
+
 -------------------------------------------------
 -- Handle Loot Button Click
 --
--- Extracted from CreateLootButton -- six distinct
+-- Extracted from PopulateLootButton -- six distinct
 -- click behaviors depending on modifier keys and
 -- context, checked in priority order (shift/ctrl
 -- first, since those apply regardless of what else
@@ -1113,12 +1171,8 @@ function LootPanel:PopulateForBoss(boss)
                 Layout.GridRowGap
             )
 
-            local button =
-                self:CreateLootButton(
-                    item,
-                    x,
-                    y
-                )
+            local button = self:AcquireLootButton()
+            self:PopulateLootButton(button, item, x, y)
 
             table.insert(self.Buttons, button)
 
@@ -1440,8 +1494,8 @@ function LootPanel:PopulateTrash()
                 Layout.GridRowGap
             )
 
-            local button =
-                self:CreateLootButton(item, x, y)
+            local button = self:AcquireLootButton()
+            self:PopulateLootButton(button, item, x, y)
 
             table.insert(
                 self.Buttons,
@@ -1509,8 +1563,8 @@ function LootPanel:PopulateExtraDrops()
                 Layout.GridRowGap
             )
 
-            local button =
-                self:CreateLootButton(item, x, y)
+            local button = self:AcquireLootButton()
+            self:PopulateLootButton(button, item, x, y)
 
             table.insert(
                 self.Buttons,
@@ -1573,12 +1627,8 @@ function LootPanel:PopulateSearchResults(results)
                 rowGap
             )
 
-        self:CreateLootButton(
-            result,
-            x,
-            y,
-            true
-        )
+        local button = self:AcquireLootButton()
+        self:PopulateLootButton(button, result, x, y, true)
 
     end
 

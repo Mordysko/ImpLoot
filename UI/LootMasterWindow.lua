@@ -584,12 +584,23 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     -------------------------------------------------
     -- Loot Council
+    --
+    -- Preselected is the one LC mode that's excluded
+    -- here -- it's a real roll under the hood (just
+    -- restricted to specific candidates), so it falls
+    -- through to the same Pending/Rolling/RollComplete/
+    -- Resolved state machine every other roll-based item
+    -- uses, rather than the Funnel/Priority/Vote display
+    -- below.
     -------------------------------------------------
 
-    if entry.Mode == "LootCouncil" then
+    local lcListName = entry.Mode == "LootCouncil" and ImpLoot.LootCouncil:GetActiveListName()
+    local lcCouncilItem = lcListName and ImpLoot.LootCouncil:GetItem(lcListName, entry.ItemID)
 
-        local listName = ImpLoot.LootCouncil:GetActiveListName()
-        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+    if entry.Mode == "LootCouncil" and lcCouncilItem and lcCouncilItem.Mode ~= "Preselected" then
+
+        local listName = lcListName
+        local councilItem = lcCouncilItem
 
         if councilItem and councilItem.Mode == "Funnel" then
 
@@ -766,11 +777,36 @@ function LootMasterWindow:PopulateRow(row, entry)
     elseif entry.State == "Pending" then
 
         if entry.Mode == "SoftReserve" then
+
             row.InfoText:SetText(
                 "Reserved by:\n" .. ImpLoot.LootMaster:FormatReserverList(entry.ItemID)
             )
+
+        elseif entry.Mode == "LootCouncil" and lcCouncilItem then
+
+            local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(lcListName, entry.ItemID)
+            local names = {}
+
+            for _, candidate in ipairs(remaining) do
+
+                if candidate.Type == "Class" then
+                    table.insert(names, "Any " .. candidate.Value)
+                else
+                    table.insert(names, candidate.Value)
+                end
+
+            end
+
+            if #names == 0 then
+                row.InfoText:SetText("Preselected: no one left -- edit candidates in Loot Priority.")
+            else
+                row.InfoText:SetText("Preselected: " .. table.concat(names, ", "))
+            end
+
         else
+
             row.InfoText:SetText("No SoftRes")
+
         end
 
         row.ActionButton:SetText(entry.Mode == "SoftReserve" and "Announce" or "Open Roll")

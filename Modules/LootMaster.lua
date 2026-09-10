@@ -630,8 +630,17 @@ function ImpLoot.LootMaster:AnnounceItem(queueID)
         return false, "Item not found in queue."
     end
 
+    local listName, councilItem
+
     if entry.Mode == "LootCouncil" then
-        return false, "Loot Council items use LC Vote, not Announce."
+
+        listName = ImpLoot.LootCouncil:GetActiveListName()
+        councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+
+        if not (councilItem and councilItem.Mode == "Preselected") then
+            return false, "Loot Council items use LC Vote, not Announce."
+        end
+
     end
 
     local reserverNames = {}
@@ -651,6 +660,27 @@ function ImpLoot.LootMaster:AnnounceItem(queueID)
         ImpLoot.Announcements:Announce("SoftReserveAnnounced", {
             item = entry.ItemLink,
             reservers = self:FormatReserverList(entry.ItemID),
+        })
+
+    elseif councilItem and councilItem.Mode == "Preselected" then
+
+        local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+        local names = {}
+
+        for _, candidate in ipairs(remaining) do
+
+            if candidate.Type == "Class" then
+                table.insert(names, "Any " .. candidate.Value)
+            else
+                table.insert(names, candidate.Value)
+            end
+
+        end
+
+        ImpLoot.Announcements:Announce("PreselectedAnnounced", {
+            item = entry.ItemLink,
+            players = self:JoinWithAmpersand(names),
+            seconds = self.Settings.RollDuration,
         })
 
     else
@@ -829,7 +859,14 @@ function ImpLoot.LootMaster:StartRoll(queueID)
     end
 
     if entry.Mode == "LootCouncil" then
-        return false, "Loot Council items are voted, not rolled."
+
+        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+
+        if not (councilItem and councilItem.Mode == "Preselected") then
+            return false, "Loot Council items are voted, not rolled."
+        end
+
     end
 
     entry.State = "Rolling"
@@ -1107,6 +1144,29 @@ function ImpLoot.LootMaster:GetMaxRollsForPlayer(entry, playerName)
 
     if entry.Mode == "OpenRoll" then
         return 1
+    end
+
+    if entry.Mode == "LootCouncil" then
+
+        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+
+        if not (councilItem and councilItem.Mode == "Preselected") then
+            return 0
+        end
+
+        local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+
+        for _, candidate in ipairs(remaining) do
+
+            if candidate.Type == "Player" and self:NamesMatch(candidate.Value, playerName) then
+                return 1
+            end
+
+        end
+
+        return 0
+
     end
 
     if entry.Mode ~= "SoftReserve" then

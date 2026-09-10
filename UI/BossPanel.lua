@@ -570,17 +570,6 @@ end
 -- Clear Content
 -------------------------------------------------
 
-local function ClearContent(content)
-
-    local children = { content:GetChildren() }
-
-    for _, child in ipairs(children) do
-        child:Hide()
-        child:SetParent(nil)
-    end
-
-end
-
 -------------------------------------------------
 -- Update Difficulty Toggle Visibility
 -------------------------------------------------
@@ -647,10 +636,76 @@ end
 -- Populate
 -------------------------------------------------
 
+-------------------------------------------------
+-- Acquire Boss Button
+--
+-- Same fix as LootPanel's button pooling: Populate()
+-- runs on every boss click, raid switch, and wishlist
+-- navigation, and used to create a fresh set of boss
+-- buttons every single time while the old ones were
+-- only hidden and unparented -- never destroyed, since
+-- WoW frames can't be garbage collected once created.
+-- Pooled by index now, reused across raids (a smaller
+-- raid's Populate() just leaves the extra pooled
+-- buttons hidden).
+-------------------------------------------------
+
+function BossPanel:AcquireBossButton(index)
+
+    self.ButtonPool = self.ButtonPool or {}
+
+    if self.ButtonPool[index] then
+        return self.ButtonPool[index]
+    end
+
+    local Layout = ImpLoot.UI.Layout
+
+    local button = CreateFrame("Button", nil, self.Content)
+
+    button:SetWidth(Layout.BossPanelWidth - 12)
+    button:SetHeight(Layout.ListButtonHeight)
+
+    local bg = button:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetTexture("Interface\\Buttons\\WHITE8X8")
+    bg:SetVertexColor(0, 0, 0, 0)
+    button.Background = bg
+
+    local text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    text:SetAllPoints()
+    text:SetJustifyH("CENTER")
+    button.Text = text
+
+    button:SetScript("OnEnter", function()
+        if not button.Selected then
+            button.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
+        end
+    end)
+
+    button:SetScript("OnLeave", function()
+        if not button.Selected then
+            button.Background:SetVertexColor(0, 0, 0, 0)
+        end
+    end)
+
+    self.ButtonPool[index] = button
+
+    return button
+
+end
+
 function BossPanel:Populate()
 
     self.Buttons = {}
-    ClearContent(self.Content)
+    self.ButtonCursor = 0
+
+    if self.ButtonPool then
+
+        for _, button in ipairs(self.ButtonPool) do
+            button:Hide()
+        end
+
+    end
 
     local raid = ImpLoot.SelectedRaid
 
@@ -703,25 +758,19 @@ function BossPanel:Populate()
 
     for _, boss in ipairs(raid.Bosses) do
 
-        local button = CreateFrame("Button", nil, self.Content)
+        self.ButtonCursor = self.ButtonCursor + 1
 
-        button:SetWidth(Layout.BossPanelWidth - 12)
-        button:SetHeight(Layout.ListButtonHeight)
+        local button = self:AcquireBossButton(self.ButtonCursor)
+
+        button:ClearAllPoints()
         button:SetPoint("TOPLEFT", 6, y)
+        button:Show()
 
-        local bg = button:CreateTexture(nil, "BACKGROUND")
-        bg:SetAllPoints()
-        bg:SetTexture("Interface\\Buttons\\WHITE8X8")
-        bg:SetVertexColor(0, 0, 0, 0)
-        button.Background = bg
-
+        button.Background:SetVertexColor(0, 0, 0, 0)
         button.Selected = false
         button.Boss = boss
 
-        local text = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        text:SetAllPoints()
-        text:SetJustifyH("CENTER")
-        text:SetText(boss.Name)
+        button.Text:SetText(boss.Name)
 
         button:SetScript("OnClick", function()
 
@@ -740,19 +789,7 @@ function BossPanel:Populate()
 
         end)
 
-        button:SetScript("OnEnter", function()
-            if not button.Selected then
-                button.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
-            end
-        end)
-
-        button:SetScript("OnLeave", function()
-            if not button.Selected then
-                button.Background:SetVertexColor(0, 0, 0, 0)
-            end
-        end)
-
-                table.insert(self.Buttons, button)
+        table.insert(self.Buttons, button)
 
         y = y - 20
 
@@ -764,60 +801,77 @@ function BossPanel:Populate()
     -- Only shown for raids that actually have trash
     -- loot tracked (Obsidian Sanctum, Eye of Eternity,
     -- Trial of the Crusader, and Ruby Sanctum don't).
+    --
+    -- Entirely static content (always says "Trash",
+    -- click handler doesn't capture any per-raid data),
+    -- so unlike the per-boss buttons above, this is a
+    -- single reusable widget rather than a cursor-based
+    -- pool -- created once, just repositioned/shown or
+    -- hidden after that.
     -------------------------------------------------
-
-    self.TrashButton = nil
 
     if raid.Trash and #raid.Trash > 0 then
 
         y = y - 40
 
-        local trashButton = CreateFrame("Button", nil, self.Content)
+        if not self.TrashButton then
 
-        trashButton:SetWidth(Layout.BossPanelWidth - 12)
-        trashButton:SetHeight(Layout.ListButtonHeight)
-        trashButton:SetPoint("TOPLEFT", 6, y)
+            local trashButton = CreateFrame("Button", nil, self.Content)
 
-        local trashBackground = trashButton:CreateTexture(nil, "BACKGROUND")
-        trashBackground:SetAllPoints()
-        trashBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
-        trashBackground:SetVertexColor(0, 0, 0, 0)
-        trashButton.Background = trashBackground
+            trashButton:SetWidth(Layout.BossPanelWidth - 12)
+            trashButton:SetHeight(Layout.ListButtonHeight)
 
-        trashButton.Selected = false
-        trashButton.IsTrash = true
+            local trashBackground = trashButton:CreateTexture(nil, "BACKGROUND")
+            trashBackground:SetAllPoints()
+            trashBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
+            trashBackground:SetVertexColor(0, 0, 0, 0)
+            trashButton.Background = trashBackground
 
-        local trashText = trashButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        trashText:SetAllPoints()
-        trashText:SetJustifyH("CENTER")
-        trashText:SetText("Trash")
+            trashButton.IsTrash = true
 
-        trashButton:SetScript("OnEnter", function()
-            if not trashButton.Selected then
-                trashButton.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
-            end
-        end)
+            local trashText = trashButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            trashText:SetAllPoints()
+            trashText:SetJustifyH("CENTER")
+            trashText:SetText("Trash")
 
-        trashButton:SetScript("OnLeave", function()
-            if not trashButton.Selected then
-                trashButton.Background:SetVertexColor(0, 0, 0, 0)
-            end
-        end)
+            trashButton:SetScript("OnEnter", function()
+                if not trashButton.Selected then
+                    trashButton.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
+                end
+            end)
 
-        trashButton:SetScript("OnClick", function()
+            trashButton:SetScript("OnLeave", function()
+                if not trashButton.Selected then
+                    trashButton.Background:SetVertexColor(0, 0, 0, 0)
+                end
+            end)
 
-            self:Highlight(trashButton)
+            trashButton:SetScript("OnClick", function()
 
-            ImpLoot.SelectedBoss = nil
-            ImpLoot.SelectedLoot = nil
+                self:Highlight(trashButton)
 
-            ImpLoot.UI.LootPanel:PopulateTrash()
+                ImpLoot.SelectedBoss = nil
+                ImpLoot.SelectedLoot = nil
 
-        end)
+                ImpLoot.UI.LootPanel:PopulateTrash()
 
-        self.TrashButton = trashButton
+            end)
 
-        table.insert(self.Buttons, trashButton)
+            self.TrashButton = trashButton
+
+        end
+
+        self.TrashButton.Selected = false
+        self.TrashButton.Background:SetVertexColor(0, 0, 0, 0)
+        self.TrashButton:ClearAllPoints()
+        self.TrashButton:SetPoint("TOPLEFT", 6, y)
+        self.TrashButton:Show()
+
+        table.insert(self.Buttons, self.TrashButton)
+
+    elseif self.TrashButton then
+
+        self.TrashButton:Hide()
 
     end
 
@@ -830,60 +884,73 @@ function BossPanel:Populate()
     -- than genuine trash-mob loot -- kept as its own
     -- button since the two mean different things to a
     -- player browsing for where an item comes from.
+    --
+    -- Same static-content reasoning as Trash above: a
+    -- single reusable widget, not a cursor-based pool.
     -------------------------------------------------
-
-    self.ExtraDropsButton = nil
 
     if raid.ExtraDrops and #raid.ExtraDrops > 0 then
 
         y = y - 20
 
-        local extraDropsButton = CreateFrame("Button", nil, self.Content)
+        if not self.ExtraDropsButton then
 
-        extraDropsButton:SetWidth(Layout.BossPanelWidth - 12)
-        extraDropsButton:SetHeight(Layout.ListButtonHeight)
-        extraDropsButton:SetPoint("TOPLEFT", 6, y)
+            local extraDropsButton = CreateFrame("Button", nil, self.Content)
 
-        local extraDropsBackground = extraDropsButton:CreateTexture(nil, "BACKGROUND")
-        extraDropsBackground:SetAllPoints()
-        extraDropsBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
-        extraDropsBackground:SetVertexColor(0, 0, 0, 0)
-        extraDropsButton.Background = extraDropsBackground
+            extraDropsButton:SetWidth(Layout.BossPanelWidth - 12)
+            extraDropsButton:SetHeight(Layout.ListButtonHeight)
 
-        extraDropsButton.Selected = false
-        extraDropsButton.IsExtraDrops = true
+            local extraDropsBackground = extraDropsButton:CreateTexture(nil, "BACKGROUND")
+            extraDropsBackground:SetAllPoints()
+            extraDropsBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
+            extraDropsBackground:SetVertexColor(0, 0, 0, 0)
+            extraDropsButton.Background = extraDropsBackground
 
-        local extraDropsText = extraDropsButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        extraDropsText:SetAllPoints()
-        extraDropsText:SetJustifyH("CENTER")
-        extraDropsText:SetText("Extra Drops")
+            extraDropsButton.IsExtraDrops = true
 
-        extraDropsButton:SetScript("OnEnter", function()
-            if not extraDropsButton.Selected then
-                extraDropsButton.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
-            end
-        end)
+            local extraDropsText = extraDropsButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+            extraDropsText:SetAllPoints()
+            extraDropsText:SetJustifyH("CENTER")
+            extraDropsText:SetText("Extra Drops")
 
-        extraDropsButton:SetScript("OnLeave", function()
-            if not extraDropsButton.Selected then
-                extraDropsButton.Background:SetVertexColor(0, 0, 0, 0)
-            end
-        end)
+            extraDropsButton:SetScript("OnEnter", function()
+                if not extraDropsButton.Selected then
+                    extraDropsButton.Background:SetVertexColor(0.35, 0.35, 0.35, 0.20)
+                end
+            end)
 
-        extraDropsButton:SetScript("OnClick", function()
+            extraDropsButton:SetScript("OnLeave", function()
+                if not extraDropsButton.Selected then
+                    extraDropsButton.Background:SetVertexColor(0, 0, 0, 0)
+                end
+            end)
 
-            self:Highlight(extraDropsButton)
+            extraDropsButton:SetScript("OnClick", function()
 
-            ImpLoot.SelectedBoss = nil
-            ImpLoot.SelectedLoot = nil
+                self:Highlight(extraDropsButton)
 
-            ImpLoot.UI.LootPanel:PopulateExtraDrops()
+                ImpLoot.SelectedBoss = nil
+                ImpLoot.SelectedLoot = nil
 
-        end)
+                ImpLoot.UI.LootPanel:PopulateExtraDrops()
 
-        self.ExtraDropsButton = extraDropsButton
+            end)
 
-        table.insert(self.Buttons, extraDropsButton)
+            self.ExtraDropsButton = extraDropsButton
+
+        end
+
+        self.ExtraDropsButton.Selected = false
+        self.ExtraDropsButton.Background:SetVertexColor(0, 0, 0, 0)
+        self.ExtraDropsButton:ClearAllPoints()
+        self.ExtraDropsButton:SetPoint("TOPLEFT", 6, y)
+        self.ExtraDropsButton:Show()
+
+        table.insert(self.Buttons, self.ExtraDropsButton)
+
+    elseif self.ExtraDropsButton then
+
+        self.ExtraDropsButton:Hide()
 
     end
 

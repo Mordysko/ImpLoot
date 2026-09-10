@@ -19,6 +19,35 @@ local WINDOW_HEIGHT = 560
 local CANDIDATE_ROW_HEIGHT = 26
 
 -------------------------------------------------
+-- Mode Explanations
+--
+-- Shown in the "?" tooltip next to the Mode button,
+-- for whichever mode is currently selected.
+-------------------------------------------------
+
+local MODE_EXPLANATIONS = {
+
+    Priority = "Candidates are tried in the listed order. " ..
+        "Once someone wins the item, they're removed from " ..
+        "the list -- the next drop goes to whoever's now first.",
+
+    Vote = "The loot council votes on who should receive each " ..
+        "drop. The loot master assigns it based on the live tally " ..
+        "once voting closes.",
+
+    Funnel = "Every drop of this item goes to whoever's in " ..
+        "candidate slot 1. Unlike Priority, winning does NOT " ..
+        "remove them -- the recipient only changes if you edit " ..
+        "the candidates yourself.",
+
+    Preselected = "Only the listed candidates are allowed to roll " ..
+        "for this item, like a council-curated Soft Reserve. " ..
+        "Once someone wins, they're removed -- the next drop only " ..
+        "offers a roll to whoever's left.",
+
+}
+
+-------------------------------------------------
 -- Initialize
 -------------------------------------------------
 
@@ -280,7 +309,7 @@ function LootPriorityWindow:BuildItemEditor(frame)
     modeLabel:SetText("Mode:")
 
     local modeButton = ImpLoot.Theme:CreateMenuButton(frame)
-    modeButton:SetSize(70, 20)
+    modeButton:SetSize(90, 20)
     modeButton:SetPoint("LEFT", modeLabel, "RIGHT", 10, 0)
     modeButton:SetText("Priority")
     self.ModeButton = modeButton
@@ -291,12 +320,52 @@ function LootPriorityWindow:BuildItemEditor(frame)
             LootPriorityWindow.Mode = "Vote"
         elseif LootPriorityWindow.Mode == "Vote" then
             LootPriorityWindow.Mode = "Funnel"
+        elseif LootPriorityWindow.Mode == "Funnel" then
+            LootPriorityWindow.Mode = "Preselected"
         else
             LootPriorityWindow.Mode = "Priority"
         end
 
         LootPriorityWindow:RefreshModeButtons()
 
+    end)
+
+    -------------------------------------------------
+    -- Mode Help
+    -------------------------------------------------
+
+    local modeHelpButton = CreateFrame("Button", nil, frame)
+    modeHelpButton:SetSize(16, 16)
+    modeHelpButton:SetPoint("LEFT", modeButton, "RIGHT", 6, 0)
+    self.ModeHelpButton = modeHelpButton
+
+    local modeHelpBackground = modeHelpButton:CreateTexture(nil, "BACKGROUND")
+    modeHelpBackground:SetAllPoints()
+    modeHelpBackground:SetTexture("Interface\\Buttons\\WHITE8X8")
+    modeHelpBackground:SetVertexColor(0.15, 0.15, 0.15, 0.9)
+
+    local modeHelpText = modeHelpButton:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    modeHelpText:SetAllPoints()
+    modeHelpText:SetJustifyH("CENTER")
+    modeHelpText:SetText("?")
+
+    modeHelpButton:SetScript("OnEnter", function()
+
+        GameTooltip:SetOwner(modeHelpButton, "ANCHOR_RIGHT")
+        GameTooltip:SetText(LootPriorityWindow.Mode .. " Mode", 1, 0.82, 0)
+
+        local explanation = MODE_EXPLANATIONS[LootPriorityWindow.Mode]
+
+        if explanation then
+            GameTooltip:AddLine(explanation, 1, 1, 1, true)
+        end
+
+        GameTooltip:Show()
+
+    end)
+
+    modeHelpButton:SetScript("OnLeave", function()
+        GameTooltip:Hide()
     end)
 
     -------------------------------------------------

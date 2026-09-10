@@ -71,6 +71,12 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    PreselectedAnnounced = {
+        Enabled = true,
+        Text = "{item} available for {players}. You have {seconds} seconds to roll.",
+        Channel = "Auto",
+    },
+
 }
 
 -------------------------------------------------

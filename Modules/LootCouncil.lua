@@ -212,7 +212,7 @@ function ImpLoot.LootCouncil:SetItem(listName, itemID, itemName, mode, candidate
         return false
     end
 
-    if mode ~= "Vote" and mode ~= "Priority" and mode ~= "Funnel" then
+    if mode ~= "Vote" and mode ~= "Priority" and mode ~= "Funnel" and mode ~= "Preselected" then
         return false
     end
 

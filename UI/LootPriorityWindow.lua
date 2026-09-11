@@ -248,6 +248,36 @@ function LootPriorityWindow:BuildItemEditor(frame)
     populateButton:SetText("Populate Item List")
     self.PopulateButton = populateButton
 
+    -------------------------------------------------
+    -- Import / Export Text
+    --
+    -- A compact text-string alternative to Populate
+    -- Item List -- can be built or shared entirely
+    -- outside the game.
+    -------------------------------------------------
+
+    ImpLoot.UI.PriorityListShareDialog:Initialize(frame)
+
+    local importTextButton = ImpLoot.Theme:CreateMenuButton(frame)
+    importTextButton:SetSize(90, 22)
+    importTextButton:SetPoint("LEFT", populateButton, "RIGHT", 8, 0)
+    importTextButton:SetText("Import Text")
+    self.ImportTextButton = importTextButton
+
+    importTextButton:SetScript("OnClick", function()
+        ImpLoot.UI.PriorityListShareDialog:ShowImport()
+    end)
+
+    local exportTextButton = ImpLoot.Theme:CreateMenuButton(frame)
+    exportTextButton:SetSize(90, 22)
+    exportTextButton:SetPoint("LEFT", importTextButton, "RIGHT", 8, 0)
+    exportTextButton:SetText("Export Text")
+    self.ExportTextButton = exportTextButton
+
+    exportTextButton:SetScript("OnClick", function()
+        ImpLoot.UI.PriorityListShareDialog:ShowExport()
+    end)
+
     populateButton:SetScript("OnClick", function()
 
         local activeName = ImpLoot.LootCouncil:GetActiveListName()

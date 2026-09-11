@@ -65,11 +65,7 @@ end
 
 local function GetRaidGroupInfo(entry)
 
-    local raidName = "Other"
-
-    if entry.Raid and entry.Raid.Name then
-        raidName = entry.Raid.Name
-    end
+    local raidName = entry.RaidName or "Other"
 
     local difficulty = entry.Difficulty
 
@@ -260,29 +256,43 @@ function DetailsWorkspace:CreateWishlistRow(parent, index)
 
         -------------------------------------------------
         -- Use Stored Location If Available
+        --
+        -- Wishlist entries only store the raid/boss NAME
+        -- (not the full database object -- storing those
+        -- directly bloated every wishlist item with the
+        -- raid's entire loot table, badly enough to blow
+        -- past a single SavedVariables allocation on
+        -- /reload). Resolve back to real objects here,
+        -- where navigation actually needs them.
         -------------------------------------------------
 
+        local resolvedRaid = row.Entry and row.Entry.RaidName
+            and ImpLoot.Database:GetRaid(row.Entry.RaidName)
+
+        local resolvedBoss = resolvedRaid and row.Entry.BossName
+            and ImpLoot.Database:GetBoss(resolvedRaid, row.Entry.BossName)
+
         if row.Entry
-        and row.Entry.Boss
+        and resolvedBoss
         and row.Entry.Difficulty then
 
             ImpLoot.PendingLootSelection = item
 
             ImpLoot.UI.BossPanel:SelectBoss(
-                row.Entry.Boss,
+                resolvedBoss,
                 row.Entry.Difficulty
             )
 
         elseif row.Entry
-        and row.Entry.Raid
+        and resolvedRaid
         and row.Entry.Difficulty
-        and not row.Entry.Boss then
+        and not row.Entry.BossName then
 
             -------------------------------------------------
             -- No Specific Boss, Just A Raid -- Trash or
-            -- Extra Drops. Both leave row.Entry.Boss nil,
-            -- so the item's own IsExtraDrops flag (set in
-            -- Database.lua) is what actually distinguishes
+            -- Extra Drops. Both leave row.Entry.BossName
+            -- nil, so the item's own IsExtraDrops flag (set
+            -- in Database.lua) is what actually distinguishes
             -- them here.
             -------------------------------------------------
 
@@ -291,14 +301,14 @@ function DetailsWorkspace:CreateWishlistRow(parent, index)
             if item.IsExtraDrops then
 
                 ImpLoot.UI.BossPanel:SelectExtraDrops(
-                    row.Entry.Raid,
+                    resolvedRaid,
                     row.Entry.Difficulty
                 )
 
             else
 
                 ImpLoot.UI.BossPanel:SelectTrash(
-                    row.Entry.Raid,
+                    resolvedRaid,
                     row.Entry.Difficulty
                 )
 

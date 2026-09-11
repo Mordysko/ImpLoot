@@ -585,3 +585,251 @@ function ImpLoot.LootCouncil:CommitStagedItems()
     return added
 
 end
+
+-------------------------------------------------
+-- Text Import / Export
+--
+-- A compact, hand-typeable/shareable alternative to
+-- Populate Item List -- lets a priority list be built
+-- (or shared with another guild/officer) entirely
+-- outside the game. Format, one item per ";":
+--
+--   itemID, mode, candidate, candidate, ...;
+--
+-- e.g. "45533, prio, Mordality, hunter;" -- Dark Edge
+-- of Depravity, Priority mode, candidate 1 is the
+-- player Mordality, candidate 2 is any Hunter.
+--
+-- mode is one of: prio=Priority, vote=Vote, fun=Funnel,
+-- pres=Preselected. Item IDs (not names) are used
+-- deliberately, since the same item name can exist under
+-- different IDs across Normal/Heroic.
+-------------------------------------------------
+
+local IMPORT_MODE_ABBREVIATIONS = {
+    prio = "Priority",
+    vote = "Vote",
+    fun = "Funnel",
+    pres = "Preselected",
+}
+
+local EXPORT_MODE_ABBREVIATIONS = {
+    Priority = "prio",
+    Vote = "vote",
+    Funnel = "fun",
+    Preselected = "pres",
+}
+
+local CLASS_LOOKUP = {}
+
+for _, className in ipairs(ImpLoot.CLASS_ORDER) do
+    CLASS_LOOKUP[string.lower(className)] = className
+end
+
+CLASS_LOOKUP["deathknight"] = "Death Knight"
+CLASS_LOOKUP["dk"] = "Death Knight"
+
+-------------------------------------------------
+-- Resolve Candidate Token
+--
+-- A bare word with no type marker in the import
+-- string -- resolved to a Class candidate if it
+-- matches a known class name (case-insensitive,
+-- including "dk"/"deathknight" for Death Knight),
+-- otherwise treated as a player name. The one
+-- unavoidable edge case: a player literally named
+-- e.g. "Hunter" would resolve as the class instead --
+-- rare enough not to be worth a structural fix, but
+-- worth documenting.
+-------------------------------------------------
+
+local function ResolveCandidateToken(token)
+
+    local className = CLASS_LOOKUP[string.lower(token)]
+
+    if className then
+        return { Type = "Class", Value = className }
+    end
+
+    return { Type = "Player", Value = token }
+
+end
+
+local function TrimText(value)
+
+    value = string.gsub(value, "^%s+", "")
+    value = string.gsub(value, "%s+$", "")
+
+    return value
+
+end
+
+-------------------------------------------------
+-- Parse Import Text
+--
+-- Returns two values: a list of successfully parsed
+-- entries ({ItemID, ItemName, Mode, Candidates}), and
+-- a list of warning strings for any skipped entries
+-- (unknown item ID, unrecognized mode, or too many
+-- candidates) -- never aborts the whole import over
+-- one bad line.
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:ParseImportText(text)
+
+    local entries = {}
+    local warnings = {}
+
+    if not text then
+        return entries, warnings
+    end
+
+    for rawItemEntry in string.gmatch(text, "[^;]+") do
+
+        local itemEntry = TrimText(rawItemEntry)
+
+        if itemEntry ~= "" then
+
+            local fields = {}
+
+            for field in string.gmatch(itemEntry, "[^,]+") do
+                table.insert(fields, TrimText(field))
+            end
+
+            local itemIDText = fields[1]
+            local modeText = fields[2]
+
+            local itemID = itemIDText and tonumber(itemIDText)
+
+            if not itemID then
+
+                table.insert(warnings, "Skipped \"" .. itemEntry .. "\": couldn't read an item ID.")
+
+            else
+
+                local item = ImpLoot.Database:FindItemByID(itemID)
+
+                if not item then
+
+                    table.insert(warnings, "Skipped item " .. itemID .. ": not a known item ID.")
+
+                else
+
+                    local mode = modeText and IMPORT_MODE_ABBREVIATIONS[string.lower(modeText)]
+
+                    if not mode then
+
+                        table.insert(warnings,
+                            "Skipped item " .. itemID .. ": unrecognized mode \"" ..
+                            tostring(modeText) .. "\" (use prio/vote/fun/pres).")
+
+                    else
+
+                        local candidateCount = #fields - 2
+
+                        if candidateCount > 5 then
+
+                            table.insert(warnings,
+                                "Skipped item " .. itemID .. ": " .. candidateCount ..
+                                " candidates listed, but only 5 are supported.")
+
+                        else
+
+                            local candidates = {}
+
+                            for i = 3, #fields do
+                                table.insert(candidates, ResolveCandidateToken(fields[i]))
+                            end
+
+                            table.insert(entries, {
+                                ItemID = itemID,
+                                ItemName = item.Name,
+                                Mode = mode,
+                                Candidates = candidates,
+                            })
+
+                        end
+
+                    end
+
+                end
+
+            end
+
+        end
+
+    end
+
+    return entries, warnings
+
+end
+
+-------------------------------------------------
+-- Import Text To List
+--
+-- Parses and writes straight into the given list,
+-- same end result as Populate Item List would have
+-- produced. Returns the count actually imported plus
+-- the same warnings list from ParseImportText.
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:ImportTextToList(listName, text)
+
+    if not self.DB.Lists[listName] then
+        return 0, { "No such priority list: " .. tostring(listName) }
+    end
+
+    local entries, warnings = self:ParseImportText(text)
+
+    local imported = 0
+
+    for _, entry in ipairs(entries) do
+
+        local ok = self:SetItem(listName, entry.ItemID, entry.ItemName, entry.Mode, entry.Candidates)
+
+        if ok then
+            imported = imported + 1
+        end
+
+    end
+
+    return imported, warnings
+
+end
+
+-------------------------------------------------
+-- Export List To Text
+--
+-- The inverse of ImportTextToList -- one line per
+-- item, same format the import expects.
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:ExportListToText(listName)
+
+    local list = self.DB.Lists[listName]
+
+    if not list then
+        return ""
+    end
+
+    local lines = {}
+
+    for itemID, item in pairs(list.Items) do
+
+        local modeAbbrev = EXPORT_MODE_ABBREVIATIONS[item.Mode] or "prio"
+
+        local parts = { tostring(itemID), modeAbbrev }
+
+        for _, candidate in ipairs(item.Candidates or {}) do
+            table.insert(parts, candidate.Value)
+        end
+
+        table.insert(lines, table.concat(parts, ", ") .. ";")
+
+    end
+
+    table.sort(lines)
+
+    return table.concat(lines, "\n")
+
+end

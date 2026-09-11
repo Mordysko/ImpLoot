@@ -942,7 +942,12 @@ function OptionsPanel:BuildAboutPanel()
         "the game menu. Alt-F4 or a crash skips that step entirely, same as any " ..
         "other addon or Blizzard's own UI settings -- so anything created since " ..
         "your last logout/reload won't be there next time. A quick /reload after " ..
-        "finishing something you don't want to risk losing is a cheap safety net."
+        "finishing something you don't want to risk losing is a cheap safety net.\n\n" ..
+        "Priority List Import/Export (in the Loot Priority window) uses a compact " ..
+        "text format: \"itemID, mode, candidate, candidate;\" per item, e.g. " ..
+        "\"45533, prio, Mordality, hunter;\" -- mode is prio/vote/fun/pres for " ..
+        "Priority/Vote/Funnel/Preselected, and a candidate is either a player name " ..
+        "or a class name (meaning \"any <class>\"). See the README for the full guide."
     )
 
     self.AboutPanel = panel

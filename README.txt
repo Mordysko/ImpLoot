@@ -98,6 +98,28 @@ options category's own description, the About tab, and the root
 ImpLoot settings page (/il help) for the full slash command list.
 
 
+LEGENDARY ITEM SAFEGUARDS
+--------------------------
+
+Legendary-quality drops (Fragment of Val'anyr and similar) get a
+few extra safeguards, since accidentally awarding one to the
+wrong person can't be undone once it's looted/traded:
+
+- The item's row in the Loot Master queue gets an orange border,
+  so it's visibly flagged before you click anything.
+- Assigning one -- whether you click Assign yourself, or
+  Auto-Assign To Roll Winner picks a winner automatically --
+  always pauses for a manual confirmation popup first. Auto-Assign
+  still picks the winner for you; it just won't commit the award
+  without you clicking through. Every other item is unaffected and
+  still assigns immediately, same as before.
+- For Loot Council Priority-mode items specifically, each
+  candidate's name shows how many of that exact item they've
+  already won this session (e.g. "Rad (2 so far)"), so you have
+  that context in view without needing to check the Summary
+  window separately.
+
+
 PRIORITY LIST TEXT IMPORT/EXPORT FORMAT
 ------------------------------------------
 

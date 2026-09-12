@@ -578,6 +578,32 @@ function LootMasterWindow:PopulateRow(row, entry)
     row.NameText:SetText(displayName)
     row.NameText:SetTextColor(r, g, b)
 
+    -------------------------------------------------
+    -- Legendary Item Border
+    --
+    -- A visible warning before the loot master even
+    -- clicks anything -- a Legendary drop's row gets an
+    -- orange border instead of the normal panel style,
+    -- so it stands out in the queue as needing extra
+    -- care (it's also the one tier that pauses for
+    -- manual confirmation before assigning -- see
+    -- RequestAssign in LootMaster.lua).
+    -------------------------------------------------
+
+    local itemQuality = ImpLoot.LootMaster:GetItemQuality(entry.ItemID)
+
+    if itemQuality == 5 then
+        local lr, lg, lb = ImpLoot.Theme:GetQualityColor(5)
+        row:SetBackdropBorderColor(lr, lg, lb, 1)
+    else
+        row:SetBackdropBorderColor(
+            ImpLoot.Theme.Colors.Border[1],
+            ImpLoot.Theme.Colors.Border[2],
+            ImpLoot.Theme.Colors.Border[3],
+            ImpLoot.Theme.Colors.Border[4]
+        )
+    end
+
     row.ActionButton:Hide()
     row.ActionButton:SetScript("OnClick", nil)
     row.TimerText:Hide()
@@ -644,7 +670,7 @@ function LootMasterWindow:PopulateRow(row, entry)
                         return
                     end
 
-                    ImpLoot.LootMaster:Assign(entry.QueueID, currentFirst.Value)
+                    ImpLoot.LootMaster:RequestAssign(entry.QueueID, currentFirst.Value)
 
                 end)
 
@@ -676,11 +702,32 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                 for _, candidate in ipairs(remaining) do
 
+                    local label
+
                     if candidate.Type == "Class" then
-                        table.insert(names, "Any " .. candidate.Value)
+                        label = "Any " .. candidate.Value
                     else
-                        table.insert(names, candidate.Value)
+                        label = candidate.Value
                     end
+
+                    -- Multi-piece Legendary components (Fragment of
+                    -- Val'anyr, etc.) get a running tally next to
+                    -- each candidate's name -- how many of this
+                    -- exact item they've already won this session,
+                    -- so whoever's assigning has that context in
+                    -- view without needing to check the Summary
+                    -- window separately.
+                    if itemQuality == 5 and candidate.Type == "Player" then
+
+                        local priorCount = ImpLoot.LootMaster:GetPlayerItemCount(candidate.Value, entry.ItemID)
+
+                        if priorCount > 0 then
+                            label = label .. " (" .. priorCount .. " so far)"
+                        end
+
+                    end
+
+                    table.insert(names, label)
 
                 end
 
@@ -708,7 +755,7 @@ function LootMasterWindow:PopulateRow(row, entry)
                         return
                     end
 
-                    ImpLoot.LootMaster:Assign(entry.QueueID, top.Value)
+                    ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Value)
 
                 end)
 
@@ -747,7 +794,7 @@ function LootMasterWindow:PopulateRow(row, entry)
                     return
                 end
 
-                ImpLoot.LootMaster:Assign(entry.QueueID, top.Value)
+                ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Value)
 
             end)
 
@@ -860,7 +907,7 @@ function LootMasterWindow:PopulateRow(row, entry)
             local top = ImpLoot.LootMaster:GetTopRoll(entry.QueueID)
 
             if top then
-                ImpLoot.LootMaster:Assign(entry.QueueID, top.Player)
+                ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Player)
             else
                 ImpLoot:Print("No rolls came in for " .. displayName .. " -- assign it manually via /il or trade it directly.")
             end

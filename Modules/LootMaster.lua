@@ -40,6 +40,135 @@ ImpLoot.LootMaster.Defaults = {
 }
 
 -------------------------------------------------
+-- Legendary Assignment Confirmation
+--
+-- Legendary-quality items (Fragment of Val'anyr, etc.)
+-- get an extra manual confirmation step before the
+-- actual assignment happens -- a single misclick handing
+-- one to the wrong person is a mistake that can't be
+-- undone once it's looted/traded. Auto-Assign To Roll
+-- Winner still picks the winner automatically for these;
+-- it just pauses on this step instead of assigning
+-- outright, same as a manual assignment would.
+--
+-- Deliberately NOT applied to every item -- that would
+-- make Auto-Assign To Roll Winner largely pointless,
+-- since every award would need a manual click-through
+-- regardless. Scoped to quality 5 (Legendary) specifically.
+-------------------------------------------------
+
+StaticPopupDialogs["IMPLOOT_CONFIRM_LEGENDARY_ASSIGN"] = {
+
+    text = "Award %s to %s?\n\nThis is a Legendary item and cannot be undone once assigned.",
+    button1 = "Award",
+    button2 = "Cancel",
+
+    OnAccept = function(_, data)
+        ImpLoot.LootMaster:Assign(data.QueueID, data.WinnerName)
+    end,
+
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+
+}
+
+-------------------------------------------------
+-- Get Item Quality
+--
+-- Checks the addon's own raid database first (it's
+-- pre-populated for every boss and doesn't depend on
+-- the item having been seen/cached this session), then
+-- falls back to the general item cache for anything not
+-- in that database (e.g. a Trash/Extra Drops item, or
+-- something from outside the addon's known raids).
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetItemQuality(itemID)
+
+    local item = ImpLoot.Database:FindItemByID(itemID)
+
+    if item and item.Quality then
+        return item.Quality
+    end
+
+    local cached = ImpLoot.ItemCache:GetItem(itemID)
+
+    if cached and cached.Quality then
+        return cached.Quality
+    end
+
+    return nil
+
+end
+
+-------------------------------------------------
+-- Get Player Item Count
+--
+-- How many times a player has already won a specific
+-- item this session, per the resolution log. Built for
+-- multi-piece Legendary components (Fragment of Val'anyr
+-- and similar) -- shown next to a candidate's name so
+-- whoever's assigning has that context in view at the
+-- moment of the decision, rather than needing to
+-- remember it or check the Summary window separately.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetPlayerItemCount(playerName, itemID)
+
+    local count = 0
+
+    for _, logEntry in ipairs(self.Log or {}) do
+
+        if logEntry.Winner == playerName and logEntry.ItemID == itemID then
+            count = count + 1
+        end
+
+    end
+
+    return count
+
+end
+
+-------------------------------------------------
+-- Request Assign
+--
+-- The entry point every caller (manual Assign button,
+-- Auto-Assign To Roll Winner, the no-rolls disenchant
+-- path) should use instead of calling Assign directly.
+-- Legendary items pause here for manual confirmation;
+-- everything else assigns immediately exactly as before.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:RequestAssign(queueID, winnerName)
+
+    local entry = self:GetEntry(queueID)
+
+    if not entry then
+        return
+    end
+
+    local quality = self:GetItemQuality(entry.ItemID)
+
+    if quality == 5 then
+
+        StaticPopup_Show(
+            "IMPLOOT_CONFIRM_LEGENDARY_ASSIGN",
+            entry.ItemLink or entry.ItemID,
+            winnerName,
+            { QueueID = queueID, WinnerName = winnerName }
+        )
+
+        return
+
+    end
+
+    self:Assign(queueID, winnerName)
+
+end
+
+-------------------------------------------------
 -- Roll Message Pattern
 --
 -- Matches WoW's own system message: "<Player> rolls
@@ -1095,7 +1224,7 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID)
                 item = entry.ItemLink,
             })
 
-            self:Assign(queueID, disenchanter)
+            self:RequestAssign(queueID, disenchanter)
 
         end
 
@@ -1104,7 +1233,7 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID)
     end
 
     if self.Settings.AutoAssignToRollWinner then
-        self:Assign(queueID, topRoll.Player)
+        self:RequestAssign(queueID, topRoll.Player)
     end
 
 end

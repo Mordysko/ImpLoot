@@ -26,6 +26,33 @@ function ImportDialog:Initialize(mainWindowFrame)
     openButton:SetPoint("BOTTOMRIGHT", -5, 5)
     openButton:SetText("Import CSV")
 
+    -------------------------------------------------
+    -- SR Counter
+    --
+    -- Shows how many soft reserves are currently loaded
+    -- (persisted across reloads -- see SoftReserve.lua)
+    -- so it's obvious at a glance whether an import is
+    -- actually in effect without opening the dialog.
+    -------------------------------------------------
+
+    local counterText = mainWindowFrame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    counterText:SetPoint("RIGHT", openButton, "LEFT", -8, 0)
+    self.CounterText = counterText
+
+    function self:UpdateCounter()
+
+        local count = ImpLoot.SoftReserve:GetTotalReserveCount()
+
+        if count > 0 then
+            counterText:SetText(count .. " SR" .. (count == 1 and "" or "s") .. " loaded")
+        else
+            counterText:SetText("No SRs loaded")
+        end
+
+    end
+
+    self:UpdateCounter()
+
     openButton:SetScript("OnClick", function()
 
         -- Recomputed every time, not just once at Initialize --
@@ -186,6 +213,7 @@ function ImportDialog:Initialize(mainWindowFrame)
     importButton:SetSize(90, 24)
     importButton:SetPoint("BOTTOMRIGHT", -110, 15)
     importButton:SetText("Import")
+    self.ImportButton = importButton
 
     importButton:SetScript("OnClick", function()
 
@@ -196,6 +224,12 @@ function ImportDialog:Initialize(mainWindowFrame)
 
         self.EditBox:SetText("")
         self.Window:Hide()
+
+        self:UpdateCounter()
+
+        if reserveCount > 0 then
+            StaticPopup_Show("IMPLOOT_RELOAD_AFTER_SR_IMPORT", reserveCount)
+        end
 
     end)
 

@@ -399,6 +399,21 @@ function ImpLoot.LootMaster:OnLootOpened()
 
     local numItems = GetNumLootItems and GetNumLootItems() or 0
 
+    -------------------------------------------------
+    -- Track which existing queue entries get matched
+    -- THIS pass, so two genuinely separate copies of the
+    -- same item dropping together (same corpse, same
+    -- itemID, different loot slots) each get their own
+    -- queue entry instead of the second slot silently
+    -- overwriting the first's LootSlot. Reopening the
+    -- SAME corpse later (a separate OnLootOpened call)
+    -- still correctly upserts against those now-settled
+    -- entries, since this tracking only exists for the
+    -- duration of a single pass.
+    -------------------------------------------------
+
+    local matchedThisPass = {}
+
     for slot = 1, numItems do
 
         if LootSlotIsItem(slot) then
@@ -407,7 +422,8 @@ function ImpLoot.LootMaster:OnLootOpened()
             local itemID = self:ExtractItemID(link)
 
             if itemID then
-                self:AddToQueue(itemID, link, bossName, corpseGUID, slot)
+                local entry = self:AddToQueue(itemID, link, bossName, corpseGUID, slot, matchedThisPass)
+                matchedThisPass[entry.QueueID] = true
             end
 
         end
@@ -447,13 +463,14 @@ end
 -- Add To Queue (Upsert)
 -------------------------------------------------
 
-function ImpLoot.LootMaster:AddToQueue(itemID, itemLink, bossName, corpseGUID, lootSlot)
+function ImpLoot.LootMaster:AddToQueue(itemID, itemLink, bossName, corpseGUID, lootSlot, matchedThisPass)
 
     for _, entry in ipairs(self.Queue) do
 
         if entry.ItemID == itemID
         and entry.CorpseGUID == corpseGUID
-        and entry.State ~= "Resolved" then
+        and entry.State ~= "Resolved"
+        and not (matchedThisPass and matchedThisPass[entry.QueueID]) then
 
             entry.LootSlot = lootSlot
             entry.Assignable = (lootSlot ~= nil)
@@ -1386,17 +1403,45 @@ function ImpLoot.LootMaster:ProcessRoll(queueID, playerName, rollValue, minRoll,
 
     end
 
-    table.insert(entry.Rolls, {
-        Player = playerName,
-        Roll = rollValue,
-        Type = self:GetRollType(minRoll, maxRoll),
-        Min = minRoll,
-        Max = maxRoll,
-    })
+    -------------------------------------------------
+    -- Two Copies, One Roll
+    --
+    -- When the same item drops twice from the same
+    -- corpse (two separate queue entries -- see
+    -- AddToQueue), players naturally roll ONCE for a
+    -- shot at either copy, not once per copy. Mirror
+    -- the same roll into any sibling entry that's also
+    -- still actively rolling, so both entries' standings
+    -- stay identical throughout the roll period.
+    -------------------------------------------------
 
-    table.sort(entry.Rolls, function(a, b)
-        return a.Roll > b.Roll
-    end)
+    local siblings = self:GetSiblingEntries(entry)
+
+    local function RecordRollOn(targetEntry)
+
+        table.insert(targetEntry.Rolls, {
+            Player = playerName,
+            Roll = rollValue,
+            Type = self:GetRollType(minRoll, maxRoll),
+            Min = minRoll,
+            Max = maxRoll,
+        })
+
+        table.sort(targetEntry.Rolls, function(a, b)
+            return a.Roll > b.Roll
+        end)
+
+    end
+
+    RecordRollOn(entry)
+
+    for _, sibling in ipairs(siblings) do
+
+        if sibling.State == "Rolling" then
+            RecordRollOn(sibling)
+        end
+
+    end
 
     ImpLoot.Events:Fire("LootQueueChanged")
 
@@ -1405,7 +1450,39 @@ function ImpLoot.LootMaster:ProcessRoll(queueID, playerName, rollValue, minRoll,
 end
 
 -------------------------------------------------
+-- Get Sibling Entries
+--
+-- Other queue entries for the exact same item dropped
+-- from the exact same corpse -- i.e. two or more copies
+-- that appeared together in one loot window. Used to
+-- keep roll standings in sync across copies and to
+-- exclude an already-assigned winner from the others'
+-- standings.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetSiblingEntries(entry)
+
+    local siblings = {}
+
+    for _, other in ipairs(self.Queue) do
+
+        if other.QueueID ~= entry.QueueID
+        and other.ItemID == entry.ItemID
+        and other.CorpseGUID == entry.CorpseGUID then
+
+            table.insert(siblings, other)
+
+        end
+
+    end
+
+    return siblings
+
+end
+
+-------------------------------------------------
 -- Standings
+
 -------------------------------------------------
 
 function ImpLoot.LootMaster:GetStandings(queueID)
@@ -1566,6 +1643,35 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName)
     end
 
     self:RecordWinForExclusion(entry, winnerName)
+
+    -------------------------------------------------
+    -- Two Copies, One Roll: Exclude The Winner From
+    -- The Other Copy's Standings
+    --
+    -- Once this copy is assigned, any sibling entry
+    -- (the same item dropped from the same corpse,
+    -- still unresolved) needs the winner's roll(s)
+    -- removed from ITS standings too -- otherwise its
+    -- own top roll would just be the same person again,
+    -- instead of correctly becoming whoever was next in
+    -- line.
+    -------------------------------------------------
+
+    for _, sibling in ipairs(self:GetSiblingEntries(entry)) do
+
+        if sibling.State ~= "Resolved" then
+
+            for i = #sibling.Rolls, 1, -1 do
+
+                if sibling.Rolls[i].Player == winnerName then
+                    table.remove(sibling.Rolls, i)
+                end
+
+            end
+
+        end
+
+    end
 
     local resultMessage
 

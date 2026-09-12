@@ -947,7 +947,8 @@ function OptionsPanel:BuildAboutPanel()
         "text format: \"itemID, mode, candidate, candidate;\" per item, e.g. " ..
         "\"45533, prio, Mordality, hunter;\" -- mode is prio/vote/fun/pres for " ..
         "Priority/Vote/Funnel/Preselected, and a candidate is either a player name " ..
-        "or a class name (meaning \"any <class>\"). See the README for the full guide."
+        "or a class name (meaning \"any <class>\"). See the README for the full guide.\n\n" ..
+        "Thanks to Xolo for testing."
     )
 
     self.AboutPanel = panel

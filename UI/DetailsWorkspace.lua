@@ -198,6 +198,31 @@ function DetailsWorkspace:CreateWishlistRow(parent, index)
     row:SetScript("OnClick", function()
 
         -------------------------------------------------
+        -- Ctrl+Click = Show In Dressing Room
+        -------------------------------------------------
+
+        if IsControlKeyDown() then
+
+            if not row.ItemID then
+                return
+            end
+
+            -- GetItemInfo can return nil if the item hasn't
+            -- been cached by the client yet (rare, but
+            -- possible for something never seen this
+            -- session) -- nothing useful to do but skip
+            -- silently rather than error.
+            local _, itemLink = GetItemInfo(row.ItemID)
+
+            if itemLink then
+                DressUpItemLink(itemLink)
+            end
+
+            return
+
+        end
+
+        -------------------------------------------------
         -- Alt+Click = Remove One Copy
         -------------------------------------------------
 

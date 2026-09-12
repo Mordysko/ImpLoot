@@ -455,9 +455,9 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
 
     local container = CreateFrame("Frame", nil, frame)
     container:SetSize(360, CANDIDATE_ROW_HEIGHT)
-    container:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -8)
+    container:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -18)
 
-    local row = { Container = container, Type = "Player" }
+    local row = { Container = container, Type = "Player", Index = index }
 
     local numberText = container:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     numberText:SetPoint("LEFT", 0, 0)
@@ -492,22 +492,90 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
     UIDropDownMenu_SetWidth(classDropdown, 120)
     row.ClassDropdown = classDropdown
     row.SelectedClass = nil
+    row.SelectedSpec = nil
+
+    -------------------------------------------------
+    -- Class Dropdown Label
+    --
+    -- "Mage" alone, or "Mage - Fire" once a spec has
+    -- been picked from the pullout submenu.
+    -------------------------------------------------
+
+    local function UpdateClassDropdownLabel()
+
+        local label = row.SelectedClass or ""
+
+        if row.SelectedSpec then
+            label = label .. " - " .. row.SelectedSpec
+        end
+
+        UIDropDownMenu_SetText(classDropdown, label)
+
+    end
+
+    -------------------------------------------------
+    -- Level 1 (classes, each with a pullout arrow to
+    -- its specs) / Level 2 (that class's specs)
+    --
+    -- Spec is a descriptive label only -- WotLK has no
+    -- reliable way for an addon to passively know
+    -- another player's current spec, so this doesn't
+    -- change how a Class candidate resolves, only how
+    -- it's labeled for whoever's assigning to read.
+    -------------------------------------------------
 
     UIDropDownMenu_Initialize(classDropdown, function(self_, level)
 
-        for _, className in ipairs(ImpLoot.CLASS_ORDER) do
+        level = level or 1
 
-            local info = UIDropDownMenu_CreateInfo()
+        if level == 1 then
 
-            info.text = className
-            info.checked = (row.SelectedClass == className)
+            for _, className in ipairs(ImpLoot.CLASS_ORDER) do
 
-            info.func = function()
-                row.SelectedClass = className
-                UIDropDownMenu_SetText(classDropdown, className)
+                local info = UIDropDownMenu_CreateInfo()
+
+                info.text = className
+                info.checked = (row.SelectedClass == className and not row.SelectedSpec)
+                info.hasArrow = (ImpLoot.CLASS_SPECS[className] ~= nil)
+                info.menuList = className
+
+                info.func = function()
+                    row.SelectedClass = className
+                    row.SelectedSpec = nil
+                    UpdateClassDropdownLabel()
+                    CloseDropDownMenus()
+                end
+
+                UIDropDownMenu_AddButton(info, level)
+
             end
 
-            UIDropDownMenu_AddButton(info, level)
+        elseif level == 2 then
+
+            local className = UIDROPDOWNMENU_MENU_VALUE
+            local specs = ImpLoot.CLASS_SPECS[className]
+
+            if not specs then
+                return
+            end
+
+            for _, specName in ipairs(specs) do
+
+                local info = UIDropDownMenu_CreateInfo()
+
+                info.text = specName
+                info.checked = (row.SelectedClass == className and row.SelectedSpec == specName)
+
+                info.func = function()
+                    row.SelectedClass = className
+                    row.SelectedSpec = specName
+                    UpdateClassDropdownLabel()
+                    CloseDropDownMenus()
+                end
+
+                UIDropDownMenu_AddButton(info, level)
+
+            end
 
         end
 
@@ -581,6 +649,36 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
         LootPriorityWindow:SwapCandidateRows(index, index + 1)
     end)
 
+    -------------------------------------------------
+    -- Link To Next Slot
+    --
+    -- Rows 1-4 get a small toggle in the gap below them
+    -- ("Prio 1 = Prio 2" instead of "Prio 1 > Prio 2") --
+    -- linked slots are all equally eligible at once; the
+    -- addon only moves on to the next (unlinked) slot
+    -- once every candidate in the linked group has won.
+    -- This is a property of the SLOT POSITION, not the
+    -- candidate occupying it -- Move Up/Down swaps
+    -- candidate data between rows but never touches this.
+    -------------------------------------------------
+
+    row.LinkedToNext = false
+
+    if index < 5 then
+
+        local linkButton = ImpLoot.Theme:CreateMenuButton(container)
+        linkButton:SetSize(30, 14)
+        linkButton:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -2)
+        linkButton:SetText("link")
+        row.LinkButton = linkButton
+
+        linkButton:SetScript("OnClick", function()
+            row.LinkedToNext = not row.LinkedToNext
+            linkButton:SetText(row.LinkedToNext and "linked" or "link")
+        end)
+
+    end
+
     return row
 
 end
@@ -595,7 +693,7 @@ function LootPriorityWindow:GetRowData(row)
         return { Type = "Player", Value = row.PlayerBox:GetText() }
     end
 
-    return { Type = "Class", Value = row.SelectedClass }
+    return { Type = "Class", Value = row.SelectedClass, Spec = row.SelectedSpec }
 
 end
 
@@ -613,11 +711,16 @@ function LootPriorityWindow:SetRowData(row, data)
     else
 
         row.SelectedClass = data.Value
+        row.SelectedSpec = data.Spec
         row.PlayerBox:Hide()
         row.ClassDropdown:Show()
 
         if UIDropDownMenu_SetText then
-            UIDropDownMenu_SetText(row.ClassDropdown, data.Value or "")
+            local label = data.Value or ""
+            if data.Spec then
+                label = label .. " - " .. data.Spec
+            end
+            UIDropDownMenu_SetText(row.ClassDropdown, label)
         end
 
     end
@@ -746,7 +849,14 @@ function LootPriorityWindow:ClearEditor()
         row.PlayerBox:Show()
 
         row.SelectedClass = nil
+        row.SelectedSpec = nil
         row.ClassDropdown:Hide()
+
+        row.LinkedToNext = false
+
+        if row.LinkButton then
+            row.LinkButton:SetText("link")
+        end
 
         if UIDropDownMenu_SetText then
             UIDropDownMenu_SetText(row.ClassDropdown, "")
@@ -776,6 +886,30 @@ function LootPriorityWindow:SaveItem()
 
     local candidates = {}
 
+    -------------------------------------------------
+    -- Derive Each Slot's Tier From The Link Chain
+    --
+    -- Tier is computed per SLOT POSITION first (1-5),
+    -- independent of whether that slot actually has a
+    -- candidate in it -- so a chain like slot 2 linked
+    -- to slot 3 still holds even if slot 3 is blank,
+    -- and slot 4 correctly ends up in its own tier
+    -- rather than accidentally merging with slot 2's.
+    -------------------------------------------------
+
+    local slotTier = {}
+    local currentTier = 1
+
+    for _, row in ipairs(self.CandidateRows) do
+
+        slotTier[row.Index] = currentTier
+
+        if not row.LinkedToNext then
+            currentTier = currentTier + 1
+        end
+
+    end
+
     for _, row in ipairs(self.CandidateRows) do
 
         if row.Type == "Player" then
@@ -783,13 +917,18 @@ function LootPriorityWindow:SaveItem()
             local name = row.PlayerBox:GetText()
 
             if name and name ~= "" then
-                table.insert(candidates, { Type = "Player", Value = name })
+                table.insert(candidates, { Type = "Player", Value = name, Tier = slotTier[row.Index] })
             end
 
         else
 
             if row.SelectedClass then
-                table.insert(candidates, { Type = "Class", Value = row.SelectedClass })
+                table.insert(candidates, {
+                    Type = "Class",
+                    Value = row.SelectedClass,
+                    Spec = row.SelectedSpec,
+                    Tier = slotTier[row.Index],
+                })
             end
 
         end
@@ -865,13 +1004,39 @@ function LootPriorityWindow:LoadItem(itemID)
             else
 
                 row.SelectedClass = candidate.Value
+                row.SelectedSpec = candidate.Spec
                 row.PlayerBox:Hide()
                 row.ClassDropdown:Show()
 
                 if UIDropDownMenu_SetText then
-                    UIDropDownMenu_SetText(row.ClassDropdown, candidate.Value)
+                    local label = candidate.Value or ""
+                    if candidate.Spec then
+                        label = label .. " - " .. candidate.Spec
+                    end
+                    UIDropDownMenu_SetText(row.ClassDropdown, label)
                 end
 
+            end
+
+            -------------------------------------------------
+            -- Restore Link State From Saved Tier Numbers
+            --
+            -- Two consecutive candidates sharing the same
+            -- Tier means their slots were linked. Legacy
+            -- data (saved before this feature existed) has
+            -- no Tier field at all -- guard against nil == nil
+            -- comparing as "linked" for that case.
+            -------------------------------------------------
+
+            local nextCandidate = item.Candidates[i + 1]
+            local linked = candidate.Tier ~= nil
+                and nextCandidate ~= nil
+                and nextCandidate.Tier == candidate.Tier
+
+            row.LinkedToNext = linked
+
+            if row.LinkButton then
+                row.LinkButton:SetText(linked and "linked" or "link")
             end
 
         end
@@ -981,7 +1146,11 @@ function LootPriorityWindow:RefreshItemsList()
         local candidateSummary = {}
 
         for _, c in ipairs(item.Candidates) do
-            table.insert(candidateSummary, c.Value)
+            local label = c.Value
+            if c.Type == "Class" and c.Spec then
+                label = label .. " (" .. c.Spec .. ")"
+            end
+            table.insert(candidateSummary, label)
         end
 
         row.Text:SetText(

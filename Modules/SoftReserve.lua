@@ -3,7 +3,6 @@
 -------------------------------------------------
 
 ImpLoot.SoftReserve = {}
-ImpLoot.SoftReserve.Reserves = {}
 
 ImpLoot.SoftReserve.Defaults = {
     AllowMultipleReserves = true,
@@ -11,13 +10,51 @@ ImpLoot.SoftReserve.Defaults = {
 }
 
 -------------------------------------------------
+-- Reload Prompt After Import
+--
+-- The imported reserve list now persists across
+-- reloads/logouts (see Initialize below), but WoW only
+-- ever writes SavedVariables to disk during an actual
+-- logout or /reload -- a crash or Alt-F4 between an
+-- import and the next natural one of those would still
+-- lose it. Prompting for an immediate reload right after
+-- a successful import closes that window rather than
+-- leaving it to chance.
+-------------------------------------------------
+
+StaticPopupDialogs["IMPLOOT_RELOAD_AFTER_SR_IMPORT"] = {
+
+    text = "Imported %d soft reserve(s).\n\nWoW only saves this to disk on your next logout or " ..
+        "reload -- a crash before then would lose it. Reload now to save it immediately?",
+    button1 = "Reload Now",
+    button2 = "Later",
+
+    OnAccept = function()
+        ReloadUI()
+    end,
+
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+
+}
+
+-------------------------------------------------
 -- Initialize
 --
--- Settings and the working "who's still eligible to
--- roll this item" state persist across reloads (the
--- import list itself doesn't -- it's re-pasted each
--- time) so a manual Clear Raid History is required to
--- reset progress mid-lockout.
+-- Settings, the working "who's still eligible to roll
+-- this item" state, AND the imported reserve list itself
+-- all persist across reloads/logouts now -- previously
+-- only settings and working state were saved, and the
+-- import itself was silently in-memory only, so it never
+-- actually survived a reload despite looking like normal
+-- addon data. A crash or Alt-F4 before the next natural
+-- save can still lose an import that was never saved at
+-- all (that's a general WoW limitation, not specific to
+-- this data), which is why ImportDialog now also prompts
+-- for an immediate /reload right after a successful
+-- import -- see UI/ImportDialog.lua.
 -------------------------------------------------
 
 function ImpLoot.SoftReserve:Initialize()
@@ -29,10 +66,14 @@ function ImpLoot.SoftReserve:Initialize()
             ExcludePreviousWinners = true,
         },
 
+        Reserves = {},
         Remaining = {},
         WonLog = {},
 
     }
+
+    -- migrate a state saved before Reserves existed in it
+    ImpLootDB.SoftReserveState.Reserves = ImpLootDB.SoftReserveState.Reserves or {}
 
     self.State = ImpLootDB.SoftReserveState
 
@@ -152,7 +193,7 @@ end
 
 function ImpLoot.SoftReserve:Import(csv)
 
-    self.Reserves = {}
+    self.State.Reserves = {}
 
     local firstLine = true
     local reserveCount = 0
@@ -181,11 +222,11 @@ function ImpLoot.SoftReserve:Import(csv)
 
                 itemID = tonumber(itemID)
 
-                if not self.Reserves[itemID] then
-                    self.Reserves[itemID] = {}
+                if not self.State.Reserves[itemID] then
+                    self.State.Reserves[itemID] = {}
                 end
 
-                table.insert(self.Reserves[itemID], {
+                table.insert(self.State.Reserves[itemID], {
 
                     Player = player,
                     Class = class,
@@ -218,11 +259,32 @@ end
 
 function ImpLoot.SoftReserve:GetReserves(itemID)
 
-    if not self.Reserves then
+    if not self.State.Reserves then
         return {}
     end
 
-    return self.Reserves[itemID] or {}
+    return self.State.Reserves[itemID] or {}
+
+end
+
+-------------------------------------------------
+-- Get Total Reserve Count
+--
+-- Sum of every individual reserve entry across every
+-- item -- for the counter shown next to the Import CSV
+-- button, so it's obvious at a glance whether SRs are
+-- currently loaded at all without opening anything.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetTotalReserveCount()
+
+    local count = 0
+
+    for _, reserves in pairs(self.State.Reserves or {}) do
+        count = count + #reserves
+    end
+
+    return count
 
 end
 

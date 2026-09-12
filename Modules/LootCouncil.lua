@@ -241,6 +241,8 @@ function ImpLoot.LootCouncil:SetItem(listName, itemID, itemName, mode, candidate
             table.insert(remainingCopy, {
                 Type = candidate.Type,
                 Value = candidate.Value,
+                Spec = candidate.Spec,
+                Tier = candidate.Tier,
             })
 
         end
@@ -319,6 +321,8 @@ function ImpLoot.LootCouncil:GetRemainingCandidates(listName, itemID)
             table.insert(remainingCopy, {
                 Type = candidate.Type,
                 Value = candidate.Value,
+                Spec = candidate.Spec,
+                Tier = candidate.Tier,
             })
 
         end
@@ -328,6 +332,59 @@ function ImpLoot.LootCouncil:GetRemainingCandidates(listName, itemID)
     end
 
     return state.Remaining[itemID]
+
+end
+
+-------------------------------------------------
+-- Get Current Tier Candidates
+--
+-- Filters GetRemainingCandidates down to just the
+-- lowest tier that still has anyone left in it -- the
+-- set of candidates actually eligible right now. Linked
+-- slots ("Prio 1 = Prio 2 = Prio 3") share a tier and
+-- are all eligible together; the addon only moves on to
+-- the next (unlinked) tier once every candidate in the
+-- current one has won.
+--
+-- Legacy data (saved before this feature existed) has no
+-- Tier field at all -- each such candidate is treated as
+-- its own tier, matching the old strict "one at a time,
+-- in order" behavior exactly.
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:GetCurrentTierCandidates(listName, itemID)
+
+    local remaining = self:GetRemainingCandidates(listName, itemID)
+
+    if #remaining == 0 then
+        return {}
+    end
+
+    local lowestTier = nil
+
+    for i, candidate in ipairs(remaining) do
+
+        local tier = candidate.Tier or i
+
+        if not lowestTier or tier < lowestTier then
+            lowestTier = tier
+        end
+
+    end
+
+    local currentTier = {}
+
+    for i, candidate in ipairs(remaining) do
+
+        local tier = candidate.Tier or i
+
+        if tier == lowestTier then
+            table.insert(currentTier, candidate)
+        end
+
+    end
+
+    return currentTier
 
 end
 

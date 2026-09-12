@@ -97,7 +97,11 @@ end
 local function candidateLabel(candidate)
 
     if candidate.Type == "Class" then
-        return "Any " .. candidate.Value
+        local label = "Any " .. candidate.Value
+        if candidate.Spec then
+            label = label .. " (" .. candidate.Spec .. ")"
+        end
+        return label
     end
 
     return candidate.Value

@@ -98,6 +98,62 @@ options category's own description, the About tab, and the root
 ImpLoot settings page (/il help) for the full slash command list.
 
 
+SOFT RESERVE IMPORT: PERSISTENCE, RELOAD PROMPT, AND MULTI-COPY DROPS
+-----------------------------------------------------------------------
+
+A few reliability improvements to the CSV import:
+
+- The imported reserve list itself now actually persists across
+  reloads and logouts, the same as everything else the addon saves.
+  It previously did not, regardless of how cleanly you reloaded --
+  a genuine bug, not something specific to crashing.
+
+- Right after a successful import, the addon prompts you to reload
+  immediately. WoW only ever writes SavedVariables to disk during
+  an actual logout or reload, so a crash between an import and your
+  next natural one of those could still lose it -- reloading right
+  away closes that window.
+
+- A small counter next to the Import CSV button shows how many SRs
+  are currently loaded, so it's obvious at a glance without opening
+  the dialog.
+
+- When the same item drops twice from the same boss at once, the
+  addon now correctly tracks both copies separately (previously the
+  second copy silently overwrote the first in the queue). Since
+  players naturally roll once for a shot at either copy rather than
+  rolling per copy, a single roll counts toward both copies'
+  standings -- and once you assign the first copy to the top
+  roller, the second copy's standings automatically exclude them,
+  so its own top spot becomes whoever rolled second. The second
+  copy always still needs its own explicit Assign click, regardless
+  of whether Auto-Assign To Roll Winner is turned on.
+
+
+LOOT PRIORITY: CLASS SPEC LABELS AND LINKED SLOTS
+---------------------------------------------------
+
+Two additions to the Loot Priority editor's candidate slots:
+
+- A Class candidate can optionally be labeled with a specific spec
+  (e.g. "Mage - Fire") -- hover the class in the dropdown for a
+  pullout menu of its specs. This is descriptive only, not
+  mechanically enforced: WotLK has no reliable way for an addon to
+  passively know another player's current spec, so it's a note for
+  whoever's assigning to use their own judgement with, the same way
+  a bare Class candidate already relies on the loot master to
+  manually confirm someone's actual class.
+
+- Consecutive slots can be linked into a single tier via the small
+  "link" toggle beneath each slot, so instead of strict order
+  (Prio 1 > Prio 2 > Prio 3), linked slots become equally eligible
+  at once (Prio 1 = Prio 2 = Prio 3) -- the list only moves on to
+  the next slot once everyone in the linked group has won. When a
+  tier has more than one candidate still in it, the Loot Master
+  window shows a small dropdown to assign to a specific one of them
+  instead of a single Assign button.
+
+
 LEGENDARY ITEM SAFEGUARDS
 --------------------------
 

@@ -503,6 +503,31 @@ function LootMasterWindow:AcquireRow(index)
     row.ActionButton = actionButton
 
     -------------------------------------------------
+    -- Assign-Among-Tied Dropdown
+    --
+    -- Shown instead of the plain Assign button when a
+    -- Priority mode item's current tier has more than
+    -- one candidate still in it (linked slots, e.g.
+    -- "Prio 1 = Prio 2 = Prio 3") -- lets the loot master
+    -- pick specifically who wins among the tied names,
+    -- rather than the addon silently grabbing the first
+    -- one in the list.
+    -------------------------------------------------
+
+    local tieDropdown = CreateFrame(
+        "Frame",
+        "ImpLootLootMasterTieDropdown" .. index,
+        row,
+        "UIDropDownMenuTemplate"
+    )
+
+    tieDropdown:SetPoint("TOPRIGHT", -14, -2)
+    UIDropDownMenu_SetWidth(tieDropdown, 90)
+    UIDropDownMenu_SetText(tieDropdown, "Assign to...")
+    tieDropdown:Hide()
+    row.TieDropdown = tieDropdown
+
+    -------------------------------------------------
     -- Timer Text
     --
     -- Live remaining-seconds display while a roll is
@@ -606,6 +631,7 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     row.ActionButton:Hide()
     row.ActionButton:SetScript("OnClick", nil)
+    row.TieDropdown:Hide()
     row.TimerText:Hide()
 
     -------------------------------------------------
@@ -682,11 +708,14 @@ function LootMasterWindow:PopulateRow(row, entry)
             -- Priority Mode
             --
             -- No voting involved -- the list's own order
-            -- already decides who's next. Show that order
-            -- and let the loot master assign straight to
-            -- the top remaining candidate, same one-click
-            -- pattern as the Vote mode's own Assign button
-            -- once a winner's decided.
+            -- (grouped into tiers by any linked slots) already
+            -- decides who's next. Show that order, grouping
+            -- tied names with "=" and tiers with ">", and let
+            -- the loot master assign straight to the current
+            -- tier's candidate -- or, if more than one name is
+            -- still tied in that tier, pick specifically who
+            -- via a small dropdown instead of the addon
+            -- silently grabbing the first one.
             -------------------------------------------------
 
             local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
@@ -695,17 +724,23 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                 row.InfoText:SetText("Priority list exhausted -- assign manually via /il or trade.")
                 row.ActionButton:Hide()
+                row.TieDropdown:Hide()
 
             else
 
-                local names = {}
+                -------------------------------------------------
+                -- Build Display Text, Grouped By Tier
+                -------------------------------------------------
 
-                for _, candidate in ipairs(remaining) do
+                local function CandidateLabel(candidate)
 
                     local label
 
                     if candidate.Type == "Class" then
                         label = "Any " .. candidate.Value
+                        if candidate.Spec then
+                            label = label .. " (" .. candidate.Spec .. ")"
+                        end
                     else
                         label = candidate.Value
                     end
@@ -727,37 +762,102 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                     end
 
-                    table.insert(names, label)
+                    return label
 
                 end
 
-                row.InfoText:SetText("Priority: " .. table.concat(names, " > "))
+                local tierGroups = {}
+                local tierOrder = {}
+                local seenTiers = {}
 
-                row.ActionButton:SetText("Assign")
-                row.ActionButton:Show()
+                for i, candidate in ipairs(remaining) do
 
-                row.ActionButton:SetScript("OnClick", function()
+                    local tier = candidate.Tier or i
 
-                    local currentRemaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
-
-                    if #currentRemaining == 0 then
-                        ImpLoot:Print("Priority list exhausted for " .. displayName .. ".")
-                        return
+                    if not seenTiers[tier] then
+                        seenTiers[tier] = true
+                        table.insert(tierOrder, tier)
+                        tierGroups[tier] = {}
                     end
 
-                    local top = currentRemaining[1]
+                    table.insert(tierGroups[tier], CandidateLabel(candidate))
 
-                    if top.Type == "Class" then
+                end
+
+                local tierTexts = {}
+
+                for _, tier in ipairs(tierOrder) do
+                    table.insert(tierTexts, table.concat(tierGroups[tier], " = "))
+                end
+
+                row.InfoText:SetText("Priority: " .. table.concat(tierTexts, " > "))
+
+                -------------------------------------------------
+                -- Assign Action -- Single Candidate Vs A Tie
+                -------------------------------------------------
+
+                local currentTier = ImpLoot.LootCouncil:GetCurrentTierCandidates(listName, entry.ItemID)
+
+                local function AssignTo(candidate)
+
+                    if candidate.Type == "Class" then
                         ImpLoot:Print(
-                            "Any " .. top.Value .. " is next in priority for " .. displayName ..
+                            "Any " .. candidate.Value .. " is next in priority for " .. displayName ..
                             " -- assign it to a specific player via /il or trade."
                         )
                         return
                     end
 
-                    ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Value)
+                    ImpLoot.LootMaster:RequestAssign(entry.QueueID, candidate.Value)
 
-                end)
+                end
+
+                if #currentTier <= 1 then
+
+                    row.TieDropdown:Hide()
+
+                    row.ActionButton:SetText("Assign")
+                    row.ActionButton:Show()
+
+                    row.ActionButton:SetScript("OnClick", function()
+
+                        local liveTier = ImpLoot.LootCouncil:GetCurrentTierCandidates(listName, entry.ItemID)
+
+                        if #liveTier == 0 then
+                            ImpLoot:Print("Priority list exhausted for " .. displayName .. ".")
+                            return
+                        end
+
+                        AssignTo(liveTier[1])
+
+                    end)
+
+                else
+
+                    row.ActionButton:Hide()
+                    row.TieDropdown:Show()
+
+                    UIDropDownMenu_Initialize(row.TieDropdown, function(self_, level)
+
+                        local liveTier = ImpLoot.LootCouncil:GetCurrentTierCandidates(listName, entry.ItemID)
+
+                        for _, candidate in ipairs(liveTier) do
+
+                            local info = UIDropDownMenu_CreateInfo()
+                            info.text = CandidateLabel(candidate)
+
+                            info.func = function()
+                                UIDropDownMenu_SetText(row.TieDropdown, "Assign to...")
+                                AssignTo(candidate)
+                            end
+
+                            UIDropDownMenu_AddButton(info, level)
+
+                        end
+
+                    end)
+
+                end
 
             end
 
@@ -837,7 +937,11 @@ function LootMasterWindow:PopulateRow(row, entry)
             for _, candidate in ipairs(remaining) do
 
                 if candidate.Type == "Class" then
-                    table.insert(names, "Any " .. candidate.Value)
+                    local label = "Any " .. candidate.Value
+                    if candidate.Spec then
+                        label = label .. " (" .. candidate.Spec .. ")"
+                    end
+                    table.insert(names, label)
                 else
                     table.insert(names, candidate.Value)
                 end

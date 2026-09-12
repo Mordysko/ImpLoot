@@ -47,6 +47,33 @@ ImpLoot.CLASS_ORDER = {
 }
 
 -------------------------------------------------
+-- Class Specs
+--
+-- For labeling a Priority list Class candidate with a
+-- specific spec (e.g. "Mage - Fire") -- descriptive
+-- only, not mechanically verified. WotLK has no
+-- reliable way for an addon to passively know another
+-- player's current spec, so this is purely a note for
+-- whoever's assigning to use their own judgement with,
+-- the same way a bare Class candidate already relies on
+-- the loot master to manually confirm someone's actual
+-- class.
+-------------------------------------------------
+
+ImpLoot.CLASS_SPECS = {
+    ["Warrior"] = { "Arms", "Fury", "Protection" },
+    ["Paladin"] = { "Holy", "Protection", "Retribution" },
+    ["Hunter"] = { "Beast Mastery", "Marksmanship", "Survival" },
+    ["Rogue"] = { "Assassination", "Combat", "Subtlety" },
+    ["Priest"] = { "Discipline", "Holy", "Shadow" },
+    ["Death Knight"] = { "Blood", "Frost", "Unholy" },
+    ["Shaman"] = { "Elemental", "Enhancement", "Restoration" },
+    ["Mage"] = { "Arcane", "Fire", "Frost" },
+    ["Warlock"] = { "Affliction", "Demonology", "Destruction" },
+    ["Druid"] = { "Balance", "Feral Combat", "Restoration" },
+}
+
+-------------------------------------------------
 -- Print
 -------------------------------------------------
 

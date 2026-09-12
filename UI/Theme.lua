@@ -113,71 +113,6 @@ end
 -- Create Tab Handle
 -------------------------------------------------
 
--------------------------------------------------
--- Create Directional Arrow
---
--- A single, uniform arrow style reused everywhere the
--- addon needs one (the drawer tab's open/close
--- indicator, the scroll "more above/below" indicators)
--- rather than different text characters that don't
--- visually match each other ("<"/">" are a different
--- weight and shape than "^"/"v" in most fonts).
---
--- Built from Interface\Buttons\UI-ScrollBar-ScrollUpButton-Up
--- specifically because it's a texture this addon has
--- already proven works in this client -- it's the exact
--- texture on the scrollbar's own up-button, which every
--- scroll frame in the addon has been successfully hiding
--- (and therefore rendering, before being hidden) since
--- the scroll indicator feature was built. The earlier
--- "Arrow-Up-Up"/etc. set turned out not to render at all
--- in this client -- rather than guess at another unverified
--- name, this one is built from something already confirmed
--- to exist. One base texture (pointing UP), rotated to the
--- other three directions via the 8-value form of
--- SetTexCoord (true corner remapping, not just a flip --
--- WotLK 3.3.5a has no SetRotation() API).
--------------------------------------------------
-
-local ARROW_BASE_TEXTURE = "Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up"
-
-local ARROW_TEXCOORDS = {
-    UP    = { 0, 0, 0, 1, 1, 0, 1, 1 },   -- identity (base texture points up)
-    DOWN  = { 1, 1, 1, 0, 0, 1, 0, 0 },   -- 180 degrees
-    RIGHT = { 0, 1, 1, 1, 0, 0, 1, 0 },   -- 90 degrees clockwise
-    LEFT  = { 1, 0, 0, 0, 1, 1, 0, 1 },   -- 90 degrees counter-clockwise
-}
-
-function ImpLoot.Theme:CreateDirectionalArrow(parent, direction)
-
-    local arrow = parent:CreateTexture(nil, "OVERLAY")
-
-    arrow:SetTexture(ARROW_BASE_TEXTURE)
-    arrow:SetVertexColor(1, 0.82, 0, 1) -- matches the addon's gold theme text color
-
-    self:SetArrowDirection(arrow, direction)
-
-    return arrow
-
-end
-
--------------------------------------------------
--- Set Arrow Direction
---
--- Re-points an existing CreateDirectionalArrow texture
--- at a new direction, for widgets that need to flip
--- which way their arrow points after creation (the
--- drawer tab, the mode toggle's cycling, etc).
--------------------------------------------------
-
-function ImpLoot.Theme:SetArrowDirection(arrow, direction)
-
-    local coords = ARROW_TEXCOORDS[direction] or ARROW_TEXCOORDS.UP
-
-    arrow:SetTexCoord(unpack(coords))
-
-end
-
 function ImpLoot.Theme:CreateTabHandle(parent)
 
     local handle = CreateFrame("Button", nil, parent)
@@ -194,9 +129,10 @@ function ImpLoot.Theme:CreateTabHandle(parent)
     -- behind whichever edge it's touching.
     handle:SetFrameStrata("BACKGROUND")
 
-    local arrow = self:CreateDirectionalArrow(handle, "RIGHT")
-    arrow:SetSize(16, 16)
+    local arrow = handle:CreateFontString(nil, "OVERLAY")
+    arrow:SetFontObject(self.Fonts.Header)
     arrow:SetPoint("CENTER")
+    arrow:SetText(">")
 
     handle.Arrow = arrow
 
@@ -211,10 +147,44 @@ end
 function ImpLoot.Theme:SetTabDirection(handle, open)
 
     if open then
-        self:SetArrowDirection(handle.Arrow, "LEFT")
+        handle.Arrow:SetText("<")
     else
-        self:SetArrowDirection(handle.Arrow, "RIGHT")
+        handle.Arrow:SetText(">")
     end
+
+end
+
+-------------------------------------------------
+-- Create Vertical Arrow (Up/Down only)
+--
+-- A small triangle icon for up/down indicators --
+-- the scroll "more above/below" indicators and the
+-- Loot Priority candidate row reorder buttons. Two
+-- separate, natively-oriented textures (Arrow-Up-Up /
+-- Arrow-Down-Up) rather than one texture rotated via
+-- TexCoord -- this is the exact style confirmed working
+-- well for scrolling, and reusing it here keeps the
+-- reorder buttons visually consistent with the scroll
+-- indicators rather than mismatched.
+--
+-- Left/right (the drawer tab's open/close indicator)
+-- stays as plain "<"/">" text -- this helper is
+-- deliberately scoped to vertical only.
+-------------------------------------------------
+
+local VERTICAL_ARROW_TEXTURES = {
+    UP   = "Interface\\Buttons\\Arrow-Up-Up",
+    DOWN = "Interface\\Buttons\\Arrow-Down-Up",
+}
+
+function ImpLoot.Theme:CreateVerticalArrow(parent, direction)
+
+    local arrow = parent:CreateTexture(nil, "OVERLAY")
+
+    arrow:SetTexture(VERTICAL_ARROW_TEXTURES[direction] or VERTICAL_ARROW_TEXTURES.UP)
+    arrow:SetVertexColor(1, 0.82, 0, 1) -- matches the addon's gold theme text color
+
+    return arrow
 
 end
 
@@ -273,18 +243,32 @@ function ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
 
     local parent = scrollFrame:GetParent()
 
-    local topArrow = self:CreateDirectionalArrow(parent, "UP")
-    topArrow:SetSize(14, 14)
-    topArrow:SetPoint("TOP", scrollFrame, "TOP", 0, 10)
-    topArrow:Hide()
+    -- Each arrow gets its own small frame (rather than being a
+    -- texture directly on `parent`) so its frame level can be
+    -- raised above the scroll frame's own -- otherwise the loot
+    -- items scrolling underneath (a separate frame hierarchy
+    -- inside the scroll frame) can end up drawn on top of the
+    -- arrow instead of below it.
+    local topArrowFrame = CreateFrame("Frame", nil, parent)
+    topArrowFrame:SetSize(14, 14)
+    topArrowFrame:SetPoint("TOP", scrollFrame, "TOP", 0, 10)
+    topArrowFrame:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)
 
-    local bottomArrow = self:CreateDirectionalArrow(parent, "DOWN")
-    bottomArrow:SetSize(14, 14)
-    bottomArrow:SetPoint("BOTTOM", scrollFrame, "BOTTOM", 0, -10)
-    bottomArrow:Hide()
+    local topArrow = self:CreateVerticalArrow(topArrowFrame, "UP")
+    topArrow:SetAllPoints()
+    topArrowFrame:Hide()
 
-    scrollFrame.TopArrow = topArrow
-    scrollFrame.BottomArrow = bottomArrow
+    local bottomArrowFrame = CreateFrame("Frame", nil, parent)
+    bottomArrowFrame:SetSize(14, 14)
+    bottomArrowFrame:SetPoint("BOTTOM", scrollFrame, "BOTTOM", 0, -10)
+    bottomArrowFrame:SetFrameLevel(scrollFrame:GetFrameLevel() + 10)
+
+    local bottomArrow = self:CreateVerticalArrow(bottomArrowFrame, "DOWN")
+    bottomArrow:SetAllPoints()
+    bottomArrowFrame:Hide()
+
+    scrollFrame.TopArrow = topArrowFrame
+    scrollFrame.BottomArrow = bottomArrowFrame
 
     local function UpdateScrollIndicators()
 
@@ -292,15 +276,15 @@ function ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
         local maximum = scrollFrame:GetVerticalScrollRange() or 0
 
         if current > 0.5 then
-            topArrow:Show()
+            topArrowFrame:Show()
         else
-            topArrow:Hide()
+            topArrowFrame:Hide()
         end
 
         if maximum > 0.5 and current < maximum - 0.5 then
-            bottomArrow:Show()
+            bottomArrowFrame:Show()
         else
-            bottomArrow:Hide()
+            bottomArrowFrame:Hide()
         end
 
     end

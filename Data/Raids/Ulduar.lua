@@ -3816,6 +3816,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -3830,6 +3831,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -3844,6 +3846,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -3858,6 +3861,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -3872,6 +3876,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 -------------------------------------------------
@@ -4255,6 +4260,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4269,6 +4275,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4283,6 +4290,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4297,12 +4305,13 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
                     Name = "Starshard Edge",
                     IDs = {
-                        Normal = 45320,
+                        Normal = 45620,
                         Heroic = nil,
                     },
                     Quality = 4,
@@ -4311,6 +4320,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                BonusLootGroup = "Hard Mode Loot",
                 },
                 
                 -------------------------------------------------

@@ -605,9 +605,9 @@ function CompareDrawer:SetOpen(open)
     self.IsOpen = open
 
     if open then
-        ImpLoot.Theme:SetArrowDirection(self.Handle.Arrow, "RIGHT")
+        self.Handle.Arrow:SetText(">")
     else
-        ImpLoot.Theme:SetArrowDirection(self.Handle.Arrow, "LEFT")
+        self.Handle.Arrow:SetText("<")
     end
 
     if open then

@@ -545,21 +545,32 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
     local upButton = ImpLoot.Theme:CreateMenuButton(container)
     upButton:SetSize(20, 20)
     upButton:SetPoint("LEFT", typeButton, "RIGHT", 175, 0)
-    upButton:SetText("^")
     row.UpButton = upButton
+
+    local upArrow = ImpLoot.Theme:CreateVerticalArrow(upButton, "UP")
+    upArrow:SetSize(10, 10)
+    upArrow:SetPoint("CENTER", 1, 1)
+    row.UpArrow = upArrow
 
     local downButton = ImpLoot.Theme:CreateMenuButton(container)
     downButton:SetSize(20, 20)
     downButton:SetPoint("LEFT", upButton, "RIGHT", 2, 0)
-    downButton:SetText("v")
     row.DownButton = downButton
 
+    local downArrow = ImpLoot.Theme:CreateVerticalArrow(downButton, "DOWN")
+    downArrow:SetSize(10, 10)
+    downArrow:SetPoint("CENTER", 1, -3)
+    row.DownArrow = downArrow
+
+    -- Slot 1 can't move up and slot 5 can't move down --
+    -- removed entirely rather than just disabled, since a
+    -- button that can never do anything is just clutter.
     if index == 1 then
-        upButton:Disable()
+        upButton:Hide()
     end
 
     if index == 5 then
-        downButton:Disable()
+        downButton:Hide()
     end
 
     upButton:SetScript("OnClick", function()

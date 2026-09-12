@@ -59,6 +59,14 @@ function MainWindow:Initialize()
     local frame = CreateFrame("Frame", "ImpLootMainWindow", UIParent)
     self.Frame = frame
 
+    -- Locked at LOW rather than user-adjustable via Window
+    -- Layering -- several sub-dialogs opened from within this
+    -- window (WishlistDialog, RaidNoteDialog, RaidNotesPopup)
+    -- have their own fixed DIALOG strata, and if this window
+    -- were adjustable up to DIALOG too, it could end up sharing
+    -- their exact strata with no guaranteed order between them.
+    frame:SetFrameStrata("LOW")
+
     frame:SetSize(Layout.WindowWidth, Layout.WindowHeight)
     frame:SetPoint("CENTER")
 

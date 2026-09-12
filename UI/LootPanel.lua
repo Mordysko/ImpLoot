@@ -109,6 +109,7 @@ function LootPanel:Initialize(mainWindowFrame, bossPanelFrame)
 
     searchBox:SetScript("OnEditFocusGained", function()
         self:ClearSearchPlaceholder()
+        searchBox:HighlightText()
     end)
 
     searchBox:SetScript("OnEditFocusLost", function()
@@ -831,8 +832,8 @@ function LootPanel:HandleLootButtonClick(button, entry, item, itemID, selectedDi
                 character,
                 wishlist.Name,
                 button.ItemID,
-                ImpLoot.SelectedRaid,
-                ImpLoot.SelectedBoss,
+                item.Raid,
+                item.Boss,
                 selectedDifficulty
             )
 
@@ -868,10 +869,31 @@ function LootPanel:HandleLootButtonClick(button, entry, item, itemID, selectedDi
 
         -------------------------------------------------
         -- Search Result = Navigate To Boss
+        --
+        -- Multi-difficulty items (tokens, using AvailableIn
+        -- instead of a single Difficulty field) have no
+        -- entry.Difficulty at all -- fall back to whichever
+        -- difficulty they're actually available on instead
+        -- of silently skipping navigation for them.
         -------------------------------------------------
 
-        if entry.Boss and entry.Difficulty then
-            ImpLoot.UI.BossPanel:SelectBoss(entry.Boss, entry.Difficulty)
+        local navigateDifficulty = entry.Difficulty
+
+        if not navigateDifficulty and entry.AvailableIn then
+
+            for _, candidate in ipairs({ "10", "25", "10 Heroic", "25 Heroic" }) do
+
+                if entry.AvailableIn[candidate] then
+                    navigateDifficulty = candidate
+                    break
+                end
+
+            end
+
+        end
+
+        if entry.Boss and navigateDifficulty then
+            ImpLoot.UI.BossPanel:SelectBoss(entry.Boss, navigateDifficulty)
         else
 
             -------------------------------------------------

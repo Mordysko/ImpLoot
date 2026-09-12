@@ -3590,7 +3590,6 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4016,7 +4015,6 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4456,7 +4454,6 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -4902,7 +4899,6 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {
@@ -6028,7 +6024,6 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                BonusLootGroup = "Hard Mode Loot",
                 },
 
                 {

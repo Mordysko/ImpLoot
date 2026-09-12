@@ -113,6 +113,71 @@ end
 -- Create Tab Handle
 -------------------------------------------------
 
+-------------------------------------------------
+-- Create Directional Arrow
+--
+-- A single, uniform arrow style reused everywhere the
+-- addon needs one (the drawer tab's open/close
+-- indicator, the scroll "more above/below" indicators)
+-- rather than different text characters that don't
+-- visually match each other ("<"/">" are a different
+-- weight and shape than "^"/"v" in most fonts).
+--
+-- Built from Interface\Buttons\UI-ScrollBar-ScrollUpButton-Up
+-- specifically because it's a texture this addon has
+-- already proven works in this client -- it's the exact
+-- texture on the scrollbar's own up-button, which every
+-- scroll frame in the addon has been successfully hiding
+-- (and therefore rendering, before being hidden) since
+-- the scroll indicator feature was built. The earlier
+-- "Arrow-Up-Up"/etc. set turned out not to render at all
+-- in this client -- rather than guess at another unverified
+-- name, this one is built from something already confirmed
+-- to exist. One base texture (pointing UP), rotated to the
+-- other three directions via the 8-value form of
+-- SetTexCoord (true corner remapping, not just a flip --
+-- WotLK 3.3.5a has no SetRotation() API).
+-------------------------------------------------
+
+local ARROW_BASE_TEXTURE = "Interface\\Buttons\\UI-ScrollBar-ScrollUpButton-Up"
+
+local ARROW_TEXCOORDS = {
+    UP    = { 0, 0, 0, 1, 1, 0, 1, 1 },   -- identity (base texture points up)
+    DOWN  = { 1, 1, 1, 0, 0, 1, 0, 0 },   -- 180 degrees
+    RIGHT = { 0, 1, 1, 1, 0, 0, 1, 0 },   -- 90 degrees clockwise
+    LEFT  = { 1, 0, 0, 0, 1, 1, 0, 1 },   -- 90 degrees counter-clockwise
+}
+
+function ImpLoot.Theme:CreateDirectionalArrow(parent, direction)
+
+    local arrow = parent:CreateTexture(nil, "OVERLAY")
+
+    arrow:SetTexture(ARROW_BASE_TEXTURE)
+    arrow:SetVertexColor(1, 0.82, 0, 1) -- matches the addon's gold theme text color
+
+    self:SetArrowDirection(arrow, direction)
+
+    return arrow
+
+end
+
+-------------------------------------------------
+-- Set Arrow Direction
+--
+-- Re-points an existing CreateDirectionalArrow texture
+-- at a new direction, for widgets that need to flip
+-- which way their arrow points after creation (the
+-- drawer tab, the mode toggle's cycling, etc).
+-------------------------------------------------
+
+function ImpLoot.Theme:SetArrowDirection(arrow, direction)
+
+    local coords = ARROW_TEXCOORDS[direction] or ARROW_TEXCOORDS.UP
+
+    arrow:SetTexCoord(unpack(coords))
+
+end
+
 function ImpLoot.Theme:CreateTabHandle(parent)
 
     local handle = CreateFrame("Button", nil, parent)
@@ -129,10 +194,9 @@ function ImpLoot.Theme:CreateTabHandle(parent)
     -- behind whichever edge it's touching.
     handle:SetFrameStrata("BACKGROUND")
 
-    local arrow = handle:CreateFontString(nil, "OVERLAY")
-    arrow:SetFontObject(self.Fonts.Header)
+    local arrow = self:CreateDirectionalArrow(handle, "RIGHT")
+    arrow:SetSize(16, 16)
     arrow:SetPoint("CENTER")
-    arrow:SetText(">")
 
     handle.Arrow = arrow
 
@@ -147,9 +211,9 @@ end
 function ImpLoot.Theme:SetTabDirection(handle, open)
 
     if open then
-        handle.Arrow:SetText("<")
+        self:SetArrowDirection(handle.Arrow, "LEFT")
     else
-        handle.Arrow:SetText(">")
+        self:SetArrowDirection(handle.Arrow, "RIGHT")
     end
 
 end
@@ -182,22 +246,41 @@ function ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
     local scrollBar = scrollBarName and _G[scrollBarName]
 
     if scrollBar then
+
         scrollBar:Hide()
         scrollBar:EnableMouse(false)
+        scrollBar:SetAlpha(0)
+
+        -- belt-and-suspenders: UIPanelScrollFrameTemplate's
+        -- up/down buttons are children of the scrollbar, so
+        -- hiding it should already hide them too, but disable
+        -- their mouse interaction directly as well in case
+        -- anything else in the template re-shows the parent
+        local upButton = _G[scrollBarName .. "ScrollUpButton"]
+        local downButton = _G[scrollBarName .. "ScrollDownButton"]
+
+        if upButton then
+            upButton:Hide()
+            upButton:EnableMouse(false)
+        end
+
+        if downButton then
+            downButton:Hide()
+            downButton:EnableMouse(false)
+        end
+
     end
 
     local parent = scrollFrame:GetParent()
 
-    local topArrow = parent:CreateFontString(nil, "OVERLAY")
-    topArrow:SetFontObject(self.Fonts.Header)
+    local topArrow = self:CreateDirectionalArrow(parent, "UP")
+    topArrow:SetSize(14, 14)
     topArrow:SetPoint("TOP", scrollFrame, "TOP", 0, 10)
-    topArrow:SetText("^")
     topArrow:Hide()
 
-    local bottomArrow = parent:CreateFontString(nil, "OVERLAY")
-    bottomArrow:SetFontObject(self.Fonts.Header)
+    local bottomArrow = self:CreateDirectionalArrow(parent, "DOWN")
+    bottomArrow:SetSize(14, 14)
     bottomArrow:SetPoint("BOTTOM", scrollFrame, "BOTTOM", 0, -10)
-    bottomArrow:SetText("v")
     bottomArrow:Hide()
 
     scrollFrame.TopArrow = topArrow
@@ -228,6 +311,40 @@ function ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
     scrollFrame:HookScript("OnVerticalScroll", UpdateScrollIndicators)
 
     UpdateScrollIndicators()
+
+end
+
+-------------------------------------------------
+-- Get Strata Above
+--
+-- Returns the next strata up from the given one, in
+-- WoW's fixed strata order. Used by windows that need
+-- to render above another ImpLoot window regardless of
+-- whatever strata that window's own Window Layering
+-- setting currently has it on -- e.g. the CSV import
+-- dialog needs to sit above the Main Window even if the
+-- user has set the Main Window itself to "DIALOG" (one
+-- of Window Layering's own valid choices), which would
+-- otherwise put them at the same strata with no
+-- guaranteed order between them.
+-------------------------------------------------
+
+local STRATA_ORDER = {
+    "BACKGROUND", "LOW", "MEDIUM", "HIGH",
+    "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP",
+}
+
+local STRATA_INDEX = {}
+
+for i, strata in ipairs(STRATA_ORDER) do
+    STRATA_INDEX[strata] = i
+end
+
+function ImpLoot.Theme:GetStrataAbove(strata)
+
+    local index = STRATA_INDEX[strata] or STRATA_INDEX.MEDIUM
+
+    return STRATA_ORDER[math.min(index + 1, #STRATA_ORDER)]
 
 end
 

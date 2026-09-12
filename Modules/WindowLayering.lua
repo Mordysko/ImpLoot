@@ -25,17 +25,27 @@ WindowLayering.VALID_STRATA = { "LOW", "MEDIUM", "HIGH", "DIALOG" }
 -------------------------------------------------
 -- Windows Covered
 --
--- The persistent/semi-persistent top-level windows
--- a player might actually want positioned above or
--- below other addons during a raid. Transient, quick
--- dialogs (import, wishlist rename, raid notes, etc.)
--- aren't included -- they're modal-style popups that
--- typically only appear briefly on top of the main
--- window anyway.
+-- The persistent/semi-persistent top-level windows a
+-- player might actually want positioned above or below
+-- other addons during a raid. Transient, quick dialogs
+-- (import, wishlist rename, raid notes, etc.) aren't
+-- included -- they're modal-style popups that typically
+-- only appear briefly on top of the main window anyway.
+--
+-- Main Window is deliberately NOT included here (even
+-- though it's one of the persistent windows) -- it's
+-- locked to LOW instead. Several of those transient
+-- sub-dialogs (WishlistDialog, RaidNoteDialog,
+-- RaidNotesPopup) are opened from within it and have
+-- their own fixed DIALOG strata; if Main Window were
+-- adjustable up to DIALOG too, it could end up sharing
+-- their exact strata with no guaranteed order between
+-- them. Locking Main Window to LOW removes that
+-- possibility entirely rather than needing each of
+-- those sub-dialogs to track it dynamically too.
 -------------------------------------------------
 
 WindowLayering.WINDOWS = {
-    { Key = "MainWindow", Label = "Main Window" },
     { Key = "LootMasterWindow", Label = "Loot Master Window" },
     { Key = "LootPriorityWindow", Label = "Loot Priority Window" },
     { Key = "SummaryWindow", Label = "Summary Window" },
@@ -44,7 +54,6 @@ WindowLayering.WINDOWS = {
 }
 
 WindowLayering.Defaults = {
-    MainWindow = "MEDIUM",
     LootMasterWindow = "MEDIUM",
     LootPriorityWindow = "MEDIUM",
     SummaryWindow = "DIALOG",

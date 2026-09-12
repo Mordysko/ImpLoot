@@ -122,7 +122,7 @@ end
 function LootPriorityWindow:BuildListRow(frame, titleBar)
 
     local listLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-    listLabel:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 4, -10)
+    listLabel:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 26, -10)
     listLabel:SetText("List:")
 
     local listDropdown = CreateFrame(
@@ -662,7 +662,7 @@ function LootPriorityWindow:BuildExistingItemsList(frame)
     scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 10)
 
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetWidth(WINDOW_WIDTH - 40)
+    scrollChild:SetWidth(WINDOW_WIDTH - 40 - 22) -- 22 = the increased left margin shift
     scrollChild:SetHeight(1)
 
     self.ItemsScrollChild = scrollChild
@@ -884,14 +884,28 @@ function LootPriorityWindow:AcquireItemRow(index)
     row = CreateFrame("Button", nil, self.ItemsScrollChild)
     row:SetSize(WINDOW_WIDTH - 50, 20)
 
+    local background = row:CreateTexture(nil, "BACKGROUND")
+    background:SetAllPoints()
+    background:SetTexture("Interface\\Buttons\\WHITE8X8")
+    background:SetVertexColor(1, 1, 1, 0)
+    row.Background = background
+
+    row:SetScript("OnEnter", function()
+        background:SetVertexColor(1, 1, 1, 0.08)
+    end)
+
+    row:SetScript("OnLeave", function()
+        background:SetVertexColor(1, 1, 1, 0)
+    end)
+
     row.Text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.Text:SetPoint("LEFT", 0, 0)
+    row.Text:SetPoint("TOPLEFT", 4, -2)
     row.Text:SetJustifyH("LEFT")
-    row.Text:SetWidth(WINDOW_WIDTH - 80)
+    row.Text:SetWidth(WINDOW_WIDTH - 84)
 
     row.RemoveButton = CreateFrame("Button", nil, row)
     row.RemoveButton:SetSize(14, 14)
-    row.RemoveButton:SetPoint("RIGHT", 0, 0)
+    row.RemoveButton:SetPoint("RIGHT", -4, 0)
 
     local removeText = row.RemoveButton:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     removeText:SetAllPoints()
@@ -963,6 +977,13 @@ function LootPriorityWindow:RefreshItemsList()
             item.Name .. " (" .. item.Mode .. "): " .. table.concat(candidateSummary, ", ")
         )
 
+        -- rows are sized to their actual (possibly wrapped)
+        -- text height, not a fixed single-line height, so a
+        -- long candidate list wrapping to two lines doesn't
+        -- overlap the row below it
+        local rowHeight = math.max((row.Text:GetStringHeight() or 12) + 6, 20)
+        row:SetHeight(rowHeight)
+
         row.RemoveButton:SetScript("OnClick", function()
             ImpLoot.LootCouncil:RemoveItem(activeName, itemID)
             LootPriorityWindow:RefreshItemsList()
@@ -974,7 +995,7 @@ function LootPriorityWindow:RefreshItemsList()
 
         row:Show()
 
-        y = y + 22
+        y = y + rowHeight + 8
 
     end
 

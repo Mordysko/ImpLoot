@@ -225,6 +225,14 @@ function PriorityListShareDialog:ShowImport()
 
     end)
 
+    -- Recomputed every time, not just once at Initialize --
+    -- Loot Priority's own strata can change later via the
+    -- Window Layering options panel, and this always needs
+    -- to end up one level above whatever it currently is.
+    self.Window:SetFrameStrata(
+        ImpLoot.Theme:GetStrataAbove(ImpLoot.UI.LootPriorityWindow.Frame:GetFrameStrata())
+    )
+
     self.Window:Show()
     self.EditBox:SetFocus()
 
@@ -263,6 +271,14 @@ function PriorityListShareDialog:ShowExport()
         self.EditBox:SetFocus()
         self.EditBox:HighlightText()
     end)
+
+    -- Recomputed every time, not just once at Initialize --
+    -- Loot Priority's own strata can change later via the
+    -- Window Layering options panel, and this always needs
+    -- to end up one level above whatever it currently is.
+    self.Window:SetFrameStrata(
+        ImpLoot.Theme:GetStrataAbove(ImpLoot.UI.LootPriorityWindow.Frame:GetFrameStrata())
+    )
 
     self.Window:Show()
     self.EditBox:SetFocus()

@@ -20,11 +20,11 @@ local PopulateModeBar = ImpLoot.UI.PopulateModeBar
 
 function PopulateModeBar:Initialize()
 
-    local frame = CreateFrame("Frame", "ImpLootPopulateModeBar", UIParent)
+    local frame = CreateFrame("Frame", "ImpLootPopulateModeBar", ImpLoot.UI.MainWindow.Frame)
     self.Frame = frame
 
-    frame:SetSize(340, 76)
-    frame:SetPoint("TOP", 0, -120)
+    frame:SetSize(260, 76)
+    frame:SetPoint("BOTTOM", ImpLoot.UI.MainWindow.Frame, "TOP", 0, 8)
     frame:SetFrameStrata("HIGH")
 
     ImpLoot.Theme:ApplyPanelStyle(frame)
@@ -37,7 +37,7 @@ function PopulateModeBar:Initialize()
 
     local addButton = ImpLoot.Theme:CreateMenuButton(frame)
     addButton:SetSize(130, 22)
-    addButton:SetPoint("BOTTOMLEFT", 10, 8)
+    addButton:SetPoint("BOTTOM", -38, 8)
     addButton:SetText("Add to Priority List")
 
     addButton:SetScript("OnClick", function()

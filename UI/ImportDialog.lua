@@ -27,6 +27,13 @@ function ImportDialog:Initialize(mainWindowFrame)
     openButton:SetText("Import CSV")
 
     openButton:SetScript("OnClick", function()
+
+        -- Recomputed every time, not just once at Initialize --
+        -- the Main Window's own strata can change later via the
+        -- Window Layering options panel, and this always needs
+        -- to end up one level above whatever it currently is.
+        self.Window:SetFrameStrata(ImpLoot.Theme:GetStrataAbove(mainWindowFrame:GetFrameStrata()))
+
         self.Window:Show()
     end)
 

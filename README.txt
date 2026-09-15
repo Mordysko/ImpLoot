@@ -130,28 +130,17 @@ A few reliability improvements to the CSV import:
   of whether Auto-Assign To Roll Winner is turned on.
 
 
-LOOT PRIORITY: CLASS SPEC LABELS AND LINKED SLOTS
----------------------------------------------------
+LOOT PRIORITY: CLASS SPEC LABELS
+----------------------------------
 
-Two additions to the Loot Priority editor's candidate slots:
-
-- A Class candidate can optionally be labeled with a specific spec
-  (e.g. "Mage - Fire") -- hover the class in the dropdown for a
-  pullout menu of its specs. This is descriptive only, not
-  mechanically enforced: WotLK has no reliable way for an addon to
-  passively know another player's current spec, so it's a note for
-  whoever's assigning to use their own judgement with, the same way
-  a bare Class candidate already relies on the loot master to
-  manually confirm someone's actual class.
-
-- Consecutive slots can be linked into a single tier via the small
-  "link" toggle beneath each slot, so instead of strict order
-  (Prio 1 > Prio 2 > Prio 3), linked slots become equally eligible
-  at once (Prio 1 = Prio 2 = Prio 3) -- the list only moves on to
-  the next slot once everyone in the linked group has won. When a
-  tier has more than one candidate still in it, the Loot Master
-  window shows a small dropdown to assign to a specific one of them
-  instead of a single Assign button.
+A Class candidate in the Loot Priority editor can optionally be
+labeled with a specific spec (e.g. "Mage - Fire") -- hover the
+class in the dropdown for a pullout menu of its specs. This is
+descriptive only, not mechanically enforced: WotLK has no reliable
+way for an addon to passively know another player's current spec,
+so it's a note for whoever's assigning to use their own judgement
+with, the same way a bare Class candidate already relies on the
+loot master to manually confirm someone's actual class.
 
 
 LEGENDARY ITEM SAFEGUARDS
@@ -226,6 +215,17 @@ FIELDS
   exactly -- a player literally named e.g. "Hunter" would be
   read as the class instead, which is the one real edge case in
   this format.
+
+- spec (optional, class candidates only): write it as
+  "class-spec" instead of a bare class name, e.g. "mage-fire" or
+  "hunter-beast mastery" (a spec name with its own space still
+  works fine -- only the FIRST hyphen is treated as the
+  class/spec separator). Same as the in-game spec label, this is
+  descriptive only and not mechanically verified. Only resolves
+  as class-spec if both halves actually match a known class and
+  one of its specs; otherwise the whole token is read as a plain
+  player name, so a pasted "Name-Realm" isn't misread as a spec
+  label.
 
 Bad entries (an unrecognized item ID, an unknown mode, more than
 5 candidates) are skipped individually with a clear message,

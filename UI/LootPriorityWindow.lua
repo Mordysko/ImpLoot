@@ -455,9 +455,9 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
 
     local container = CreateFrame("Frame", nil, frame)
     container:SetSize(360, CANDIDATE_ROW_HEIGHT)
-    container:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -18)
+    container:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -8)
 
-    local row = { Container = container, Type = "Player", Index = index }
+    local row = { Container = container, Type = "Player" }
 
     local numberText = container:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     numberText:SetPoint("LEFT", 0, 0)
@@ -649,36 +649,6 @@ function LootPriorityWindow:CreateCandidateRow(frame, index, previous)
         LootPriorityWindow:SwapCandidateRows(index, index + 1)
     end)
 
-    -------------------------------------------------
-    -- Link To Next Slot
-    --
-    -- Rows 1-4 get a small toggle in the gap below them
-    -- ("Prio 1 = Prio 2" instead of "Prio 1 > Prio 2") --
-    -- linked slots are all equally eligible at once; the
-    -- addon only moves on to the next (unlinked) slot
-    -- once every candidate in the linked group has won.
-    -- This is a property of the SLOT POSITION, not the
-    -- candidate occupying it -- Move Up/Down swaps
-    -- candidate data between rows but never touches this.
-    -------------------------------------------------
-
-    row.LinkedToNext = false
-
-    if index < 5 then
-
-        local linkButton = ImpLoot.Theme:CreateMenuButton(container)
-        linkButton:SetSize(30, 14)
-        linkButton:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -2)
-        linkButton:SetText("link")
-        row.LinkButton = linkButton
-
-        linkButton:SetScript("OnClick", function()
-            row.LinkedToNext = not row.LinkedToNext
-            linkButton:SetText(row.LinkedToNext and "linked" or "link")
-        end)
-
-    end
-
     return row
 
 end
@@ -852,12 +822,6 @@ function LootPriorityWindow:ClearEditor()
         row.SelectedSpec = nil
         row.ClassDropdown:Hide()
 
-        row.LinkedToNext = false
-
-        if row.LinkButton then
-            row.LinkButton:SetText("link")
-        end
-
         if UIDropDownMenu_SetText then
             UIDropDownMenu_SetText(row.ClassDropdown, "")
         end
@@ -886,30 +850,6 @@ function LootPriorityWindow:SaveItem()
 
     local candidates = {}
 
-    -------------------------------------------------
-    -- Derive Each Slot's Tier From The Link Chain
-    --
-    -- Tier is computed per SLOT POSITION first (1-5),
-    -- independent of whether that slot actually has a
-    -- candidate in it -- so a chain like slot 2 linked
-    -- to slot 3 still holds even if slot 3 is blank,
-    -- and slot 4 correctly ends up in its own tier
-    -- rather than accidentally merging with slot 2's.
-    -------------------------------------------------
-
-    local slotTier = {}
-    local currentTier = 1
-
-    for _, row in ipairs(self.CandidateRows) do
-
-        slotTier[row.Index] = currentTier
-
-        if not row.LinkedToNext then
-            currentTier = currentTier + 1
-        end
-
-    end
-
     for _, row in ipairs(self.CandidateRows) do
 
         if row.Type == "Player" then
@@ -917,7 +857,7 @@ function LootPriorityWindow:SaveItem()
             local name = row.PlayerBox:GetText()
 
             if name and name ~= "" then
-                table.insert(candidates, { Type = "Player", Value = name, Tier = slotTier[row.Index] })
+                table.insert(candidates, { Type = "Player", Value = name })
             end
 
         else
@@ -927,7 +867,6 @@ function LootPriorityWindow:SaveItem()
                     Type = "Class",
                     Value = row.SelectedClass,
                     Spec = row.SelectedSpec,
-                    Tier = slotTier[row.Index],
                 })
             end
 
@@ -1016,27 +955,6 @@ function LootPriorityWindow:LoadItem(itemID)
                     UIDropDownMenu_SetText(row.ClassDropdown, label)
                 end
 
-            end
-
-            -------------------------------------------------
-            -- Restore Link State From Saved Tier Numbers
-            --
-            -- Two consecutive candidates sharing the same
-            -- Tier means their slots were linked. Legacy
-            -- data (saved before this feature existed) has
-            -- no Tier field at all -- guard against nil == nil
-            -- comparing as "linked" for that case.
-            -------------------------------------------------
-
-            local nextCandidate = item.Candidates[i + 1]
-            local linked = candidate.Tier ~= nil
-                and nextCandidate ~= nil
-                and nextCandidate.Tier == candidate.Tier
-
-            row.LinkedToNext = linked
-
-            if row.LinkButton then
-                row.LinkButton:SetText(linked and "linked" or "link")
             end
 
         end

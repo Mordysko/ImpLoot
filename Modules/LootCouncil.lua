@@ -242,7 +242,6 @@ function ImpLoot.LootCouncil:SetItem(listName, itemID, itemName, mode, candidate
                 Type = candidate.Type,
                 Value = candidate.Value,
                 Spec = candidate.Spec,
-                Tier = candidate.Tier,
             })
 
         end
@@ -322,7 +321,6 @@ function ImpLoot.LootCouncil:GetRemainingCandidates(listName, itemID)
                 Type = candidate.Type,
                 Value = candidate.Value,
                 Spec = candidate.Spec,
-                Tier = candidate.Tier,
             })
 
         end
@@ -332,59 +330,6 @@ function ImpLoot.LootCouncil:GetRemainingCandidates(listName, itemID)
     end
 
     return state.Remaining[itemID]
-
-end
-
--------------------------------------------------
--- Get Current Tier Candidates
---
--- Filters GetRemainingCandidates down to just the
--- lowest tier that still has anyone left in it -- the
--- set of candidates actually eligible right now. Linked
--- slots ("Prio 1 = Prio 2 = Prio 3") share a tier and
--- are all eligible together; the addon only moves on to
--- the next (unlinked) tier once every candidate in the
--- current one has won.
---
--- Legacy data (saved before this feature existed) has no
--- Tier field at all -- each such candidate is treated as
--- its own tier, matching the old strict "one at a time,
--- in order" behavior exactly.
--------------------------------------------------
-
-function ImpLoot.LootCouncil:GetCurrentTierCandidates(listName, itemID)
-
-    local remaining = self:GetRemainingCandidates(listName, itemID)
-
-    if #remaining == 0 then
-        return {}
-    end
-
-    local lowestTier = nil
-
-    for i, candidate in ipairs(remaining) do
-
-        local tier = candidate.Tier or i
-
-        if not lowestTier or tier < lowestTier then
-            lowestTier = tier
-        end
-
-    end
-
-    local currentTier = {}
-
-    for i, candidate in ipairs(remaining) do
-
-        local tier = candidate.Tier or i
-
-        if tier == lowestTier then
-            table.insert(currentTier, candidate)
-        end
-
-    end
-
-    return currentTier
 
 end
 
@@ -661,6 +606,13 @@ end
 -- pres=Preselected. Item IDs (not names) are used
 -- deliberately, since the same item name can exist under
 -- different IDs across Normal/Heroic.
+--
+-- A class candidate can optionally carry a spec label,
+-- written as "class-spec" (e.g. "mage-fire", "hunter-
+-- beast mastery"): "45533, prio, mage-fire;" means any
+-- Mage specifically labeled Fire spec. Spec is
+-- descriptive only (see CLASS_SPECS in Core.lua), same
+-- as it is everywhere else in the addon.
 -------------------------------------------------
 
 local IMPORT_MODE_ABBREVIATIONS = {
@@ -686,6 +638,15 @@ end
 CLASS_LOOKUP["deathknight"] = "Death Knight"
 CLASS_LOOKUP["dk"] = "Death Knight"
 
+local function TrimText(value)
+
+    value = string.gsub(value, "^%s+", "")
+    value = string.gsub(value, "%s+$", "")
+
+    return value
+
+end
+
 -------------------------------------------------
 -- Resolve Candidate Token
 --
@@ -698,9 +659,50 @@ CLASS_LOOKUP["dk"] = "Death Knight"
 -- e.g. "Hunter" would resolve as the class instead --
 -- rare enough not to be worth a structural fix, but
 -- worth documenting.
+--
+-- A class can optionally carry a spec, written as
+-- "class-spec" (e.g. "mage-fire", "hunter-beast
+-- mastery" -- the spec half can still contain spaces
+-- of its own, since only the FIRST hyphen is treated
+-- as the class/spec separator). Only actually resolved
+-- as class-spec if the part before the hyphen matches a
+-- known class AND the part after matches one of that
+-- class's specs -- otherwise falls through to being
+-- read as a plain player name, so a player name that
+-- happens to include a hyphen (e.g. a pasted
+-- "Name-Realm") isn't misread as a spec label.
 -------------------------------------------------
 
 local function ResolveCandidateToken(token)
+
+    local hyphenPos = token:find("-", 1, true)
+
+    if hyphenPos then
+
+        local classPart = TrimText(token:sub(1, hyphenPos - 1))
+        local specPart = TrimText(token:sub(hyphenPos + 1))
+
+        local className = CLASS_LOOKUP[string.lower(classPart)]
+
+        if className then
+
+            local specs = ImpLoot.CLASS_SPECS[className]
+
+            if specs then
+
+                for _, specName in ipairs(specs) do
+
+                    if string.lower(specName) == string.lower(specPart) then
+                        return { Type = "Class", Value = className, Spec = specName }
+                    end
+
+                end
+
+            end
+
+        end
+
+    end
 
     local className = CLASS_LOOKUP[string.lower(token)]
 
@@ -709,15 +711,6 @@ local function ResolveCandidateToken(token)
     end
 
     return { Type = "Player", Value = token }
-
-end
-
-local function TrimText(value)
-
-    value = string.gsub(value, "^%s+", "")
-    value = string.gsub(value, "%s+$", "")
-
-    return value
 
 end
 
@@ -878,7 +871,15 @@ function ImpLoot.LootCouncil:ExportListToText(listName)
         local parts = { tostring(itemID), modeAbbrev }
 
         for _, candidate in ipairs(item.Candidates or {}) do
-            table.insert(parts, candidate.Value)
+
+            local token = candidate.Value
+
+            if candidate.Type == "Class" and candidate.Spec then
+                token = token .. "-" .. candidate.Spec
+            end
+
+            table.insert(parts, token)
+
         end
 
         table.insert(lines, table.concat(parts, ", ") .. ";")

@@ -651,7 +651,7 @@ local TOTC = {
                 },
 
                 {
-                    Name = "Band of the Violent Temperment",
+                    Name = "Band of the Violent Temperament",
                     IDs = {
                         Normal = 46959,
                         Heroic = nil,
@@ -816,7 +816,7 @@ local TOTC = {
                 },
 
                 {
-                    Name = "Steel Bladebreaker",
+                    Name = "Stygian Bladebreaker",
                     IDs = {
                         Normal = 46958,
                         Heroic = nil,

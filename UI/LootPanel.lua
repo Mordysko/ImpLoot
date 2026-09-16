@@ -996,6 +996,7 @@ function LootPanel:PopulateForBoss(boss)
     end
 
     self.Buttons = {}
+    self.PendingScrollTargetY = nil
     self:Clear()
     self:ResetLootHeaders()
 
@@ -1200,6 +1201,7 @@ function LootPanel:PopulateForBoss(boss)
 
             if ImpLoot.SelectedLoot == item then
                 self:HighlightButton(button)
+                self.PendingScrollTargetY = y
             end
 
         end
@@ -1742,7 +1744,18 @@ function LootPanel:UpdateScrollChildHeight(height)
 
     self.ScrollChild:SetHeight(height)
 
-    self.Content:SetVerticalScroll(0)
+    -- Scroll to bring a pending-selection item into view
+    -- (e.g. navigating here from a wishlist click) instead
+    -- of always resetting to the top, which would otherwise
+    -- hide the very item the click was meant to show --
+    -- offset up slightly so it isn't flush against the very
+    -- top edge of the visible area.
+    if self.PendingScrollTargetY then
+        self.Content:SetVerticalScroll(math.max(self.PendingScrollTargetY - 20, 0))
+        self.PendingScrollTargetY = nil
+    else
+        self.Content:SetVerticalScroll(0)
+    end
 
     -------------------------------------------------
     -- Refresh ScrollFrame

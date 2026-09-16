@@ -406,7 +406,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Heroes' Crypstalker Handguards",
+                    Name = "Heroes' Cryptstalker Handguards",
                     IDs = {
                         Normal = 39582,
                         Heroic = nil,
@@ -421,7 +421,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Heroes' Crypstalker Legguards",
+                    Name = "Heroes' Cryptstalker Legguards",
                     IDs = {
                         Normal = 39580,
                         Heroic = nil,
@@ -436,7 +436,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Heroes' Crypstalker Tunic",
+                    Name = "Heroes' Cryptstalker Tunic",
                     IDs = {
                         Normal = 39579,
                         Heroic = nil,
@@ -1985,7 +1985,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Valorous Crypstalker Handguards",
+                    Name = "Valorous Cryptstalker Handguards",
                     IDs = {
                         Normal = 40504,
                         Heroic = nil,
@@ -2000,7 +2000,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Valorous Crypstalker Legguards",
+                    Name = "Valorous Cryptstalker Legguards",
                     IDs = {
                         Normal = 40506,
                         Heroic = nil,
@@ -2015,7 +2015,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Valorous Crypstalker Tunic",
+                    Name = "Valorous Cryptstalker Tunic",
                     IDs = {
                         Normal = 40503,
                         Heroic = nil,

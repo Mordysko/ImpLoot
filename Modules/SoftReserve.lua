@@ -335,6 +335,41 @@ function ImpLoot.SoftReserve:GetRemainingSlots(itemID)
 end
 
 -------------------------------------------------
+-- Get Sole Reserver
+--
+-- Returns the player's name if every remaining slot for
+-- this item belongs to that one single player (whether
+-- they hold one slot or several via Plus), so the loot
+-- master can skip straight to assigning instead of
+-- running an announcement/roll that only one person
+-- could ever win. Returns nil when there's no one left,
+-- or when more than one distinct player is still
+-- eligible.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetSoleReserver(itemID)
+
+    local slots = self:GetRemainingSlots(itemID)
+
+    if #slots == 0 then
+        return nil
+    end
+
+    local solePlayer = slots[1].Player
+
+    for i = 2, #slots do
+
+        if slots[i].Player ~= solePlayer then
+            return nil
+        end
+
+    end
+
+    return solePlayer
+
+end
+
+-------------------------------------------------
 -- Record Win
 --
 -- Removes the winner's FIRST remaining slot for this

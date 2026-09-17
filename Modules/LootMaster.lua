@@ -1428,7 +1428,19 @@ function ImpLoot.LootMaster:ProcessRoll(queueID, playerName, rollValue, minRoll,
         })
 
         table.sort(targetEntry.Rolls, function(a, b)
+
+            -- Main Spec rolls always outrank Off Spec rolls,
+            -- regardless of the actual number rolled -- an
+            -- 87 on an Off Spec roll (1-99) must never beat
+            -- a 45 on a Main Spec roll (1-100). Only compare
+            -- the raw roll value once both sides are the
+            -- same type.
+            if a.Type ~= b.Type then
+                return a.Type == "MS"
+            end
+
             return a.Roll > b.Roll
+
         end)
 
     end

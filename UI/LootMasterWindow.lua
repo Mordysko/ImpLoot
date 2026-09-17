@@ -826,7 +826,18 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     elseif entry.State == "Pending" then
 
-        if entry.Mode == "SoftReserve" then
+        local soleReserver = entry.Mode == "SoftReserve"
+            and ImpLoot.SoftReserve:GetSoleReserver(entry.ItemID)
+
+        if soleReserver then
+
+            -- Only one person could possibly win this --
+            -- no point running an announcement/roll that
+            -- has a single, already-known outcome. Skip
+            -- straight to a one-click Assign.
+            row.InfoText:SetText("Only reserved by " .. soleReserver .. " -- ready to assign.")
+
+        elseif entry.Mode == "SoftReserve" then
 
             row.InfoText:SetText(
                 "Reserved by:\n" .. ImpLoot.LootMaster:FormatReserverList(entry.ItemID)
@@ -863,10 +874,22 @@ function LootMasterWindow:PopulateRow(row, entry)
 
         end
 
-        row.ActionButton:SetText(entry.Mode == "SoftReserve" and "Announce" or "Open Roll")
+        if soleReserver then
+            row.ActionButton:SetText("Assign")
+        else
+            row.ActionButton:SetText(entry.Mode == "SoftReserve" and "Announce" or "Open Roll")
+        end
+
         row.ActionButton:Show()
 
         row.ActionButton:SetScript("OnClick", function()
+
+            if soleReserver then
+
+                ImpLoot.LootMaster:RequestAssign(entry.QueueID, soleReserver)
+                return
+
+            end
 
             local ok, msg = ImpLoot.LootMaster:AnnounceItem(entry.QueueID)
 

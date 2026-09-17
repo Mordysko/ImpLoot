@@ -8835,6 +8835,39 @@ local ICC = {
             },
         },
     },
+
+    ExtraDrops = {
+
+        {
+            Name = "Primordial Saronite",
+            IDs = { Normal = 49908, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Crafting reagent. Can drop from any boss, any mode.",
+            AvailableIn = {
+                ["10"] = true,
+                ["10 Heroic"] = true,
+                ["25"] = true,
+                ["25 Heroic"] = true,
+            },
+        },
+
+        {
+            Name = "Shadowfrost Shard",
+            IDs = { Normal = 50274, Heroic = nil },
+            Quality = 4,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Shadowmourne questline item. Can drop from any boss, 25 man only.",
+            AvailableIn = {
+                ["25"] = true,
+                ["25 Heroic"] = true,
+            },
+        },
+    },
 }
 
 ImpLoot.Database:RegisterRaid(ICC)

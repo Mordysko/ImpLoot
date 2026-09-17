@@ -6843,6 +6843,237 @@ local ULD = {
             Notes = "Can drop from any boss, 25 man only.",
             Difficulty = "25",
         },
+
+        -------------------------------------------------
+        -- Recipes
+        --
+        -- Profession recipes, same "can drop from any
+        -- boss, 10 or 25 man" rule as Runed Orb above.
+        -- Item names keep their in-game "Plans:"/
+        -- "Formula:"/"Pattern:" prefix, which is the only
+        -- profession-type indicator the addon's data
+        -- model carries for these.
+        -------------------------------------------------
+
+        {
+            Name = "Plans: Spiked Deathdealers",
+            IDs = { Normal = 45093, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Plans: Battlelord's Plate Boots",
+            IDs = { Normal = 45089, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Plans: Treads of Destiny",
+            IDs = { Normal = 45091, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Plans: Belt of the Titans",
+            IDs = { Normal = 45088, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Plans: Plate Girdle of Righteousness",
+            IDs = { Normal = 45090, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Plans: Indestructible Plate Girdle",
+            IDs = { Normal = 45092, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Formula: Enchant Weapon - Blade Ward",
+            IDs = { Normal = 46027, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Enchanting recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Formula: Enchant Weapon - Blood Draining",
+            IDs = { Normal = 46348, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Enchanting recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Boots of Wintry Endurance",
+            IDs = { Normal = 45101, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Footpads of Silence",
+            IDs = { Normal = 45099, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Lightning Grounded Boots",
+            IDs = { Normal = 45097, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Boots of Living Scale",
+            IDs = { Normal = 45095, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Belt of Arctic Life",
+            IDs = { Normal = 45100, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Death-warmed Belt",
+            IDs = { Normal = 45098, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Belt of Dragons",
+            IDs = { Normal = 45094, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Blue Belt of Chaos",
+            IDs = { Normal = 45096, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Savior's Slippers",
+            IDs = { Normal = 45105, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Spellslinger's Slippers",
+            IDs = { Normal = 45103, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Cord of the White Dawn",
+            IDs = { Normal = 45104, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
+
+        {
+            Name = "Pattern: Sash of Ancient Power",
+            IDs = { Normal = 45102, Heroic = nil },
+            Quality = 3,
+            Slot = nil,
+            Token = false,
+            Classes = nil,
+            Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            AvailableIn = { ["10"] = true, ["25"] = true },
+        },
     },
 }
 

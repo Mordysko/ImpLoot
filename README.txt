@@ -98,6 +98,21 @@ options category's own description, the About tab, and the root
 ImpLoot settings page (/il help) for the full slash command list.
 
 
+MINIMUM QUALITY FILTER
+------------------------
+
+Options -> Loot Master has a "Minimum quality to queue" dropdown.
+Anything already spoken for elsewhere in the addon -- on the
+Priority list in any mode, or Soft Reserved -- always gets queued
+regardless of this setting; it only has any say over an item that
+would otherwise just fall through to an unassigned Open Roll. Set
+it to, say, Epic, and an unclaimed green or blue item never shows
+up in the Loot Master window at all -- it's silently skipped rather
+than needing a manual pass or disenchant click. Defaults to "All
+qualities (no filter)", which behaves exactly as the addon always
+has.
+
+
 SOFT RESERVE IMPORT: PERSISTENCE, RELOAD PROMPT, AND MULTI-COPY DROPS
 -----------------------------------------------------------------------
 
@@ -114,9 +129,13 @@ A few reliability improvements to the CSV import:
   next natural one of those could still lose it -- reloading right
   away closes that window.
 
-- A small counter next to the Import CSV button shows how many SRs
-  are currently loaded, so it's obvious at a glance without opening
-  the dialog.
+- A counter next to the Import CSV button shows how many SRs are
+  currently loaded and the date of the last import in brackets, so
+  it's obvious at a glance without opening the dialog. The date
+  shown is when the CSV was imported in-game, not anything from the
+  file itself -- SoftRes.it's own Date column is a per-reservation
+  submission timestamp (when each player individually reserved),
+  not a single date for the whole raid.
 
 - When the same item drops twice from the same boss at once, the
   addon now correctly tracks both copies separately (previously the

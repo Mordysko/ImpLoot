@@ -33,9 +33,14 @@ function ImportDialog:Initialize(mainWindowFrame)
     -- (persisted across reloads -- see SoftReserve.lua)
     -- so it's obvious at a glance whether an import is
     -- actually in effect without opening the dialog.
+    -- Also shows the date of the last import in brackets
+    -- -- the SoftRes.it export's own Date column is a
+    -- per-reservation submission timestamp rather than a
+    -- single raid date, so there's nothing in the CSV
+    -- itself worth showing instead.
     -------------------------------------------------
 
-    local counterText = mainWindowFrame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    local counterText = mainWindowFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     counterText:SetPoint("RIGHT", openButton, "LEFT", -8, 0)
     self.CounterText = counterText
 
@@ -44,7 +49,16 @@ function ImportDialog:Initialize(mainWindowFrame)
         local count = ImpLoot.SoftReserve:GetTotalReserveCount()
 
         if count > 0 then
-            counterText:SetText(count .. " SR" .. (count == 1 and "" or "s") .. " loaded")
+
+            local text = count .. " SR" .. (count == 1 and "" or "s") .. " loaded"
+            local importDate = ImpLoot.SoftReserve:GetImportDate()
+
+            if importDate then
+                text = text .. " (" .. importDate .. ")"
+            end
+
+            counterText:SetText(text)
+
         else
             counterText:SetText("No SRs loaded")
         end

@@ -217,16 +217,85 @@ end
 
 local CHANNEL_CHOICES = { "Auto", "AutoNoWarning", "Say", "Party", "Raid", "RaidWarning", "Guild", "Officer" }
 
-local function CreateChoiceDropdown(parent, label, y, frameName, choices, getValue, setValue)
+-------------------------------------------------
+-- Minimum Quality Choices
+--
+-- Maps a friendly label to the underlying item quality
+-- number (standard WoW quality scale) for the Minimum
+-- Quality dropdown. Kept in display order, lowest first.
+-------------------------------------------------
+
+local QUALITY_CHOICE_LABELS = {
+    "All qualities (no filter)",
+    "Common (white)",
+    "Uncommon (green)",
+    "Rare (blue)",
+    "Epic (purple)",
+    "Legendary (orange)",
+}
+
+local QUALITY_LABEL_TO_VALUE = {
+    ["All qualities (no filter)"] = 0,
+    ["Common (white)"] = 1,
+    ["Uncommon (green)"] = 2,
+    ["Rare (blue)"] = 3,
+    ["Epic (purple)"] = 4,
+    ["Legendary (orange)"] = 5,
+}
+
+local QUALITY_VALUE_TO_LABEL = {
+    [0] = "All qualities (no filter)",
+    [1] = "Common (white)",
+    [2] = "Uncommon (green)",
+    [3] = "Rare (blue)",
+    [4] = "Epic (purple)",
+    [5] = "Legendary (orange)",
+}
+
+-- Matches WoW's own item quality colors, so the dropdown
+-- reads the same way item names do everywhere else in
+-- the game. "All qualities" is left uncolored (defaults
+-- to the dropdown's normal text color) since it isn't a
+-- quality tier itself.
+local QUALITY_CHOICE_COLORS = {
+    ["Common (white)"] = "ffffff",
+    ["Uncommon (green)"] = "1eff00",
+    ["Rare (blue)"] = "0070dd",
+    ["Epic (purple)"] = "a335ee",
+    ["Legendary (orange)"] = "ff8000",
+}
+
+local function CreateChoiceDropdown(parent, label, y, frameName, choices, getValue, setValue, stacked, choiceColors, width)
 
     local text = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
     text:SetPoint("TOPLEFT", 16, y)
     text:SetText(label)
 
     local dropdown = CreateFrame("Frame", frameName, parent, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", text, "RIGHT", 0, -2)
 
-    UIDropDownMenu_SetWidth(dropdown, 100)
+    if stacked then
+        dropdown:SetPoint("TOPLEFT", text, "BOTTOMLEFT", -16, -4)
+    else
+        dropdown:SetPoint("LEFT", text, "RIGHT", 0, -2)
+    end
+
+    UIDropDownMenu_SetWidth(dropdown, width or 100)
+
+    -- Wraps a choice's label in its quality color, if one
+    -- was given for it, so both the open menu and the
+    -- button's own selected-value text stay consistent
+    -- with each other.
+    local function ColoredLabel(choice)
+
+        local hex = choiceColors and choiceColors[choice]
+
+        if hex then
+            return "|cff" .. hex .. choice .. "|r"
+        end
+
+        return choice
+
+    end
 
     UIDropDownMenu_Initialize(dropdown, function(self, level)
 
@@ -234,12 +303,12 @@ local function CreateChoiceDropdown(parent, label, y, frameName, choices, getVal
 
             local info = UIDropDownMenu_CreateInfo()
 
-            info.text = choice
+            info.text = ColoredLabel(choice)
             info.checked = (getValue() == choice)
 
             info.func = function()
                 setValue(choice)
-                UIDropDownMenu_SetText(dropdown, choice)
+                UIDropDownMenu_SetText(dropdown, ColoredLabel(choice))
             end
 
             UIDropDownMenu_AddButton(info, level)
@@ -253,12 +322,14 @@ local function CreateChoiceDropdown(parent, label, y, frameName, choices, getVal
     dropdown.RefreshFn = function()
 
         if UIDropDownMenu_SetText then
-            UIDropDownMenu_SetText(dropdown, getValue())
+            UIDropDownMenu_SetText(dropdown, ColoredLabel(getValue()))
         end
 
     end
 
-    return dropdown, y - ROW_HEIGHT - 6
+    local nextY = stacked and (y - ROW_HEIGHT - 34) or (y - ROW_HEIGHT - 6)
+
+    return dropdown, nextY
 
 end
 
@@ -430,6 +501,22 @@ function OptionsPanel:BuildLootMasterPanel()
     widget, y = CreateCheckboxRow(panel, "Auto-clear the queue when the next boss is looted", y,
         function() return Settings.AutoClearOnNewBoss end,
         function(v) Settings.AutoClearOnNewBoss = v end)
+    table.insert(panel.Widgets, widget)
+
+    y = y - 10
+
+    widget, y = CreateChoiceDropdown(
+        panel,
+        "Minimum quality to queue (unassigned items only):",
+        y,
+        "ImpLootMinimumQualityDropdown",
+        QUALITY_CHOICE_LABELS,
+        function() return QUALITY_VALUE_TO_LABEL[Settings.MinimumQuality or 0] end,
+        function(label) Settings.MinimumQuality = QUALITY_LABEL_TO_VALUE[label] end,
+        true,
+        QUALITY_CHOICE_COLORS,
+        170
+    )
     table.insert(panel.Widgets, widget)
 
     self.LootMasterPanel = panel

@@ -194,6 +194,7 @@ end
 function ImpLoot.SoftReserve:Import(csv)
 
     self.State.Reserves = {}
+    self.State.ImportDate = date("%Y-%m-%d")
 
     local firstLine = true
     local reserveCount = 0
@@ -286,6 +287,21 @@ function ImpLoot.SoftReserve:GetTotalReserveCount()
 
     return count
 
+end
+
+-------------------------------------------------
+-- Get Import Date
+--
+-- The date the CSV was last imported (captured at
+-- import time -- see Import above), for display next to
+-- the SR counter. The SoftRes.it export's own Date
+-- column is a per-reservation submission timestamp, not
+-- a single raid-wide date, so there's nothing in the CSV
+-- itself to show instead.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetImportDate()
+    return self.State.ImportDate
 end
 
 -------------------------------------------------

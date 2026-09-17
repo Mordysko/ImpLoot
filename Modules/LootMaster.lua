@@ -37,6 +37,13 @@ ImpLoot.LootMaster.Defaults = {
     AutoAssignToRollWinner = true,
     AutoClearOnNewBoss = false,
 
+    -- 0 (Poor) means no filtering at all -- every item
+    -- that drops is queued, exactly like before this
+    -- setting existed. Only items that would otherwise
+    -- fall through to unassigned Open Roll are affected;
+    -- see ShouldQueueItem below.
+    MinimumQuality = 0,
+
 }
 
 -------------------------------------------------
@@ -347,6 +354,46 @@ function ImpLoot.LootMaster:DetermineMode(itemID)
 end
 
 -------------------------------------------------
+-- Should Queue Item
+--
+-- The Minimum Quality setting only ever applies to an
+-- item that isn't spoken for anywhere else in the addon.
+-- Anything already on the priority list (Loot Council,
+-- any mode) or Soft Reserved takes precedence over the
+-- quality filter completely and always gets queued --
+-- the filter only has a say for whatever's left, which
+-- would otherwise just fall through to an unassigned
+-- Open Roll. Below the configured minimum, those get
+-- quietly skipped instead of ever reaching the queue;
+-- at or above it, they're queued and handled exactly as
+-- they always have been.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:ShouldQueueItem(itemID, slotQuality)
+
+    if self:DetermineMode(itemID) ~= "OpenRoll" then
+        return true
+    end
+
+    local minimum = self.Settings.MinimumQuality or 0
+
+    if minimum <= 0 then
+        return true
+    end
+
+    local quality = slotQuality or self:GetItemQuality(itemID)
+
+    if not quality then
+        -- Unknown quality -- never silently hide an item
+        -- we can't actually confirm falls below the bar.
+        return true
+    end
+
+    return quality >= minimum
+
+end
+
+-------------------------------------------------
 -- On Loot Opened
 --
 -- Scans every item slot in the loot window that just
@@ -422,8 +469,14 @@ function ImpLoot.LootMaster:OnLootOpened()
             local itemID = self:ExtractItemID(link)
 
             if itemID then
-                local entry = self:AddToQueue(itemID, link, bossName, corpseGUID, slot, matchedThisPass)
-                matchedThisPass[entry.QueueID] = true
+
+                local _, _, _, _, slotQuality = GetLootSlotInfo(slot)
+
+                if self:ShouldQueueItem(itemID, slotQuality) then
+                    local entry = self:AddToQueue(itemID, link, bossName, corpseGUID, slot, matchedThisPass)
+                    matchedThisPass[entry.QueueID] = true
+                end
+
             end
 
         end

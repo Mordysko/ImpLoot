@@ -6824,6 +6824,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Crafting Reagent",
             AvailableIn = {
                 ["10"] = true,
                 ["25"] = true,
@@ -6841,6 +6842,7 @@ local ULD = {
             Token = false,
             Classes = { "Paladin", "Priest", "Shaman", "Druid" },
             Notes = "Can drop from any boss, 25 man only.",
+            BonusLootGroup = "Quest Item",
             Difficulty = "25",
         },
 
@@ -6863,6 +6865,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6874,6 +6877,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6885,6 +6889,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6896,6 +6901,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6907,6 +6913,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6918,6 +6925,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Blacksmithing",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6929,6 +6937,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Enchanting recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Enchanting",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6940,6 +6949,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Enchanting recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Enchanting",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6951,6 +6961,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6962,6 +6973,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6973,6 +6985,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6984,6 +6997,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -6995,6 +7009,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7006,6 +7021,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7017,6 +7033,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7028,6 +7045,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Leatherworking",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7039,6 +7057,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Tailoring",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7050,6 +7069,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Tailoring",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7061,6 +7081,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Tailoring",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -7072,6 +7093,7 @@ local ULD = {
             Token = false,
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Recipes - Tailoring",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
     },

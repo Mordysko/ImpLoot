@@ -4540,6 +4540,7 @@ local TOTC = {
             Token = false,
             Classes = nil,
             Notes = "Can drop from any boss, 10 or 25 man.",
+            BonusLootGroup = "Crafting Reagent",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4552,6 +4553,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4564,6 +4566,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4576,6 +4579,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4588,6 +4592,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4600,6 +4605,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4612,6 +4618,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4624,6 +4631,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4636,6 +4644,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4648,6 +4657,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4660,6 +4670,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4672,6 +4683,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Blacksmithing (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4684,6 +4696,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Blacksmithing recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Blacksmithing (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4696,6 +4709,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4708,6 +4722,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4720,6 +4735,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4732,6 +4748,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4744,6 +4761,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4756,6 +4774,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4768,6 +4787,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4780,6 +4800,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4792,6 +4813,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4804,6 +4826,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4816,6 +4839,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4828,6 +4852,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4840,6 +4865,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4852,6 +4878,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4864,6 +4891,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Leatherworking (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4876,6 +4904,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Leatherworking recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Leatherworking (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4888,6 +4917,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Tailoring (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4900,6 +4930,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Tailoring (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4912,6 +4943,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Tailoring (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4924,6 +4956,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Tailoring (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4936,6 +4969,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Tailoring (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4948,6 +4982,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Tailoring (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4960,6 +4995,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Alliance",
+            BonusLootGroup = "Recipes - Tailoring (Alliance)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
 
@@ -4972,6 +5008,7 @@ local TOTC = {
             Classes = nil,
             Notes = "Tailoring recipe. Can drop from any boss, 10 or 25 man.",
             Faction = "Horde",
+            BonusLootGroup = "Recipes - Tailoring (Horde)",
             AvailableIn = { ["10"] = true, ["25"] = true },
         },
     },

@@ -44,6 +44,15 @@ ImpLoot.LootMaster.Defaults = {
     -- see ShouldQueueItem below.
     MinimumQuality = 0,
 
+    -- When true, /il <item> skips landing in the queue
+    -- for a manual Announce click and immediately starts
+    -- its roll/announcement instead -- whatever mode the
+    -- item actually resolves to (SoftReserve, LootCouncil,
+    -- or Open Roll), same as clicking Announce yourself
+    -- would. Default false preserves the original /il
+    -- behaviour of just adding it to the queue.
+    ManualItemAutoRoll = false,
+
 }
 
 -------------------------------------------------
@@ -172,6 +181,35 @@ function ImpLoot.LootMaster:RequestAssign(queueID, winnerName)
     end
 
     self:Assign(queueID, winnerName)
+
+end
+
+-------------------------------------------------
+-- Assign Sole Reserver
+--
+-- The one-click path for a SoftReserve item nobody else
+-- could possibly win (see SoftReserve:GetSoleReserver) --
+-- announces the direct assignment to chat first, since
+-- skipping the roll shouldn't also mean skipping letting
+-- the raid know who got it and why, then goes through
+-- the same RequestAssign path (legendary confirmation
+-- included) as every other assignment.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:AssignSoleReserver(queueID, winnerName)
+
+    local entry = self:GetEntry(queueID)
+
+    if not entry then
+        return
+    end
+
+    ImpLoot.Announcements:Announce("SoleReserverAssigned", {
+        item = entry.ItemLink,
+        winner = winnerName,
+    })
+
+    self:RequestAssign(queueID, winnerName)
 
 end
 
@@ -616,7 +654,23 @@ function ImpLoot.LootMaster:AddManualItem(text)
         bossName = UnitName("target")
     end
 
-    self:AddToQueue(itemID, itemLink, bossName, nil, nil)
+    local entry = self:AddToQueue(itemID, itemLink, bossName, nil, nil)
+
+    if self.Settings.ManualItemAutoRoll then
+
+        local ok, message = self:AnnounceItem(entry.QueueID)
+
+        if ok then
+            return true, "Started the roll for " .. itemLink .. "."
+        end
+
+        -- Announcing failed for some reason (e.g. already
+        -- rolling/resolved) -- the item's still safely in
+        -- the queue either way, so fall through to the
+        -- normal "added to the queue" message below rather
+        -- than leaving the person with no feedback at all.
+
+    end
 
     return true, "Added " .. itemLink .. " to the loot queue."
 

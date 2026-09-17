@@ -29,6 +29,12 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    SoleReserverAssigned = {
+        Enabled = true,
+        Text = "{item} was only reserved by {winner} -- assigned directly.",
+        Channel = "Auto",
+    },
+
     WinnerAnnounced = {
         Enabled = true,
         Text = "Congratulations! {winner} wins with a roll of {roll}. ({range})",

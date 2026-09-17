@@ -886,7 +886,7 @@ function LootMasterWindow:PopulateRow(row, entry)
 
             if soleReserver then
 
-                ImpLoot.LootMaster:RequestAssign(entry.QueueID, soleReserver)
+                ImpLoot.LootMaster:AssignSoleReserver(entry.QueueID, soleReserver)
                 return
 
             end

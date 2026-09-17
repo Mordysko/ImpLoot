@@ -98,6 +98,47 @@ options category's own description, the About tab, and the root
 ImpLoot settings page (/il help) for the full slash command list.
 
 
+SOFT RESERVE: SOLE RESERVER SHORTCUT
+---------------------------------------
+
+When a Soft Reserved item's remaining reserve slots all belong to
+the same one person (whether they hold one slot or several via a
+Plus reserve), there's no real contest to run -- so instead of
+Announce/roll, the queue row shows a one-click Assign straight to
+that person. This still announces to chat first (so the raid knows
+who got it and why, even though there's no roll to watch), then
+assigns exactly like any other winner would be, legendary
+confirmation included.
+
+The moment a second person reserves the same item, this reverts to
+the normal Announce/roll flow automatically.
+
+
+MANUAL ITEMS: /il <item>
+--------------------------
+
+Typing /il followed by an item link or name (shift-click the item
+to paste its link, which is far more reliable than typing the
+name) adds it to the Loot Master queue by hand -- useful for
+anything that didn't come through the normal loot window (a trade,
+a BoE someone wants rolled on, etc). By default it's added the same
+way any other item is, waiting there for you to click Announce when
+ready.
+
+Options -> Loot Master has a checkbox, "/il <item> immediately
+starts its roll/announcement", for skipping that manual click: with
+it on, /il goes straight to whatever announcement the item's actual
+mode calls for (Soft Reserve, Loot Priority, or an open roll) the
+moment it's added, the same as clicking Announce yourself would.
+Off by default, so /il behaves exactly as it always has unless you
+turn this on.
+
+A Soft Reserve item that turns out to have only one person on it
+(see below) still resolves as a direct assignment either way --
+this setting only changes whether the announcement/roll step for
+everything else starts immediately or waits for you.
+
+
 MINIMUM QUALITY FILTER
 ------------------------
 

@@ -519,6 +519,13 @@ function OptionsPanel:BuildLootMasterPanel()
     )
     table.insert(panel.Widgets, widget)
 
+    y = y - 10
+
+    widget, y = CreateCheckboxRow(panel, "/il <item> immediately starts its roll/announcement", y,
+        function() return Settings.ManualItemAutoRoll end,
+        function(v) Settings.ManualItemAutoRoll = v end)
+    table.insert(panel.Widgets, widget)
+
     self.LootMasterPanel = panel
 
     return panel
@@ -562,6 +569,7 @@ end
 local ANNOUNCEMENT_LABELS = {
     OpenRollAnnounced = "Open Roll Announced",
     SoftReserveAnnounced = "Soft Reserve Roll Announced",
+    SoleReserverAssigned = "Sole Reserver Assigned",
     WinnerAnnounced = "Winner Announced",
     EligibleClasses = "Eligible Classes",
     NoRollsDisenchant = "No Rolls (Disenchanter)",
@@ -573,9 +581,9 @@ local ANNOUNCEMENT_LABELS = {
 }
 
 local ANNOUNCEMENT_ORDER = {
-    "OpenRollAnnounced", "SoftReserveAnnounced", "WinnerAnnounced", "EligibleClasses",
-    "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled", "FunnelAssigned",
-    "PreselectedAnnounced",
+    "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "WinnerAnnounced",
+    "EligibleClasses", "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled",
+    "FunnelAssigned", "PreselectedAnnounced",
 }
 
 function OptionsPanel:BuildAnnouncementsPanel()

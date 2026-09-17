@@ -1543,6 +1543,7 @@ end
 function LootPanel:PopulateExtraDrops()
 
     self.Buttons = {}
+    self.PendingScrollTargetY = nil
     self:Clear()
     self:ResetLootHeaders()
 
@@ -1555,52 +1556,130 @@ function LootPanel:PopulateExtraDrops()
     local selectedDifficulty =
         ImpLoot.UI.BossPanel:GetSelectedDifficulty()
 
+    local selectedFaction =
+        ImpLoot.UI.BossPanel:GetSelectedFaction()
+
     local Layout = ImpLoot.UI.Layout
 
-    local displayIndex = 0
+    -------------------------------------------------
+    -- Split Into The Base Bucket + Any Named Groups
+    -- (Crafting Reagent, Quest Item, Recipes by
+    -- profession -- and, where a recipe drops as a
+    -- different item per faction, further split by
+    -- Horde/Alliance) -- same grouping mechanism as
+    -- PopulateForBoss's BonusLootGroup, in the order
+    -- each group first appears.
+    -------------------------------------------------
+
+    local baseBucket = { Label = nil, Items = {} }
+    local buckets = { baseBucket }
+    local bucketByLabel = {}
+
+    local totalShown = 0
 
     for _, item in ipairs(raid.ExtraDrops) do
 
         local availableIn = item.AvailableIn
 
         if availableIn
-        and availableIn[selectedDifficulty] then
+        and availableIn[selectedDifficulty]
+        and (not item.Faction or item.Faction == selectedFaction) then
 
-            displayIndex = displayIndex + 1
+            totalShown = totalShown + 1
 
-            local column =
-                (displayIndex - 1) % Layout.GridColumns
+            local label = item.BonusLootGroup
+            local bucket = baseBucket
 
-            local row =
-                math.floor(
-                    (displayIndex - 1) /
-                    Layout.GridColumns
-                )
+            if label then
 
-            local x = column * (
-                Layout.GridButtonWidth +
-                Layout.GridColumnGap
-            )
+                bucket = bucketByLabel[label]
 
-            local y = row * (
-                46 +
-                Layout.GridRowGap
-            )
+                if not bucket then
+
+                    bucket = { Label = label, Items = {} }
+                    bucketByLabel[label] = bucket
+                    table.insert(buckets, bucket)
+
+                end
+
+            end
+
+            table.insert(bucket.Items, item)
+
+        end
+
+    end
+
+    -------------------------------------------------
+    -- Render A Grid Of Items, Starting At Row Y
+    -------------------------------------------------
+
+    local function renderGrid(items, startY)
+
+        for i, item in ipairs(items) do
+
+            local column = (i - 1) % Layout.GridColumns
+            local row = math.floor((i - 1) / Layout.GridColumns)
+
+            local x = column * (Layout.GridButtonWidth + Layout.GridColumnGap)
+            local y = startY + row * (46 + Layout.GridRowGap)
 
             local button = self:AcquireLootButton()
             self:PopulateLootButton(button, item, x, y)
 
-            table.insert(
-                self.Buttons,
-                button
-            )
+            table.insert(self.Buttons, button)
 
             if ImpLoot.SelectedLoot == item then
                 self:HighlightButton(button)
+                self.PendingScrollTargetY = y
             end
 
         end
 
+        local rowsUsed = math.ceil(#items / Layout.GridColumns)
+
+        return startY + rowsUsed * (46 + Layout.GridRowGap)
+
+    end
+
+    -------------------------------------------------
+    -- Render Every Bucket In Order
+    -------------------------------------------------
+
+    local y = 0
+    local renderedAnything = false
+
+    for _, bucket in ipairs(buckets) do
+
+        if bucket.Label then
+
+            if renderedAnything then
+                y = y + 6
+            end
+
+            local header = self:AcquireLootHeader()
+
+            header:ClearAllPoints()
+            header:SetPoint("TOPLEFT", self.ScrollChild, "TOPLEFT", 4, -y)
+            header:SetFontObject(GameFontNormal)
+            header:SetText(bucket.Label)
+            header:Show()
+
+            y = y + 20
+
+        end
+
+        if #bucket.Items > 0 then
+            y = renderGrid(bucket.Items, y)
+            renderedAnything = true
+        end
+
+    end
+
+    if totalShown > 0 then
+        self:UpdateScrollChildHeight(y)
+    else
+        self:UpdateScrollChildHeight(1)
     end
 
 end

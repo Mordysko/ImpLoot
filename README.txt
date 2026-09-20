@@ -98,6 +98,23 @@ options category's own description, the About tab, and the root
 ImpLoot settings page (/il help) for the full slash command list.
 
 
+ASSIGNING TO SOMEONE NOT PRESENT
+-----------------------------------
+
+Assigning an item -- through any mode, including the Sole Reserver
+shortcut above -- only hands it out through the game's own Master
+Loot system if the winner is actually a valid recipient for that
+loot window right now (in the raid, in range of the corpse). If
+they're not -- offline, not on that raid night, out of range,
+whatever the reason -- the addon doesn't error or get stuck. It
+still records them as the winner and marks the item resolved, but
+flags it "(trade it)" next to their name in the queue, and the chat
+message reads "Recorded -- trade this item to <name>" instead of
+confirming an actual hand-off. That's your cue that this one needs
+manually trading (or mailing) to them yourself once they're around
+to receive it -- the addon can't do that part for you.
+
+
 SOFT RESERVE: SOLE RESERVER SHORTCUT
 ---------------------------------------
 

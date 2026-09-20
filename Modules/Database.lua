@@ -25,9 +25,10 @@ function ImpLoot.Database:RegisterRaid(raid)
     -- Link Raid, Boss and Loot
     -------------------------------------------------
 
-    for _, boss in ipairs(raid.Bosses) do
+    for i, boss in ipairs(raid.Bosses) do
 
         boss.Raid = raid
+        boss.Index = i
 
         for _, item in ipairs(boss.Loot) do
 

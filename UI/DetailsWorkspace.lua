@@ -1579,7 +1579,18 @@ function DetailsWorkspace:RefreshRaidPlanner()
     end
 
     -------------------------------------------------
-    -- Group By Raid -> Difficulty
+    -- Group By Raid -> Difficulty -> Boss
+    --
+    -- Bosses need to appear in the same order they're
+    -- actually fought in that raid, with every item for
+    -- the same boss grouped together rather than
+    -- interleaved in whatever order they were added to
+    -- the wishlist. Boss.Index (set once, in
+    -- Database:RegisterRaid, from each boss's position in
+    -- raid.Bosses) is the source of truth for that order.
+    -- Trash and Extra Drops aren't real bosses and have no
+    -- Index, so they're pinned after every real boss,
+    -- Trash then Extra Drops, in that fixed order.
     -------------------------------------------------
 
     local raidGroups = {}
@@ -1591,20 +1602,41 @@ function DetailsWorkspace:RefreshRaidPlanner()
         if item and item.Raid then
 
             local raidName = item.Raid.Name
-            local bossName = item.Boss and item.Boss.Name
-                or (item.IsExtraDrops and "Extra Drops")
-                or "Trash"
+
+            local bossName, bossIndex
+
+            if item.Boss then
+                bossName = item.Boss.Name
+                bossIndex = item.Boss.Index or 999997
+            elseif item.IsExtraDrops then
+                bossName = "Extra Drops"
+                bossIndex = 999999
+            else
+                bossName = "Trash"
+                bossIndex = 999998
+            end
 
             raidGroups[raidName] = raidGroups[raidName] or {}
 
             for difficulty in pairs(item.AvailableIn or {}) do
 
-                raidGroups[raidName][difficulty] = raidGroups[raidName][difficulty] or {}
+                raidGroups[raidName][difficulty] = raidGroups[raidName][difficulty] or {
+                    BossesByName = {},
+                    BossOrder = {},
+                }
 
-                table.insert(raidGroups[raidName][difficulty], {
-                    BossName = bossName,
-                    ItemName = item.Name,
-                })
+                local bucket = raidGroups[raidName][difficulty]
+                local bossGroup = bucket.BossesByName[bossName]
+
+                if not bossGroup then
+
+                    bossGroup = { BossName = bossName, BossIndex = bossIndex, Items = {} }
+                    bucket.BossesByName[bossName] = bossGroup
+                    table.insert(bucket.BossOrder, bossGroup)
+
+                end
+
+                table.insert(bossGroup.Items, item.Name)
 
             end
 
@@ -1640,9 +1672,17 @@ function DetailsWorkspace:RefreshRaidPlanner()
 
                 table.insert(lines, "  |cffcccccc" .. label .. "|r")
 
-                for _, entry in ipairs(difficulties[difficulty]) do
+                local bossOrder = difficulties[difficulty].BossOrder
 
-                    table.insert(lines, "    " .. entry.BossName .. " -- " .. entry.ItemName)
+                table.sort(bossOrder, function(a, b)
+                    return a.BossIndex < b.BossIndex
+                end)
+
+                for _, bossGroup in ipairs(bossOrder) do
+
+                    for _, itemName in ipairs(bossGroup.Items) do
+                        table.insert(lines, "    " .. bossGroup.BossName .. " -- " .. itemName)
+                    end
 
                 end
 

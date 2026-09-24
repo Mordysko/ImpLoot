@@ -1292,7 +1292,7 @@ end
 -- for the loot master to Assign manually.
 -------------------------------------------------
 
-function ImpLoot.LootMaster:FinalizeRoll(queueID)
+function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
 
     local entry = self:GetEntry(queueID)
 
@@ -1332,7 +1332,26 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID)
 
     end
 
-    if not self.Settings.AutoFinalizeOnTimeout then
+    -------------------------------------------------
+    -- Manually Clicking Stop Always Resolves The Roll
+    --
+    -- A deliberate, active decision to end the roll
+    -- right now -- unlike the timer running out on its
+    -- own, assigning to whoever's currently winning
+    -- doesn't wait on the Auto Finalize/Auto Assign
+    -- settings (those two only describe unattended
+    -- behaviour for a natural timeout). If nobody
+    -- rolled at all, it still falls through to the
+    -- disenchanter check below, same as an unattended
+    -- timeout would.
+    -------------------------------------------------
+
+    if isManualStop and topRoll then
+        self:RequestAssign(queueID, topRoll.Player)
+        return
+    end
+
+    if not isManualStop and not self.Settings.AutoFinalizeOnTimeout then
         return
     end
 
@@ -1489,6 +1508,21 @@ function ImpLoot.LootMaster:ProcessRoll(queueID, playerName, rollValue, minRoll,
 
     if rollValue == 0 then
         return false, "Rolls of 0 don't count."
+    end
+
+    -------------------------------------------------
+    -- Only The Two Standard Ranges Count
+    --
+    -- /roll 1-100 (Main Spec) or /roll 1-99 (the
+    -- addon's own Off Spec Roll button, and the
+    -- standard convention for it) -- anything else
+    -- (a typo'd range, a custom /roll someone made up)
+    -- is silently ignored rather than being treated as
+    -- a legitimate participant in the standings.
+    -------------------------------------------------
+
+    if maxRoll ~= 100 and maxRoll ~= 99 then
+        return false, "Only /roll 1-100 or 1-99 count -- that roll was ignored."
     end
 
     local maxAllowed = self:GetMaxRollsForPlayer(entry, playerName)

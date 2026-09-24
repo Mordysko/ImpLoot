@@ -911,7 +911,7 @@ function LootMasterWindow:PopulateRow(row, entry)
         row.ActionButton:Show()
 
         row.ActionButton:SetScript("OnClick", function()
-            ImpLoot.LootMaster:FinalizeRoll(entry.QueueID)
+            ImpLoot.LootMaster:FinalizeRoll(entry.QueueID, true)
         end)
 
         if entry.RollEndTime then

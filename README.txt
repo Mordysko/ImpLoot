@@ -80,11 +80,21 @@ A TYPICAL RAID NIGHT, START TO FINISH
 4. Let the timer run out, or click "Stop" to end it early --
    whichever comes first. The winner is announced the moment the
    roll ends, whether or not the item gets assigned right away.
+   Clicking Stop yourself always assigns the item straight to
+   whoever's currently winning (if anyone's rolled), regardless of
+   your Auto Assign setting -- that setting only ever governs what
+   happens when the timer runs out on its own, not a moment where
+   you've actively stepped in to end the roll yourself.
 
-5. If Auto Assign is on, the item goes to the winner
-   automatically. If not (or if nobody rolled), it sits in
-   "awaiting assignment" for you to hand out manually --
-   including to a disenchanter, if you've set one up.
+5. If the timer runs out on its own and Auto Assign is on, the
+   item goes to the winner automatically. If the timer runs out
+   with Auto Assign off, or nobody rolled at all, it sits in
+   "awaiting assignment" for you to hand out manually -- including
+   to a disenchanter, if you've set one up and nobody rolled.
+
+   Only /roll 1-100 or /roll 1-99 ever count toward the standings
+   -- any other range (a typo, or someone rolling something custom)
+   is silently ignored rather than treated as a real participant.
 
 6. Loot Council items skip the roll/timer step entirely --
    they're resolved by vote or by a pre-built priority list

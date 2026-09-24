@@ -191,6 +191,18 @@ A few reliability improvements to the CSV import:
   It previously did not, regardless of how cleanly you reloaded --
   a genuine bug, not something specific to crashing.
 
+- Re-importing a CSV now correctly refreshes who's shown as having
+  reserved each item. Previously, an item's reserver list was only
+  ever computed once and then cached from then on -- so if that
+  item had been seen in an earlier import (a previous raid night,
+  say), re-importing a fresh CSV wouldn't update it: it would keep
+  showing the old reserver names, including people who'd reserved
+  it before but not this time, while missing anyone who'd reserved
+  it since. A genuine bug, now fixed -- every re-import rebuilds
+  each item's reserver list from that import's actual data. Each
+  raid night's own win history is untouched by this and still
+  carries through a re-import, same as before.
+
 - Right after a successful import, the addon prompts you to reload
   immediately. WoW only ever writes SavedVariables to disk during
   an actual logout or reload, so a crash between an import and your

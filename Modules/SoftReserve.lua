@@ -196,6 +196,26 @@ function ImpLoot.SoftReserve:Import(csv)
     self.State.Reserves = {}
     self.State.ImportDate = date("%Y-%m-%d")
 
+    -------------------------------------------------
+    -- Remaining Slots Must Be Recomputed, Not Reused
+    --
+    -- GetRemainingSlots only ever builds a given item's
+    -- entry once and caches it from then on (so it can
+    -- be mutated in place as people win items during the
+    -- raid) -- which meant an item seen in an earlier
+    -- import kept showing that OLD reserver list even
+    -- after a completely fresh CSV came in, since nothing
+    -- ever told it to throw the cached version away.
+    -- Clearing it here forces every item to rebuild from
+    -- this import's actual Reserves the next time it's
+    -- asked for. WonLog is deliberately left alone --
+    -- that's this raid night's win history, which a
+    -- re-import (to pick up a late reservation, say)
+    -- shouldn't erase.
+    -------------------------------------------------
+
+    self.State.Remaining = {}
+
     local firstLine = true
     local reserveCount = 0
 

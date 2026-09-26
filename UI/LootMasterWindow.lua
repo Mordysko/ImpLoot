@@ -826,10 +826,33 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     elseif entry.State == "Pending" then
 
-        local soleReserver = entry.Mode == "SoftReserve"
+        local multiCopyDecision = entry.Mode == "SoftReserve"
+            and ImpLoot.LootMaster:GetMultiCopyDecision(entry)
+
+        local soleReserver = (not multiCopyDecision) and entry.Mode == "SoftReserve"
             and ImpLoot.SoftReserve:GetSoleReserver(entry.ItemID)
 
-        if soleReserver then
+        if multiCopyDecision and multiCopyDecision.Type == "DirectAssign" then
+
+            -- As many (or fewer) distinct reservers as
+            -- there are copies of this item in the loot
+            -- window right now -- no roll needed, one
+            -- copy per reserver. Same shortcut as Sole
+            -- Reserver, just generalized past 1-vs-1 (see
+            -- GetMultiCopyDecision).
+            row.InfoText:SetText(
+                "Exactly matches its reservers -- ready to assign to:\n"
+                .. ImpLoot.LootMaster:JoinWithAmpersand(multiCopyDecision.Reservers)
+            )
+
+        elseif multiCopyDecision and multiCopyDecision.Type == "GroupRoll" then
+
+            row.InfoText:SetText(
+                "Reserved by (" .. #multiCopyDecision.Group .. " copies):\n"
+                .. ImpLoot.LootMaster:FormatReserverList(entry.ItemID)
+            )
+
+        elseif soleReserver then
 
             -- Only one person could possibly win this --
             -- no point running an announcement/roll that
@@ -874,7 +897,7 @@ function LootMasterWindow:PopulateRow(row, entry)
 
         end
 
-        if soleReserver then
+        if (multiCopyDecision and multiCopyDecision.Type == "DirectAssign") or soleReserver then
             row.ActionButton:SetText("Assign")
         else
             row.ActionButton:SetText(entry.Mode == "SoftReserve" and "Announce" or "Open Roll")
@@ -883,6 +906,20 @@ function LootMasterWindow:PopulateRow(row, entry)
         row.ActionButton:Show()
 
         row.ActionButton:SetScript("OnClick", function()
+
+            if multiCopyDecision and multiCopyDecision.Type == "DirectAssign" then
+
+                ImpLoot.LootMaster:ExecuteDirectAssign(multiCopyDecision)
+                return
+
+            end
+
+            if multiCopyDecision and multiCopyDecision.Type == "GroupRoll" then
+
+                ImpLoot.LootMaster:ExecuteGroupRoll(multiCopyDecision)
+                return
+
+            end
 
             if soleReserver then
 

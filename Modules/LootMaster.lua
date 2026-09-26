@@ -1634,6 +1634,173 @@ function ImpLoot.LootMaster:GetSiblingEntries(entry)
 end
 
 -------------------------------------------------
+-- Get Copy Group
+--
+-- Every still-Pending entry for the exact same item
+-- from the exact same corpse, itself included -- the
+-- full set of copies a Soft Reserve multi-copy
+-- decision (see GetMultiCopyDecision) needs to reason
+-- about together. Once a copy leaves Pending (it's
+-- rolling, or already resolved), it's no longer part
+-- of a decision still being made about the others.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetCopyGroup(entry)
+
+    local group = {}
+
+    for _, other in ipairs(self.Queue) do
+
+        if other.ItemID == entry.ItemID
+        and other.CorpseGUID == entry.CorpseGUID
+        and other.State == "Pending" then
+
+            table.insert(group, other)
+
+        end
+
+    end
+
+    return group
+
+end
+
+-------------------------------------------------
+-- Get Multi-Copy Decision
+--
+-- For a Soft Reserve item with more than one Pending
+-- copy from the same corpse, works out which of two
+-- outcomes applies by comparing distinct reservers to
+-- the number of copies -- reusing the exact same
+-- comparison the Sole Reserver shortcut already makes,
+-- just no longer limited to 1-vs-1:
+--
+--   reservers <= copies -> "DirectAssign": no roll
+--   needed at all, one copy per reserver. Any leftover
+--   copies (more copies than reservers) fall back to
+--   plain Open Roll, same as an unreserved item.
+--
+--   reservers > copies -> "GroupRoll": every copy in
+--   the group needs to be rolled for together, as one
+--   combined event rather than separate per-copy
+--   announcements.
+--
+-- Returns nil when there's nothing special to decide:
+-- not Soft Reserve mode, only one copy, no reservers
+-- at all, or AllowMultipleReserves is on (that setting
+-- means each copy is deliberately handled on its own --
+-- see SoftReserve.lua).
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetMultiCopyDecision(entry)
+
+    if entry.Mode ~= "SoftReserve" then
+        return nil
+    end
+
+    if ImpLoot.SoftReserve:GetSettings().AllowMultipleReserves then
+        return nil
+    end
+
+    local group = self:GetCopyGroup(entry)
+
+    if #group <= 1 then
+        return nil
+    end
+
+    local reservers = ImpLoot.SoftReserve:GetDistinctReservers(entry.ItemID)
+
+    if #reservers == 0 then
+        return nil
+    end
+
+    if #reservers <= #group then
+
+        return {
+            Type = "DirectAssign",
+            Group = group,
+            Reservers = reservers,
+        }
+
+    end
+
+    return {
+        Type = "GroupRoll",
+        Group = group,
+    }
+
+end
+
+-------------------------------------------------
+-- Execute Direct Assign
+--
+-- The "reservers <= copies" outcome of a multi-copy
+-- decision: one copy per reserver, no roll, one
+-- combined announcement naming everyone who's getting
+-- one. Any copies left over once every reserver has
+-- one (more copies than reservers) are released to
+-- plain Open Roll -- handled from there exactly like
+-- any other unreserved item, not auto-announced here.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:ExecuteDirectAssign(decision)
+
+    local group = decision.Group
+    local reservers = decision.Reservers
+
+    for i = #reservers + 1, #group do
+        group[i].Mode = "OpenRoll"
+    end
+
+    ImpLoot.Announcements:Announce("MultiCopyDirectAssigned", {
+        item = group[1].ItemLink,
+        count = tostring(#reservers),
+        winners = self:JoinWithAmpersand(reservers),
+    })
+
+    for i, reserver in ipairs(reservers) do
+        self:RequestAssign(group[i].QueueID, reserver)
+    end
+
+end
+
+-------------------------------------------------
+-- Execute Group Roll
+--
+-- The "reservers > copies" outcome: every copy in the
+-- group needs a roll, but as one combined event -- a
+-- single announcement and every copy's timer starting
+-- together, rather than the loot master having to
+-- click Announce on each copy separately (which is
+-- exactly how a copy could be left un-announced with
+-- no roll data of its own, sitting out the whole roll
+-- period). Rolls mirroring across copies and excluding
+-- an assigned winner from the others' standings is
+-- unchanged, existing behaviour (see ProcessRoll and
+-- Assign) -- this only fixes how the group gets
+-- started in the first place.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:ExecuteGroupRoll(decision)
+
+    local group = decision.Group
+
+    -- AnnounceItem handles the chat message, the addon-
+    -- to-addon sync, and the eligible-classes follow-up
+    -- (if any) -- all identical for every copy since they
+    -- share the same ItemID/Mode/reserver list, so that
+    -- only needs to happen once, via the first copy.
+    -- Every other copy just needs its own timer started.
+
+    self:AnnounceItem(group[1].QueueID)
+
+    for i = 2, #group do
+        self:StartRoll(group[i].QueueID)
+    end
+
+end
+
+-------------------------------------------------
 -- Standings
 
 -------------------------------------------------

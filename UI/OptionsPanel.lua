@@ -570,6 +570,7 @@ local ANNOUNCEMENT_LABELS = {
     OpenRollAnnounced = "Open Roll Announced",
     SoftReserveAnnounced = "Soft Reserve Roll Announced",
     SoleReserverAssigned = "Sole Reserver Assigned",
+    MultiCopyDirectAssigned = "Multi-Copy Direct Assigned",
     WinnerAnnounced = "Winner Announced",
     EligibleClasses = "Eligible Classes",
     NoRollsDisenchant = "No Rolls (Disenchanter)",
@@ -581,7 +582,7 @@ local ANNOUNCEMENT_LABELS = {
 }
 
 local ANNOUNCEMENT_ORDER = {
-    "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "WinnerAnnounced",
+    "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "MultiCopyDirectAssigned", "WinnerAnnounced",
     "EligibleClasses", "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled",
     "FunnelAssigned", "PreselectedAnnounced",
 }

@@ -406,6 +406,37 @@ function ImpLoot.SoftReserve:GetSoleReserver(itemID)
 end
 
 -------------------------------------------------
+-- Get Distinct Reservers
+--
+-- The unique players still eligible for this item,
+-- collapsing away Plus (multi-slot) duplicates -- a
+-- Plus reserve means extra ROLLS for that one person,
+-- not an extra person, so it must never inflate a
+-- count of how many distinct people are still in the
+-- running. Order matches each player's first
+-- appearance in GetRemainingSlots.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetDistinctReservers(itemID)
+
+    local slots = self:GetRemainingSlots(itemID)
+    local seen = {}
+    local players = {}
+
+    for _, slot in ipairs(slots) do
+
+        if not seen[slot.Player] then
+            seen[slot.Player] = true
+            table.insert(players, slot.Player)
+        end
+
+    end
+
+    return players
+
+end
+
+-------------------------------------------------
 -- Record Win
 --
 -- Removes the winner's FIRST remaining slot for this

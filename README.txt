@@ -141,6 +141,44 @@ The moment a second person reserves the same item, this reverts to
 the normal Announce/roll flow automatically.
 
 
+SOFT RESERVE: MULTIPLE COPIES DROPPING TOGETHER
+---------------------------------------------------
+
+When two or more copies of the same item drop from the same corpse
+at once, the addon compares how many distinct people reserved it
+against how many copies actually dropped (this only applies with
+"Allow multiple reserves" off -- see below):
+
+- Reservers <= copies: no roll needed at all. One click assigns one
+  copy to each reserver, with a single combined chat announcement
+  naming everyone who's getting one. If there are fewer reservers
+  than copies, the leftover copy (or copies) is released to plain
+  Open Roll and handled from there exactly like any other unreserved
+  item -- it's no longer treated as Soft Reserved at all.
+
+- Reservers > copies: still needs a roll, but as one combined event
+  covering every copy together -- a single announcement, and every
+  copy's roll timer starting from the same click, rather than having
+  to click Announce on each copy separately (previously, clicking
+  Announce on only one copy left any other copy sitting un-announced
+  with no roll data of its own for the whole roll period -- a real
+  bug). Rolling once already counted toward every copy's standings,
+  and assigning one copy already excluded that winner from the
+  others' -- both unchanged; this only fixes how the group of copies
+  gets started in the first place. The top N rollers (N = number of
+  copies) each end up with one.
+
+A Plus reserve (an extra roll on the same item) counts as one extra
+chance to roll for that person, not an extra distinct reserver --
+it never changes this comparison.
+
+With "Allow multiple reserves" ON, none of the above applies: each
+copy is deliberately handled completely on its own, with no
+combined announcement and no exclusion between copies, since the
+whole point of that setting is letting the same person legitimately
+win more than one copy.
+
+
 MANUAL ITEMS: /il <item>
 --------------------------
 

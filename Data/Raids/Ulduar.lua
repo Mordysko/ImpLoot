@@ -5812,6 +5812,7 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                    BonusLootGroup = "Zero Lights",
                 },                
 
                 -------------------------------------------------

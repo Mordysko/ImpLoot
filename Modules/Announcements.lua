@@ -35,6 +35,12 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    MultiCopyDirectAssigned = {
+        Enabled = true,
+        Text = "{item} (x{count}) exactly matched its reservers -- assigned directly to {winners}.",
+        Channel = "Auto",
+    },
+
     WinnerAnnounced = {
         Enabled = true,
         Text = "Congratulations! {winner} wins with a roll of {roll}. ({range})",

@@ -241,6 +241,13 @@ function ImportDialog:Initialize(mainWindowFrame)
 
         self:UpdateCounter()
 
+        if ImpLoot.UI.SummaryWindow and ImpLoot.UI.SummaryWindow.Frame
+        and ImpLoot.UI.SummaryWindow.Frame:IsShown() then
+
+            ImpLoot.UI.SummaryWindow:Refresh()
+
+        end
+
         if reserveCount > 0 then
             StaticPopup_Show("IMPLOOT_RELOAD_AFTER_SR_IMPORT", reserveCount)
         end

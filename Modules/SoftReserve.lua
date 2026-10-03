@@ -385,23 +385,13 @@ end
 
 function ImpLoot.SoftReserve:GetSoleReserver(itemID)
 
-    local slots = self:GetRemainingSlots(itemID)
+    local present = self:GetPresentReservers(itemID)
 
-    if #slots == 0 then
-        return nil
+    if #present == 1 then
+        return present[1]
     end
 
-    local solePlayer = slots[1].Player
-
-    for i = 2, #slots do
-
-        if slots[i].Player ~= solePlayer then
-            return nil
-        end
-
-    end
-
-    return solePlayer
+    return nil
 
 end
 
@@ -433,6 +423,36 @@ function ImpLoot.SoftReserve:GetDistinctReservers(itemID)
     end
 
     return players
+
+end
+
+-------------------------------------------------
+-- Get Present Reservers
+--
+-- GetDistinctReservers, filtered down to whoever's
+-- actually in the raid right now (see
+-- LootMaster:IsPlayerPresent -- offline-but-in-group
+-- still counts as present; only genuinely not being in
+-- the raid at all doesn't). This is what Sole Reserver
+-- and the multi-copy comparison both reason about --
+-- someone who reserved an item but was never on the
+-- raid shouldn't factor into either decision.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetPresentReservers(itemID)
+
+    local all = self:GetDistinctReservers(itemID)
+    local present = {}
+
+    for _, player in ipairs(all) do
+
+        if ImpLoot.LootMaster:IsPlayerPresent(player) then
+            table.insert(present, player)
+        end
+
+    end
+
+    return present
 
 end
 

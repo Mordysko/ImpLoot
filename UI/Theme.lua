@@ -294,6 +294,32 @@ function ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(scrollFrame)
     scrollFrame:HookScript("OnScrollRangeChanged", UpdateScrollIndicators)
     scrollFrame:HookScript("OnVerticalScroll", UpdateScrollIndicators)
 
+    -------------------------------------------------
+    -- Keep The Arrows In Sync With The Scroll Frame's
+    -- Own Visibility
+    --
+    -- The arrow frames are deliberately parented to
+    -- `parent`, not `scrollFrame` itself -- they sit
+    -- just outside scrollFrame's own rect (10px above/
+    -- below it), and a real ScrollFrame clips its own
+    -- children to that rect, so parenting them to
+    -- scrollFrame would just make them invisible.
+    -- That tradeoff means hiding scrollFrame (e.g. a
+    -- window that swaps between two scrollable panes)
+    -- does NOT automatically hide these sibling arrow
+    -- frames -- without this hook they're left showing
+    -- on top of whatever pane replaced it, which is
+    -- exactly what a "double scroll indicator" bug
+    -- looks like.
+    -------------------------------------------------
+
+    scrollFrame:HookScript("OnHide", function()
+        topArrowFrame:Hide()
+        bottomArrowFrame:Hide()
+    end)
+
+    scrollFrame:HookScript("OnShow", UpdateScrollIndicators)
+
     UpdateScrollIndicators()
 
 end
@@ -346,6 +372,47 @@ function ImpLoot.Theme:GetQualityColor(quality)
         return 0.00, 0.44, 0.87
     elseif quality == 2 then
         return 0.12, 1.00, 0.00
+    end
+
+    return 1, 1, 1
+
+end
+
+-------------------------------------------------
+-- Class Colors
+--
+-- Standard WoW class colors, keyed by the normalized
+-- form (uppercase, no spaces) of whatever class string
+-- a data source happens to use -- CSV imports have been
+-- seen with both "Death Knight" and "Deathknight", so
+-- the lookup itself normalizes rather than requiring
+-- any one exact spelling.
+-------------------------------------------------
+
+local CLASS_COLORS = {
+    WARRIOR = { 0.78, 0.61, 0.43 },
+    PALADIN = { 0.96, 0.55, 0.73 },
+    HUNTER = { 0.67, 0.83, 0.45 },
+    ROGUE = { 1.00, 0.96, 0.41 },
+    PRIEST = { 1.00, 1.00, 1.00 },
+    DEATHKNIGHT = { 0.77, 0.12, 0.23 },
+    SHAMAN = { 0.00, 0.44, 0.87 },
+    MAGE = { 0.41, 0.80, 0.94 },
+    WARLOCK = { 0.58, 0.51, 0.79 },
+    DRUID = { 1.00, 0.49, 0.04 },
+}
+
+function ImpLoot.Theme:GetClassColor(class)
+
+    if not class then
+        return 1, 1, 1
+    end
+
+    local key = class:upper():gsub("%s+", "")
+    local color = CLASS_COLORS[key]
+
+    if color then
+        return color[1], color[2], color[3]
     end
 
     return 1, 1, 1

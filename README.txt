@@ -141,6 +141,83 @@ The moment a second person reserves the same item, this reverts to
 the normal Announce/roll flow automatically.
 
 
+SUMMARY WINDOW: "WHO WON WHAT" TABLE, WITH SOFT RESERVES ONE CLICK AWAY
+---------------------------------------------------------------------
+
+The Summary window opens to "Who won what" by default -- a plain,
+read-only table (Item / Winner / Roll), not an editable text box.
+It's grouped by boss, in that raid's own real encounter order
+(Boss.Index, the same source of truth the Raid Planner uses), not
+the order items happened to resolve in. The Roll column shows "SR"
+for a Soft Reserve win, "LC" for Loot Council, or the winner's own
+roll type (MS/OS) for an Open Roll win. It populates itself
+automatically -- nothing to click to generate it, and it updates
+whenever an item resolves while the window's open.
+
+Post to raid and Clear sit alongside it, operating on that same
+data. The SR view itself -- one card per player, their class-
+colored spec, and the items they've reserved with icons, with its
+own Back button to return -- is reached from a "Soft Reserve"
+button on the main Loot Master window, alongside Summary/Priority
+Lists/Clear All, opening straight to it without going through "Who
+won what" first. (An earlier pass also had a second copy of this
+button inside the Summary window itself; that's been removed as
+redundant now that the Loot Master window's own button covers it.)
+
+"Export" (originally called "Copy CSV" while this was being built)
+opens a small, separate copyable text box (Ctrl+C, WoW has no
+clipboard API) with one plain comma-separated line per item --
+Item,Winner,Roll -- meant for pasting into a spreadsheet, kept
+deliberately separate from the visual table above it.
+
+Also fixed in this pass:
+
+- Resolutions were being logged twice into this same data, once
+  directly the moment an item was assigned and once again when
+  that same addon message echoed back to the loot master's own
+  client (a known WoW quirk -- broadcasting to your own raid/party
+  channel delivers the message back to you too) -- every entry in
+  "Who won what" was effectively doubled. Fixed both by recognizing
+  and ignoring a message that's just your own broadcast coming
+  back, and by a second, independent safety check in the logging
+  itself that skips an exact repeat of the most recent entry within
+  a few seconds -- genuinely different wins, including the same
+  item won again much later, are unaffected either way.
+
+- A long item name wrapping to two lines within its column no
+  longer overlaps the row placed underneath it -- each row's actual
+  rendered height is measured and accounted for now, rather than
+  assuming every row is exactly one line tall.
+
+- Reopening the window via the Loot Master window's "Summary"
+  button now always lands back on "Who won what", even if the
+  window had last been left open on the Soft Reserve view or the
+  Export text -- previously it would keep showing whichever of
+  those was last visible until a full /reload.
+
+
+SOFT RESERVE: ABSENT RESERVERS
+-----------------------------------
+
+Everywhere the addon reasons about who's reserved an item -- the
+Sole Reserver shortcut, the multiple-copies comparison, and the
+Loot Master window's own "Reserved by" text -- only counts someone
+who's actually in the raid right now. Offline still counts as
+present (they're still in the group, just disconnected, and might
+reconnect); only genuinely not being in the raid at all doesn't.
+A sole reserver who turns out to be absent falls back to a plain
+Open Roll rather than offering a one-click Assign to someone who
+can't actually receive it, and the same applies if every reserver
+on an item is absent. The Loot Master window's own reserver list
+leaves absent people off entirely, since there's nothing useful in
+naming someone who isn't eligible for the loot anyway.
+
+The chat announcement sent to the raid is the one place absent
+reservers are still named -- but marked, e.g. "Alice & (Carol -
+Absent) & Bob" -- so nobody's left wondering why an item is being
+rolled for by fewer people than reserved it.
+
+
 SOFT RESERVE: MULTIPLE COPIES DROPPING TOGETHER
 ---------------------------------------------------
 

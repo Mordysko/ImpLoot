@@ -169,9 +169,11 @@ end
 -- from the loot master, still gets one this way.
 -------------------------------------------------
 
-function ImpLoot.Comms:SendResolved(itemID, winner, bossName)
+function ImpLoot.Comms:SendResolved(itemID, winner, bossName, mode, resultLabel)
 
-    self:Broadcast(joinParts("RESOLVED", itemID, winner, bossName or ""))
+    self:Broadcast(joinParts(
+        "RESOLVED", itemID, winner, bossName or "", mode or "", resultLabel or ""
+    ))
 
 end
 
@@ -207,12 +209,32 @@ function ImpLoot.Comms:OnMessageReceived(message, sender)
 
     elseif msgType == "RESOLVED" then
 
-        local _, itemID, winner, bossName = self:SplitParts(message)
+        -------------------------------------------------
+        -- Skip Our Own Broadcast Coming Back
+        --
+        -- SendAddonMessage to a group channel (PARTY/
+        -- RAID) echoes back to the sender's own client,
+        -- same as any other group chat message would --
+        -- the loot master's own Assign() already calls
+        -- LogResolution directly the moment it happens,
+        -- so logging it again here when that same
+        -- message arrives back as an incoming one would
+        -- double every entry in their own log. This only
+        -- needs to run for entries arriving from someone
+        -- ELSE's client.
+        -------------------------------------------------
+
+        if ImpLoot.LootMaster:NamesMatch(sender, UnitName("player")) then
+            return
+        end
+
+        local _, itemID, winner, bossName, mode, resultLabel = self:SplitParts(message)
 
         if ImpLoot.LootMaster and ImpLoot.LootMaster.LogResolution then
 
             ImpLoot.LootMaster:LogResolution(
-                tonumber(itemID), winner, (bossName ~= "" and bossName or nil)
+                tonumber(itemID), winner, (bossName ~= "" and bossName or nil),
+                (mode ~= "" and mode or nil), (resultLabel ~= "" and resultLabel or nil)
             )
 
         end

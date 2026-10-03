@@ -30,7 +30,7 @@ end
 -------------------------------------------------
 
 local WINDOW_WIDTH = 340
-local WINDOW_HEIGHT = 420
+local WINDOW_HEIGHT = 448
 local ROW_HEIGHT = 46
 local ROW_GAP = 6
 local HEADER_HEIGHT = 18
@@ -197,6 +197,17 @@ function LootMasterWindow:Initialize()
 
     self.ClearAllButton = clearAllButton
 
+    local softReserveButton = ImpLoot.Theme:CreateMenuButton(frame)
+    softReserveButton:SetSize(90, 20)
+    softReserveButton:SetPoint("TOPLEFT", summaryButton, "BOTTOMLEFT", 0, -4)
+    softReserveButton:SetText("Soft Reserve")
+
+    softReserveButton:SetScript("OnClick", function()
+        ImpLoot.UI.SummaryWindow:ToggleReserves()
+    end)
+
+    self.SoftReserveButton = softReserveButton
+
     -------------------------------------------------
     -- Scroll Content
     -------------------------------------------------
@@ -210,7 +221,7 @@ function LootMasterWindow:Initialize()
 
     self.ScrollFrame = scrollFrame
 
-    scrollFrame:SetPoint("TOPLEFT", summaryButton, "BOTTOMLEFT", 2, -8)
+    scrollFrame:SetPoint("TOPLEFT", softReserveButton, "BOTTOMLEFT", 2, -8)
     scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 10)
 
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
@@ -825,6 +836,26 @@ function LootMasterWindow:PopulateRow(row, entry)
     -------------------------------------------------
 
     elseif entry.State == "Pending" then
+
+        -------------------------------------------------
+        -- No Present Reservers = Treat As Open Roll
+        --
+        -- Soft Reserve only makes sense if at least one
+        -- of its reservers is actually in the raid to
+        -- claim it. If every reserver on this item (the
+        -- sole one, or all of several) turns out to be
+        -- absent, there's no one left to assign it to
+        -- directly or to prioritize in a roll -- so it
+        -- falls back to plain Open Roll, same as an item
+        -- nobody reserved at all.
+        -------------------------------------------------
+
+        if entry.Mode == "SoftReserve"
+        and #ImpLoot.SoftReserve:GetPresentReservers(entry.ItemID) == 0 then
+
+            entry.Mode = "OpenRoll"
+
+        end
 
         local multiCopyDecision = entry.Mode == "SoftReserve"
             and ImpLoot.LootMaster:GetMultiCopyDecision(entry)

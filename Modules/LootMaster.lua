@@ -737,6 +737,77 @@ function ImpLoot.LootMaster:FormatReserverList(itemID)
 
     local slots = ImpLoot.SoftReserve:GetRemainingSlots(itemID)
 
+    -------------------------------------------------
+    -- Absent Reservers Aren't Shown Here
+    --
+    -- Someone who reserved an item but isn't actually
+    -- in the raid wasn't there for the kill and isn't
+    -- eligible for the loot, so there's no reason to
+    -- list them in what the loot master sees -- unlike
+    -- the chat announcement, which marks them instead
+    -- (see FormatReserverListForAnnouncement), this is
+    -- purely about who can actually win it.
+    -------------------------------------------------
+
+    local presentSlots = {}
+
+    for _, slot in ipairs(slots) do
+
+        if self:IsPlayerPresent(slot.Player) then
+            table.insert(presentSlots, slot)
+        end
+
+    end
+
+    if #presentSlots == 0 then
+        return "No SoftRes"
+    end
+
+    local counts = {}
+    local order = {}
+
+    for _, slot in ipairs(presentSlots) do
+
+        if not counts[slot.Player] then
+            counts[slot.Player] = 0
+            table.insert(order, slot.Player)
+        end
+
+        counts[slot.Player] = counts[slot.Player] + 1
+
+    end
+
+    local parts = {}
+
+    for _, player in ipairs(order) do
+
+        if counts[player] > 1 then
+            table.insert(parts, player .. " (x" .. counts[player] .. ")")
+        else
+            table.insert(parts, player)
+        end
+
+    end
+
+    return self:JoinWithAmpersand(parts)
+
+end
+
+-------------------------------------------------
+-- Format Reserver List For Announcement
+--
+-- The chat-facing counterpart to FormatReserverList:
+-- everyone still gets named here (so people who were
+-- about to sit out an item they reserved know why), but
+-- anyone not actually in the raid is marked "- Absent"
+-- rather than silently left off a message the whole
+-- raid sees.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:FormatReserverListForAnnouncement(itemID)
+
+    local slots = ImpLoot.SoftReserve:GetRemainingSlots(itemID)
+
     if #slots == 0 then
         return "No SoftRes"
     end
@@ -759,11 +830,17 @@ function ImpLoot.LootMaster:FormatReserverList(itemID)
 
     for _, player in ipairs(order) do
 
+        local label = player
+
         if counts[player] > 1 then
-            table.insert(parts, player .. " (x" .. counts[player] .. ")")
-        else
-            table.insert(parts, player)
+            label = label .. " (x" .. counts[player] .. ")"
         end
+
+        if not self:IsPlayerPresent(player) then
+            label = "(" .. label .. " - Absent)"
+        end
+
+        table.insert(parts, label)
 
     end
 
@@ -912,7 +989,7 @@ function ImpLoot.LootMaster:AnnounceItem(queueID)
 
         ImpLoot.Announcements:Announce("SoftReserveAnnounced", {
             item = entry.ItemLink,
-            reservers = self:FormatReserverList(entry.ItemID),
+            reservers = self:FormatReserverListForAnnouncement(entry.ItemID),
         })
 
     elseif councilItem and councilItem.Mode == "Preselected" then
@@ -1189,6 +1266,30 @@ function ImpLoot.LootMaster:GetRaidRosterNames()
     end
 
     return names
+
+end
+
+-------------------------------------------------
+-- Is Player Present
+--
+-- Whether a name belongs to someone currently in the
+-- raid roster -- offline members still count (they're
+-- still in the group, just disconnected; they might
+-- reconnect before anything needs resolving), only
+-- someone genuinely not in the raid at all doesn't.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:IsPlayerPresent(playerName)
+
+    for _, rosterName in ipairs(self:GetRaidRosterNames()) do
+
+        if self:NamesMatch(rosterName, playerName) then
+            return true
+        end
+
+    end
+
+    return false
 
 end
 
@@ -1708,7 +1809,7 @@ function ImpLoot.LootMaster:GetMultiCopyDecision(entry)
         return nil
     end
 
-    local reservers = ImpLoot.SoftReserve:GetDistinctReservers(entry.ItemID)
+    local reservers = ImpLoot.SoftReserve:GetPresentReservers(entry.ItemID)
 
     if #reservers == 0 then
         return nil
@@ -1934,14 +2035,82 @@ end
 -- too, and anyone else running the addon who's curious.
 -------------------------------------------------
 
-function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName)
+function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName, mode, resultLabel)
+
+    local now = time and time() or 0
+
+    -------------------------------------------------
+    -- Guard Against An Exact Duplicate
+    --
+    -- The same item, winner and boss logged again
+    -- within a few seconds of the most recent entry is
+    -- never a second, genuine resolution -- it's the
+    -- same one arriving twice (an addon message echo,
+    -- a double-fired event, etc). Checking only the
+    -- most recent entry, not the whole log, is
+    -- deliberate: two separate, real wins of the same
+    -- item by the same person (different raid nights,
+    -- or legitimately winning two copies under Allow
+    -- Multiple Reserves) must still both be recorded.
+    -------------------------------------------------
+
+    local lastEntry = self.Log[#self.Log]
+
+    if lastEntry
+    and lastEntry.ItemID == itemID
+    and lastEntry.Winner == winnerName
+    and lastEntry.BossName == bossName
+    and (now - lastEntry.Timestamp) < 5 then
+
+        return
+
+    end
 
     table.insert(self.Log, {
         ItemID = itemID,
         Winner = winnerName,
         BossName = bossName,
-        Timestamp = time and time() or 0,
+        Mode = mode,
+        ResultLabel = resultLabel,
+        Timestamp = now,
     })
+
+end
+
+-------------------------------------------------
+-- Get Result Label
+--
+-- The short tag for the Summary window's Roll column:
+-- "SR" for a Soft Reserve win, "LC" for Loot Council,
+-- or the winner's own roll type (MS/OS) looked up from
+-- the entry's own roll standings for an Open Roll win.
+-- Blank if none of those apply (e.g. assigned with no
+-- roll at all, or the winner's roll can't be found).
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetResultLabel(entry, winnerName)
+
+    if entry.Mode == "SoftReserve" then
+        return "SR"
+    end
+
+    if entry.Mode == "LootCouncil" then
+        return "LC"
+    end
+
+    if entry.Rolls then
+
+        for _, roll in ipairs(entry.Rolls) do
+
+            if roll.Player == winnerName then
+                return roll.Type
+            end
+
+        end
+
+    end
+
+    return ""
 
 end
 
@@ -2086,10 +2255,16 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName)
 
     end
 
-    self:LogResolution(entry.ItemID, winnerName, entry.BossName)
+    local resultLabel = self:GetResultLabel(entry, winnerName)
+
+    self:LogResolution(entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel)
 
     if ImpLoot.Comms then
-        ImpLoot.Comms:SendResolved(entry.ItemID, winnerName, entry.BossName)
+
+        ImpLoot.Comms:SendResolved(
+            entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel
+        )
+
     end
 
     ImpLoot.Events:Fire("LootQueueChanged")

@@ -369,6 +369,40 @@ function ImpLoot.LootMaster:IsMasterLooter()
 end
 
 -------------------------------------------------
+-- Get Master Looter Name
+--
+-- Same lookup as IsMasterLooter, but returning WHO it
+-- is rather than whether it's us -- nil when the group
+-- isn't using master loot at all. Used to recognise the
+-- loot master's own raid chat (Comms chat fallback).
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetMasterLooterName()
+
+    if not GetLootMethod then
+        return nil
+    end
+
+    local method, partyIndex, raidIndex = GetLootMethod()
+
+    if method ~= "master" then
+        return nil
+    end
+
+    if raidIndex and raidIndex > 0 then
+        return GetRaidRosterInfo and (GetRaidRosterInfo(raidIndex)) or nil
+    end
+
+    if partyIndex and partyIndex > 0 then
+        return UnitName("party" .. partyIndex)
+    end
+
+    -- partyIndex/raidIndex of 0 means the player themselves
+    return UnitName("player")
+
+end
+
+-------------------------------------------------
 -- Determine Mode
 --
 -- Loot Council takes priority over Soft Reserve if
@@ -1447,9 +1481,45 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
     -- timeout would.
     -------------------------------------------------
 
-    if isManualStop and topRoll then
-        self:RequestAssign(queueID, topRoll.Player)
-        return
+    if isManualStop then
+
+        -------------------------------------------------
+        -- Stop Also Finalizes Any Sibling Still Rolling
+        --
+        -- Clicking Stop only ever directly targets the
+        -- one row it's clicked on -- for a multi-copy
+        -- Soft Reserve group (see ExecuteGroupRoll),
+        -- every copy was started rolling together, but
+        -- without this they'd only ever get *stopped*
+        -- together if the loot master happened to click
+        -- Stop on each one separately. Left alone, a
+        -- sibling copy would just sit on its own Stop
+        -- button indefinitely once this one's already
+        -- resolved -- no Assign button, no auto-assign,
+        -- nothing, until someone noticed and clicked it
+        -- too. Recursing here finalizes each one exactly
+        -- as if Stop had been clicked on it directly,
+        -- including its own winner announcement and
+        -- assignment -- and since each call only ever
+        -- looks at siblings still in "Rolling" (this one
+        -- is "RollComplete" by the time it loops back
+        -- around), it can't re-process the same entry
+        -- twice or loop forever.
+        -------------------------------------------------
+
+        for _, sibling in ipairs(self:GetSiblingEntries(entry)) do
+
+            if sibling.State == "Rolling" then
+                self:FinalizeRoll(sibling.QueueID, true)
+            end
+
+        end
+
+        if topRoll then
+            self:RequestAssign(queueID, topRoll.Player)
+            return
+        end
+
     end
 
     if not isManualStop and not self.Settings.AutoFinalizeOnTimeout then

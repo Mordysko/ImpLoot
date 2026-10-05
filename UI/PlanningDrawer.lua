@@ -12,6 +12,78 @@ local PlanningDrawer = ImpLoot.UI.PlanningDrawer
 PlanningDrawer.IsOpen = false
 
 -------------------------------------------------
+-- Fit Button To Text
+--
+-- Sizes a menu button to its own label rather than a
+-- fixed width, within [minWidth, maxWidth]. A label too
+-- long to fit even at maxWidth is trimmed and ended
+-- with "..." so it can never spill outside the button
+-- (or past the drawer it sits in).
+--
+-- Trimming steps back one whole UTF-8 character at a
+-- time (skipping continuation bytes 0x80-0xBF to land
+-- on the lead byte) -- cutting a name with accented
+-- characters mid-sequence would otherwise leave an
+-- invalid byte that renders as garbage.
+-------------------------------------------------
+
+local BUTTON_TEXT_PADDING = 16
+
+local function TrimLastCharacter(text)
+
+    local i = #text
+
+    while i > 1 do
+
+        local byte = text:byte(i)
+
+        if byte < 0x80 or byte >= 0xC0 then
+            break
+        end
+
+        i = i - 1
+
+    end
+
+    return text:sub(1, i - 1)
+
+end
+
+local function FitButtonToText(button, label, minWidth, maxWidth)
+
+    button:SetText(label)
+
+    local fontString = button:GetFontString()
+
+    if not fontString then
+        button:SetWidth(maxWidth)
+        return
+    end
+
+    if fontString:GetStringWidth() + BUTTON_TEXT_PADDING > maxWidth then
+
+        local trimmed = label
+
+        while #trimmed > 1 do
+
+            trimmed = TrimLastCharacter(trimmed)
+            button:SetText(trimmed .. "...")
+
+            if fontString:GetStringWidth() + BUTTON_TEXT_PADDING <= maxWidth then
+                break
+            end
+
+        end
+
+    end
+
+    local width = fontString:GetStringWidth() + BUTTON_TEXT_PADDING
+
+    button:SetWidth(math.max(minWidth, math.min(maxWidth, width)))
+
+end
+
+-------------------------------------------------
 -- Initialize
 -------------------------------------------------
 
@@ -507,7 +579,7 @@ function PlanningDrawer:Refresh()
                 local wishlistButton =
                     ImpLoot.Theme:CreateMenuButton(self.Content)
 
-                wishlistButton:SetSize(120, 22)
+                wishlistButton:SetHeight(22)
 
                 -------------------------------------------------
                 -- First wishlist
@@ -535,20 +607,19 @@ function PlanningDrawer:Refresh()
 
                 end
 
-                wishlistButton:SetText(
-                    wishlist.Name
-                )
-
                 local currentActive =
                     ImpLoot.Wishlist:GetActive(character)
 
+                local label = wishlist.Name
+
                 if currentActive == wishlist then
-
-                    wishlistButton:SetText(
-                        "> " .. wishlist.Name
-                    )
-
+                    label = "> " .. wishlist.Name
                 end
+
+                -- Width follows the name, capped at 190 (the
+                -- drawer's 200px of usable width, less a small
+                -- margin) so it can never extend past the drawer.
+                FitButtonToText(wishlistButton, label, 60, 190)
 
                 wishlistButton:SetScript(
                     "OnClick",

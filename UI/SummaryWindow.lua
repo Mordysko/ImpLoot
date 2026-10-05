@@ -201,26 +201,6 @@ function SummaryWindow:Initialize()
     self.ResultHeadingWidgets = {}
 
     -------------------------------------------------
-    -- Soft Reserve View's Own Back Button
-    --
-    -- "Who won what" is the default view now, so it's
-    -- the SR card view that needs a way back to it --
-    -- not the other way around.
-    -------------------------------------------------
-
-    local reservesBackButton = ImpLoot.Theme:CreateMenuButton(frame)
-    reservesBackButton:SetSize(70, 20)
-    reservesBackButton:SetPoint("BOTTOMLEFT", 2, 8)
-    reservesBackButton:SetText("Back")
-    reservesBackButton:Hide()
-
-    reservesBackButton:SetScript("OnClick", function()
-        self:HideReserves()
-    end)
-
-    self.ReservesBackButton = reservesBackButton
-
-    -------------------------------------------------
     -- Export Box (Overlay)
     --
     -- A multi-line, auto-selected EditBox -- WoW has no
@@ -309,7 +289,6 @@ function SummaryWindow:Initialize()
     -------------------------------------------------
 
     self.ScrollFrame:Hide()
-    self.ReservesBackButton:Hide()
 
     self:RenderResultsTable()
 
@@ -337,7 +316,6 @@ function SummaryWindow:Show()
     -------------------------------------------------
 
     self.ScrollFrame:Hide()
-    self.ReservesBackButton:Hide()
 
     self.ExportScroll:Hide()
     self.ExportBackButton:Hide()
@@ -971,11 +949,14 @@ function SummaryWindow:RenderResultsTable()
 end
 
 -------------------------------------------------
--- Show / Hide Reserves
+-- Show Reserves
 --
 -- "Who won what" (the results table) is the default
--- view now -- Soft Reserve is the way out to the SR
--- card view, with its own Back button to return.
+-- view -- the SR card view is only ever reached via
+-- the Loot Master window's own "Soft Reserve" button
+-- (ToggleReserves below), and dismissed the same way
+-- (closing the whole window), so it has no Back button
+-- or other in-window way out of its own.
 -------------------------------------------------
 
 function SummaryWindow:ShowReserves()
@@ -987,23 +968,8 @@ function SummaryWindow:ShowReserves()
 
     self:Refresh()
     self.ScrollFrame:Show()
-    self.ReservesBackButton:Show()
 
     self.Title:SetText("Soft reserves")
-
-end
-
-function SummaryWindow:HideReserves()
-
-    self.ScrollFrame:Hide()
-    self.ReservesBackButton:Hide()
-
-    self.ResultsScroll:Show()
-    self.PostButton:Show()
-    self.ClearButton:Show()
-    self.ExportButton:Show()
-
-    self.Title:SetText("Who won what")
 
 end
 

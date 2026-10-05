@@ -156,13 +156,13 @@ whenever an item resolves while the window's open.
 
 Post to raid and Clear sit alongside it, operating on that same
 data. The SR view itself -- one card per player, their class-
-colored spec, and the items they've reserved with icons, with its
-own Back button to return -- is reached from a "Soft Reserve"
-button on the main Loot Master window, alongside Summary/Priority
-Lists/Clear All, opening straight to it without going through "Who
-won what" first. (An earlier pass also had a second copy of this
-button inside the Summary window itself; that's been removed as
-redundant now that the Loot Master window's own button covers it.)
+colored spec, and the items they've reserved with icons -- is
+reached from a "Soft Reserve" button on the main Loot Master
+window, alongside Summary/Priority Lists/Clear All, opening
+straight to it without going through "Who won what" first. It has
+no Back button of its own -- that same Soft Reserve button (or the
+window's own close button) is the only way in or out, rather than
+duplicating a second navigation path inside the Summary window.
 
 "Export" (originally called "Copy CSV" while this was being built)
 opens a small, separate copyable text box (Ctrl+C, WoW has no
@@ -218,6 +218,89 @@ Absent) & Bob" -- so nobody's left wondering why an item is being
 rolled for by fewer people than reserved it.
 
 
+RESERVE / WISHLIST POPUP: ALSO WORKS FROM LOOT MASTER CHAT
+-------------------------------------------------------------
+
+The "this item is one of yours" popup used to depend on the loot
+master's ImpLoot sending a hidden addon message, so it only worked
+if both the loot master and the raider had the addon. It now also
+reads the loot master's raid/party chat (raid, raid leader, raid
+warning, party, party leader), so a raider with the addon gets the
+popup even when the loot master doesn't have it.
+
+It is deliberately limited so general gear talk never triggers it:
+
+- Only the player who is currently the master looter. Nobody
+  else's chat is looked at, and if the group isn't using master
+  loot there's no loot master to listen to, so it does nothing.
+- Never your own messages (a loot master has the addon, which
+  already covers them).
+- Not once that loot master is known to have the addon -- if their
+  addon messages are reaching you, the addon path already handled
+  it and you won't get a second popup for the same item.
+- Lines that read as a result, reminder or note rather than "item
+  up for roll" are skipped -- "congrats", "wins", "assigned to",
+  "seconds left", "can be used by", "disenchant" and similar --
+  since the loot master's own result lines carry the item link too.
+- At most one popup per item per roll window, however many times
+  it gets re-posted.
+
+What chat can check: the item against your own wishlists, and
+against your own Soft Reserve import if you've imported the list
+(chat doesn't carry the reserver list the way the addon message
+does). A message that reads as Soft Reserved ("reserved by...",
+"SR") only pops for a genuine reserve of yours, not for a wishlist
+match, since you can't roll on a reserved item you didn't reserve.
+
+Limits, since this reads free text: a loot master who words a result
+unusually could still pop a stale prompt, and one who words an
+announcement with one of the result phrases above could be missed.
+The phrase list is at the top of the chat section in Comms.lua if it
+ever needs tuning.
+
+TO REMOVE THIS FEATURE (added in beta.67; on probation):
+
+Quick switch-off, nothing deleted: in Comms:Initialize (Modules/
+Comms.lua), delete or comment out the "for _, chatEvent in
+ipairs(CHAT_EVENTS) do chatFrame:RegisterEvent(chatEvent) end" loop.
+Without those registrations nothing ever reaches the chat code, and
+the popup goes back to working exactly as it did before (addon
+message only).
+
+Full removal, all in Modules/Comms.lua unless noted:
+ 1. Delete the whole "Chat Fallback: The Loot Master's Raid Chat"
+    section at the very end of the file (ExtractItemIDs,
+    LooksLikeNotUpForRoll, LooksSoftReserved, OnChatMessage,
+    ProcessPendingChatItems, HandleChatItem, and the constants
+    above them).
+ 2. Delete the "Chat Fallback Watcher" block at the end of
+    Comms:Initialize (the chatFrame, its OnEvent and OnUpdate).
+ 3. Delete the three tables and CHAT_EVENTS list near the top of the
+    file (AddonSenders, PendingChatItems, ChatItemCooldown,
+    CHAT_EVENTS).
+ 4. Delete the "shortSender / AddonSenders" lines at the top of
+    OnMessageReceived.
+ 5. Modules/LootMaster.lua: delete GetMasterLooterName (only this
+    feature uses it).
+ 6. Delete this README section.
+
+Safe to keep either way: FindWishlistName in Comms.lua. It's just
+the wishlist check pulled out of HandleItemAnnounced -- behaviour
+there is unchanged -- so the addon-message popup keeps using it.
+
+
+WISHLIST DRAWER: BUTTONS FIT THEIR NAMES
+-----------------------------------------
+
+Each wishlist in the drawer's list is now sized to its own name
+rather than a fixed width, so a long name like "> Ulduar - Discipline"
+is no longer wider than the button it sits on. Short names get a
+correspondingly narrower button (with a small minimum so a very short
+name is still easy to click), and the width is capped to fit inside
+the drawer -- a name too long even for that is shortened with "..."
+rather than spilling past the edge.
+
+
 SOFT RESERVE: MULTIPLE COPIES DROPPING TOGETHER
 ---------------------------------------------------
 
@@ -244,6 +327,19 @@ against how many copies actually dropped (this only applies with
   others' -- both unchanged; this only fixes how the group of copies
   gets started in the first place. The top N rollers (N = number of
   copies) each end up with one.
+
+  Stopping the roll early works the same way: clicking Stop on any
+  one copy now also finalizes every other copy still rolling (each
+  to its own top roller, with its own winner announcement) rather
+  than only the one actually clicked. Previously, a sibling copy
+  left rolling when Stop was clicked on just one of them would sit
+  there indefinitely -- stuck on its own Stop/Roll button with no
+  Assign option and nothing happening automatically, however long
+  you left it, needing a manual Stop click of its own to notice and
+  resolve. A copy that's already resolved naturally (its own timer
+  already ran out, or it was already stopped separately) is left
+  alone either way -- this only ever reaches toward a copy still
+  genuinely mid-roll.
 
 A Plus reserve (an extra roll on the same item) counts as one extra
 chance to roll for that person, not an extra distinct reserver --

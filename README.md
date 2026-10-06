@@ -1,7 +1,5 @@
-[README.md](https://github.com/user-attachments/files/33089214/README.md)
-<p align="center">
-  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
-</p>
+<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/5b12e26f-4691-4f72-a00b-f23ba2b61970" />
+
 
 # ImpLoot
 
@@ -85,6 +83,9 @@ The **Raid Planner** page answers "which raids do I still need to run?". It's a 
 ### Compare
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
+
+<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/2a3bbed3-87b7-42cd-846e-9b69672ffecd" />
+
 
 - While the drawer is open, `Alt`+click on an item in the loot list fills **slot 1**, and `Alt`+right-click fills **slot 2**. (This replaces `Alt`+click adding to your wishlist for as long as the drawer is open.)
 - Click a slot to **lock** it so it isn't replaced, and click again to unlock. Right-click a slot to remove its item (a locked slot has to be unlocked first). `Ctrl`+click a slot to try the item on.

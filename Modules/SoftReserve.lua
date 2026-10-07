@@ -1,0 +1,513 @@
+-------------------------------------------------
+-- ImpLoot Soft Reserve
+-------------------------------------------------
+
+ImpLoot.SoftReserve = {}
+
+ImpLoot.SoftReserve.Defaults = {
+    AllowMultipleReserves = true,
+    ExcludePreviousWinners = true,
+    MaxReservesPerPlayer = 3,
+}
+
+-------------------------------------------------
+-- Reload Prompt After Import
+--
+-- The imported reserve list now persists across
+-- reloads/logouts (see Initialize below), but WoW only
+-- ever writes SavedVariables to disk during an actual
+-- logout or /reload -- a crash or Alt-F4 between an
+-- import and the next natural one of those would still
+-- lose it. Prompting for an immediate reload right after
+-- a successful import closes that window rather than
+-- leaving it to chance.
+-------------------------------------------------
+
+StaticPopupDialogs["IMPLOOT_RELOAD_AFTER_SR_IMPORT"] = {
+
+    text = "Imported %d soft reserve(s).\n\nWoW only saves this to disk on your next logout or " ..
+        "reload -- a crash before then would lose it. Reload now to save it immediately?",
+    button1 = "Reload Now",
+    button2 = "Later",
+
+    OnAccept = function()
+        ReloadUI()
+    end,
+
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+
+}
+
+-------------------------------------------------
+-- Initialize
+--
+-- Settings, the working "who's still eligible to roll
+-- this item" state, AND the imported reserve list itself
+-- all persist across reloads/logouts now -- previously
+-- only settings and working state were saved, and the
+-- import itself was silently in-memory only, so it never
+-- actually survived a reload despite looking like normal
+-- addon data. A crash or Alt-F4 before the next natural
+-- save can still lose an import that was never saved at
+-- all (that's a general WoW limitation, not specific to
+-- this data), which is why ImportDialog now also prompts
+-- for an immediate /reload right after a successful
+-- import -- see UI/ImportDialog.lua.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:Initialize()
+
+    ImpLootDB.SoftReserveState = ImpLootDB.SoftReserveState or {
+
+        Settings = {
+            AllowMultipleReserves = true,
+            ExcludePreviousWinners = true,
+            MaxReservesPerPlayer = 3,
+        },
+
+        Reserves = {},
+        Remaining = {},
+        WonLog = {},
+
+    }
+
+    -- migrate a state saved before Reserves existed in it
+    ImpLootDB.SoftReserveState.Reserves = ImpLootDB.SoftReserveState.Reserves or {}
+
+    self.State = ImpLootDB.SoftReserveState
+
+end
+
+function ImpLoot.SoftReserve:GetSettings()
+    return self.State.Settings
+end
+
+function ImpLoot.SoftReserve:SetSetting(key, value)
+    self.State.Settings[key] = value
+end
+
+-------------------------------------------------
+-- Reset Settings To Defaults
+--
+-- Only the Settings sub-table -- never touches
+-- Remaining/WonLog (in-progress raid state).
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:ResetSettingsToDefaults()
+
+    for key, value in pairs(self.Defaults) do
+        self.State.Settings[key] = value
+    end
+
+end
+
+-------------------------------------------------
+-- Parse CSV Line
+--
+-- SoftRes.it has exported at least two CSV variants:
+-- one that quotes fields containing commas (item/boss
+-- names) and one that quotes nothing at all. Column
+-- order is identical between them (just different
+-- header labels, which Import() skips regardless), so
+-- a proper quote-aware field splitter handles both --
+-- and any future variant with the same column order --
+-- without needing to special-case either one.
+-------------------------------------------------
+
+local function ParseCSVLine(line)
+
+    local fields = {}
+    local i = 1
+    local n = #line
+
+    while i <= n + 1 do
+
+        local field
+
+        if line:sub(i, i) == '"' then
+
+            -- Quoted field: read to the closing quote; a
+            -- doubled "" inside represents a literal quote
+            -- character rather than ending the field.
+            local out = {}
+            i = i + 1
+
+            while true do
+
+                local c = line:sub(i, i)
+
+                if c == "" then
+                    break -- malformed / unterminated -- stop at end of line
+                elseif c == '"' then
+
+                    if line:sub(i + 1, i + 1) == '"' then
+                        table.insert(out, '"')
+                        i = i + 2
+                    else
+                        i = i + 1
+                        break
+                    end
+
+                else
+                    table.insert(out, c)
+                    i = i + 1
+                end
+
+            end
+
+            field = table.concat(out)
+
+        else
+
+            -- Unquoted field: up to the next comma or end of line
+            local commaPos = line:find(",", i, true)
+
+            if commaPos then
+                field = line:sub(i, commaPos - 1)
+                i = commaPos
+            else
+                field = line:sub(i)
+                i = n + 1
+            end
+
+        end
+
+        table.insert(fields, field)
+
+        if line:sub(i, i) == "," then
+            i = i + 1
+        else
+            break
+        end
+
+    end
+
+    return fields
+
+end
+
+-------------------------------------------------
+-- Import CSV
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:Import(csv)
+
+    self.State.Reserves = {}
+    self.State.ImportDate = date("%Y-%m-%d")
+
+    -------------------------------------------------
+    -- Remaining Slots Must Be Recomputed, Not Reused
+    --
+    -- GetRemainingSlots only ever builds a given item's
+    -- entry once and caches it from then on (so it can
+    -- be mutated in place as people win items during the
+    -- raid) -- which meant an item seen in an earlier
+    -- import kept showing that OLD reserver list even
+    -- after a completely fresh CSV came in, since nothing
+    -- ever told it to throw the cached version away.
+    -- Clearing it here forces every item to rebuild from
+    -- this import's actual Reserves the next time it's
+    -- asked for. WonLog is deliberately left alone --
+    -- that's this raid night's win history, which a
+    -- re-import (to pick up a late reservation, say)
+    -- shouldn't erase.
+    -------------------------------------------------
+
+    self.State.Remaining = {}
+
+    local firstLine = true
+    local reserveCount = 0
+
+    for line in csv:gmatch("[^\r\n]+") do
+
+        if firstLine then
+
+            firstLine = false
+
+        else
+
+            local fields = ParseCSVLine(line)
+
+            local itemName = fields[1]
+            local itemID = fields[2]
+            local boss = fields[3]
+            local player = fields[4]
+            local class = fields[5]
+            local spec = fields[6]
+            local note = fields[7]
+            local plus = fields[8]
+            local date = fields[9]
+
+            if itemID and tonumber(itemID) then
+
+                itemID = tonumber(itemID)
+
+                if not self.State.Reserves[itemID] then
+                    self.State.Reserves[itemID] = {}
+                end
+
+                table.insert(self.State.Reserves[itemID], {
+
+                    Player = player,
+                    Class = class,
+                    Spec = spec,
+
+                    ItemName = itemName,
+                    Boss = boss,
+
+                    Note = note,
+                    Plus = tonumber(plus) or 0,
+                    Date = date,
+
+                })
+
+                reserveCount = reserveCount + 1
+
+            end
+
+        end
+
+    end
+
+    return reserveCount
+
+end
+
+-------------------------------------------------
+-- Get Reserves for Item
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetReserves(itemID)
+
+    if not self.State.Reserves then
+        return {}
+    end
+
+    return self.State.Reserves[itemID] or {}
+
+end
+
+-------------------------------------------------
+-- Get Total Reserve Count
+--
+-- Sum of every individual reserve entry across every
+-- item -- for the counter shown next to the Import CSV
+-- button, so it's obvious at a glance whether SRs are
+-- currently loaded at all without opening anything.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetTotalReserveCount()
+
+    local count = 0
+
+    for _, reserves in pairs(self.State.Reserves or {}) do
+        count = count + #reserves
+    end
+
+    return count
+
+end
+
+-------------------------------------------------
+-- Get Import Date
+--
+-- The date the CSV was last imported (captured at
+-- import time -- see Import above), for display next to
+-- the SR counter. The SoftRes.it export's own Date
+-- column is a per-reservation submission timestamp, not
+-- a single raid-wide date, so there's nothing in the CSV
+-- itself to show instead.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetImportDate()
+    return self.State.ImportDate
+end
+
+-------------------------------------------------
+-- Remaining Rollers (Working State)
+--
+-- Expands each reserve record into one flat "slot"
+-- per effective roll (1 base + Plus, unless multiple
+-- reserves are disallowed) so the same table.remove
+-- shift-and-compact mechanic used for Loot Council
+-- applies here too. Falls back to a fresh expansion
+-- from the current import if this item hasn't been
+-- touched yet this session.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetRemainingSlots(itemID)
+
+    if not self.State.Remaining[itemID] then
+
+        local slots = {}
+
+        for _, reserve in ipairs(self:GetReserves(itemID)) do
+
+            local count = 1
+
+            if self.State.Settings.AllowMultipleReserves then
+                count = 1 + (reserve.Plus or 0)
+            end
+
+            for i = 1, count do
+
+                table.insert(slots, {
+                    Player = reserve.Player,
+                    Class = reserve.Class,
+                    Spec = reserve.Spec,
+                })
+
+            end
+
+        end
+
+        self.State.Remaining[itemID] = slots
+
+    end
+
+    return self.State.Remaining[itemID]
+
+end
+
+-------------------------------------------------
+-- Get Sole Reserver
+--
+-- Returns the player's name if every remaining slot for
+-- this item belongs to that one single player (whether
+-- they hold one slot or several via Plus), so the loot
+-- master can skip straight to assigning instead of
+-- running an announcement/roll that only one person
+-- could ever win. Returns nil when there's no one left,
+-- or when more than one distinct player is still
+-- eligible.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetSoleReserver(itemID)
+
+    local present = self:GetPresentReservers(itemID)
+
+    if #present == 1 then
+        return present[1]
+    end
+
+    return nil
+
+end
+
+-------------------------------------------------
+-- Get Distinct Reservers
+--
+-- The unique players still eligible for this item,
+-- collapsing away Plus (multi-slot) duplicates -- a
+-- Plus reserve means extra ROLLS for that one person,
+-- not an extra person, so it must never inflate a
+-- count of how many distinct people are still in the
+-- running. Order matches each player's first
+-- appearance in GetRemainingSlots.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetDistinctReservers(itemID)
+
+    local slots = self:GetRemainingSlots(itemID)
+    local seen = {}
+    local players = {}
+
+    for _, slot in ipairs(slots) do
+
+        if not seen[slot.Player] then
+            seen[slot.Player] = true
+            table.insert(players, slot.Player)
+        end
+
+    end
+
+    return players
+
+end
+
+-------------------------------------------------
+-- Get Present Reservers
+--
+-- GetDistinctReservers, filtered down to whoever's
+-- actually in the raid right now (see
+-- LootMaster:IsPlayerPresent -- offline-but-in-group
+-- still counts as present; only genuinely not being in
+-- the raid at all doesn't). This is what Sole Reserver
+-- and the multi-copy comparison both reason about --
+-- someone who reserved an item but was never on the
+-- raid shouldn't factor into either decision.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:GetPresentReservers(itemID)
+
+    local all = self:GetDistinctReservers(itemID)
+    local present = {}
+
+    for _, player in ipairs(all) do
+
+        if ImpLoot.LootMaster:IsPlayerPresent(player) then
+            table.insert(present, player)
+        end
+
+    end
+
+    return present
+
+end
+
+-------------------------------------------------
+-- Record Win
+--
+-- Removes the winner's FIRST remaining slot for this
+-- item and shifts the rest up, unless Exclude Previous
+-- Winners is turned off (in which case winning doesn't
+-- remove eligibility for a repeat drop).
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:RecordWin(itemID, winnerName)
+
+    if not self.State.Settings.ExcludePreviousWinners then
+        return
+    end
+
+    local slots = self:GetRemainingSlots(itemID)
+
+    for i, slot in ipairs(slots) do
+
+        if slot.Player == winnerName then
+
+            table.remove(slots, i)
+
+            break
+
+        end
+
+    end
+
+    self.State.WonLog[itemID] = self.State.WonLog[itemID] or {}
+
+    table.insert(self.State.WonLog[itemID], { Winner = winnerName })
+
+end
+
+function ImpLoot.SoftReserve:GetWonLog(itemID)
+    return self.State.WonLog[itemID] or {}
+end
+
+-------------------------------------------------
+-- Clear Raid History
+--
+-- Resets working state (remaining slots + won log)
+-- for every item -- never touches the imported
+-- reserve list itself, and never touches settings.
+-------------------------------------------------
+
+function ImpLoot.SoftReserve:ClearRaidHistory()
+
+    self.State.Remaining = {}
+    self.State.WonLog = {}
+
+end

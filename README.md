@@ -72,6 +72,9 @@ Open the planning tab on the right edge of the window and choose **Wishlist**.
 - An item added more than once shows its count (for example `x2`). `Alt`+click an item in the wishlist to remove one copy. Click an item to jump to the boss that drops it.
 - Switch between **All Items**, **By Raid** (grouped by raid and difficulty, such as "Icecrown Citadel 10 - Heroic") and **By Slot**.
 
+<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/f52fd2b5-83bb-4e71-823f-f26354503880" />
+<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/cd69270c-10d9-41a0-b529-17e02f697647" />
+
 ### Characters
 
 The **Characters** page lists every character you've logged in with ImpLoot. Pick one to view and edit its wishlists from any character, which is handy for planning an alt's gear without logging onto it. Choosing a character here only changes which wishlist you're looking at; it never affects the character you're actually playing.
@@ -79,6 +82,8 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 ### Raid Planner
 
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
+
+<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/448da1e9-4739-4e15-b3f4-d41356ec4f56" />
 
 ### Compare
 

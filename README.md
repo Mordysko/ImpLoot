@@ -122,7 +122,7 @@ More detail is available in-game: each options category has its own description,
 
 ## Assigning to someone who isn't present
 
-An item is only handed out through WoW's Master Loot system if the winner can actually receive it right now (in the raid and in range of the corpse). If they can't, ImpLoot doesn't error or get stuck: it records them as the winner, marks the item resolved, and flags it **(trade it)** in the queue. The chat message reads `Recorded -- trade this item to <name>.` That's your cue to trade or mail it to them yourself later.
+An item is only handed out through WoW's Master Loot system if the winner can actually receive it right now (in the raid and in range of the corpse). If they can't, ImpLoot doesn't error or get stuck: it records them as the winner, marks the item resolved, and flags it **(te it)** in the queue. The chat message reads `Recorded -- te this item to <name>.` That's your cue to te or mail it to them yourself later.
 
 ## The Summary window
 
@@ -189,11 +189,11 @@ Besides building a list in-game (**Populate Item List**), you can import one fro
 itemID, mode, candidate, candidate, ...;
 ```
 
-For example, Dark Edge of Depravity (item 45533) in Priority mode, first candidate the player Mordality, second any Hunter:
+For example, Dark Edge of Depravity (item 45533) in Priority mode, first candidate the player Moradladdy, second any Hunter:
 
 ```
-45533, prio, Mordality, hunter;
-39633, vote, Rad;
+45533, prio, Moradladdy, hunter;
+39633, vote, Brad;
 ```
 
 **Fields**
@@ -231,7 +231,7 @@ Legendary drops (Fragment of Val'anyr and similar) can't be undone once looted o
 
 - The item's row in the queue has an **orange border**.
 - Assigning one, whether you click Assign or Auto-Assign picks a winner, **always pauses for a confirmation popup**. Auto-Assign still picks the winner; it just won't commit without you. Every other item assigns immediately as normal.
-- For Loot Council Priority-mode items, each candidate's name shows how many of that exact item they've already won this session (e.g. "Rad (2 so far)").
+- For Loot Council Priority-mode items, each candidate's name shows how many of that exact item they've already won this session (e.g. "Brad (2 so far)").
 
 ## Slash commands
 

@@ -938,12 +938,22 @@ local TOKEN_CLASS_GROUPS = {
 
 ImpLoot.LootMaster.TokenClassGroups = TOKEN_CLASS_GROUPS
 
-function ImpLoot.LootMaster:AnnounceItem(queueID)
+-- `copies` (optional) is how many copies are being rolled
+-- for together as one group (see StartGroupRoll) -- the
+-- chat announcement then reads "[Item] x2" so the raid
+-- knows one roll covers every copy.
+function ImpLoot.LootMaster:AnnounceItem(queueID, copies)
 
     local entry = self:GetEntry(queueID)
 
     if not entry then
         return false, "Item not found in queue."
+    end
+
+    local announcedLink = entry.ItemLink
+
+    if copies and copies > 1 then
+        announcedLink = (entry.ItemLink or "") .. " x" .. copies
     end
 
     local listName, councilItem
@@ -974,7 +984,7 @@ function ImpLoot.LootMaster:AnnounceItem(queueID)
     if entry.Mode == "SoftReserve" then
 
         ImpLoot.Announcements:Announce("SoftReserveAnnounced", {
-            item = entry.ItemLink,
+            item = announcedLink,
             reservers = self:FormatReserverListForAnnouncement(entry.ItemID),
         })
 
@@ -1002,13 +1012,19 @@ function ImpLoot.LootMaster:AnnounceItem(queueID)
     else
 
         ImpLoot.Announcements:Announce("OpenRollAnnounced", {
-            item = entry.ItemLink,
+            item = announcedLink,
             seconds = self.Settings.RollDuration,
         })
 
     end
 
-    local item = ImpLoot.Database:FindItemByID(entry.ItemID)
+    -- "Can be used by: <classes>" only makes sense for an Open
+    -- Roll, where anyone of those classes may roll. A Soft
+    -- Reserve roll is limited to its reservers, and a
+    -- Preselected one to its listed players, so the class line
+    -- there just reads like a second, open invitation.
+    local item = entry.Mode == "OpenRoll"
+        and ImpLoot.Database:FindItemByID(entry.ItemID)
 
     -- Class-locked gear lists its own classes; tier tokens are
     -- worked out from their name (see SoftReserve:GetItemClasses)
@@ -1185,6 +1201,7 @@ function ImpLoot.LootMaster:StartRoll(queueID)
 
     entry.State = "Rolling"
     entry.Rolls = {}
+    entry.RollGroup = nil
 
     if self.Settings.RollDuration and self.Settings.RollDuration > 0 then
 
@@ -1385,6 +1402,15 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
         return
     end
 
+    -- Several copies rolled for together (see StartGroupRoll)
+    -- finish together, with one winner per copy.
+    local group = self:GetRollGroupEntries(entry)
+
+    if #group > 1 then
+        self:FinalizeGroupRoll(group, isManualStop)
+        return
+    end
+
     self:StopRoll(queueID)
 
     entry.RollEndTime = nil
@@ -1432,38 +1458,6 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
     -------------------------------------------------
 
     if isManualStop then
-
-        -------------------------------------------------
-        -- Stop Also Finalizes Any Sibling Still Rolling
-        --
-        -- Clicking Stop only ever directly targets the
-        -- one row it's clicked on -- for a multi-copy
-        -- Soft Reserve group (see ExecuteGroupRoll),
-        -- every copy was started rolling together, but
-        -- without this they'd only ever get *stopped*
-        -- together if the loot master happened to click
-        -- Stop on each one separately. Left alone, a
-        -- sibling copy would just sit on its own Stop
-        -- button indefinitely once this one's already
-        -- resolved -- no Assign button, no auto-assign,
-        -- nothing, until someone noticed and clicked it
-        -- too. Recursing here finalizes each one exactly
-        -- as if Stop had been clicked on it directly,
-        -- including its own winner announcement and
-        -- assignment -- and since each call only ever
-        -- looks at siblings still in "Rolling" (this one
-        -- is "RollComplete" by the time it loops back
-        -- around), it can't re-process the same entry
-        -- twice or loop forever.
-        -------------------------------------------------
-
-        for _, sibling in ipairs(self:GetSiblingEntries(entry)) do
-
-            if sibling.State == "Rolling" then
-                self:FinalizeRoll(sibling.QueueID, true)
-            end
-
-        end
 
         if topRoll then
             self:RequestAssign(queueID, topRoll.Player)
@@ -1888,35 +1882,244 @@ end
 -------------------------------------------------
 -- Execute Group Roll
 --
--- The "reservers > copies" outcome: every copy in the
--- group needs a roll, but as one combined event -- a
--- single announcement and every copy's timer starting
--- together, rather than the loot master having to
--- click Announce on each copy separately (which is
--- exactly how a copy could be left un-announced with
--- no roll data of its own, sitting out the whole roll
--- period). Rolls mirroring across copies and excluding
--- an assigned winner from the others' standings is
--- unchanged, existing behaviour (see ProcessRoll and
--- Assign) -- this only fixes how the group gets
--- started in the first place.
+-- The "reservers > copies" outcome: every copy is
+-- rolled for together as one event (see StartGroupRoll).
 -------------------------------------------------
 
 function ImpLoot.LootMaster:ExecuteGroupRoll(decision)
+    return self:StartGroupRoll(decision.Group)
+end
 
-    local group = decision.Group
+-------------------------------------------------
+-- Get Open Roll Copy Group
+--
+-- Every still-Pending Open Roll copy of the same item
+-- from the same corpse, itself included. Returns nil
+-- when there's only the one copy. A Soft Reserve copy
+-- whose reservers are all absent counts as Open Roll
+-- here too (the Loot Master window makes the same
+-- switch when it draws the row).
+-------------------------------------------------
 
-    -- AnnounceItem handles the chat message, the addon-
-    -- to-addon sync, and the eligible-classes follow-up
-    -- (if any) -- all identical for every copy since they
-    -- share the same ItemID/Mode/reserver list, so that
-    -- only needs to happen once, via the first copy.
-    -- Every other copy just needs its own timer started.
+function ImpLoot.LootMaster:GetOpenRollCopyGroup(entry)
 
-    self:AnnounceItem(group[1].QueueID)
+    local function IsOpenRoll(e)
+
+        if e.Mode == "OpenRoll" then
+            return true
+        end
+
+        return e.Mode == "SoftReserve"
+            and #ImpLoot.SoftReserve:GetPresentReservers(e.ItemID) == 0
+
+    end
+
+    if not IsOpenRoll(entry) then
+        return nil
+    end
+
+    local group = {}
+
+    for _, copy in ipairs(self:GetCopyGroup(entry)) do
+
+        if IsOpenRoll(copy) then
+            copy.Mode = "OpenRoll"
+            table.insert(group, copy)
+        end
+
+    end
+
+    if #group <= 1 then
+        return nil
+    end
+
+    return group
+
+end
+
+-------------------------------------------------
+-- Start Group Roll
+--
+-- Two or more copies of the same item from the same
+-- corpse are rolled for ONCE: one announcement ("[Item]
+-- x2"), one shared timer, and the rolls mirrored onto
+-- every copy (see ProcessRoll). When it ends,
+-- FinalizeGroupRoll gives the first copy to the highest
+-- roller, the second to the next-highest DIFFERENT
+-- player, and so on.
+--
+-- The first copy is the "leader": its timer drives the
+-- countdown and it's the one rolls are routed to. Every
+-- copy is tagged with the full group (RollGroup) so a
+-- Stop on any of them ends the whole roll.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:StartGroupRoll(group)
+
+    local leader = group[1]
+
+    local ok, message = self:AnnounceItem(leader.QueueID, #group)
+
+    if not ok then
+        return false, message
+    end
+
+    local ids = {}
+
+    for _, copy in ipairs(group) do
+        table.insert(ids, copy.QueueID)
+    end
 
     for i = 2, #group do
         self:StartRoll(group[i].QueueID)
+        group[i].RollEndTime = leader.RollEndTime
+    end
+
+    for _, copy in ipairs(group) do
+        copy.RollGroup = ids
+    end
+
+    self.ActiveRollQueueID = leader.QueueID
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+    return true
+
+end
+
+-------------------------------------------------
+-- Get Roll Group Entries
+--
+-- The copies rolled for together with this entry
+-- (itself included, leader first), or just the entry
+-- on its own if it wasn't part of a group roll.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetRollGroupEntries(entry)
+
+    if not entry.RollGroup then
+        return { entry }
+    end
+
+    local group = {}
+
+    for _, id in ipairs(entry.RollGroup) do
+
+        local copy = self:GetEntry(id)
+
+        if copy then
+            table.insert(group, copy)
+        end
+
+    end
+
+    return group
+
+end
+
+-------------------------------------------------
+-- Finalize Group Roll
+--
+-- Ends every copy's roll at once and works out one
+-- winner per copy from the shared standings: the top
+-- roller gets the first copy, the next-highest
+-- different player the second, and so on. Copies with
+-- no one left to win them go to the disenchanter (if
+-- one is set), same as a single item nobody rolled on.
+--
+-- Follows the same settings as a single roll: Stop
+-- always assigns; a timeout only assigns with Auto
+-- Finalize (and Auto Assign for actual winners) on.
+-- With those off, each copy just sits ready to Assign,
+-- and assigning one removes that winner from the
+-- other copies' standings (see Assign).
+-------------------------------------------------
+
+function ImpLoot.LootMaster:FinalizeGroupRoll(group, isManualStop)
+
+    local copies = {}
+
+    for _, copy in ipairs(group) do
+
+        self:StopRoll(copy.QueueID)
+
+        if copy.State == "Rolling" then
+
+            copy.RollEndTime = nil
+            copy.State = "RollComplete"
+
+            table.insert(copies, copy)
+
+        end
+
+    end
+
+    if #copies == 0 then
+        return
+    end
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+    -- Every copy holds the same mirrored, already-sorted rolls.
+    local winners = {}
+    local seen = {}
+
+    for _, roll in ipairs(copies[1].Rolls) do
+
+        if #winners >= #copies then
+            break
+        end
+
+        if not seen[roll.Player] then
+            seen[roll.Player] = true
+            table.insert(winners, roll)
+        end
+
+    end
+
+    for i, roll in ipairs(winners) do
+
+        ImpLoot.Announcements:Announce("WinnerAnnounced", {
+            item = copies[i].ItemLink,
+            winner = roll.Player,
+            roll = tostring(roll.Roll),
+            range = tostring(roll.Min) .. "-" .. tostring(roll.Max),
+        })
+
+    end
+
+    if not isManualStop and not self.Settings.AutoFinalizeOnTimeout then
+        return
+    end
+
+    local disenchanter = nil
+
+    if #winners < #copies then
+        disenchanter = ImpLoot.LootCouncil:GetActiveDisenchanter(
+            self:GetRaidRosterNames()
+        )
+    end
+
+    for i, copy in ipairs(copies) do
+
+        local roll = winners[i]
+
+        if roll then
+
+            if isManualStop or self.Settings.AutoAssignToRollWinner then
+                self:RequestAssign(copy.QueueID, roll.Player)
+            end
+
+        elseif disenchanter then
+
+            ImpLoot.Announcements:Announce("NoRollsDisenchant", {
+                item = copy.ItemLink,
+            })
+
+            self:RequestAssign(copy.QueueID, disenchanter)
+
+        end
+
     end
 
 end

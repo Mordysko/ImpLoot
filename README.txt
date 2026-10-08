@@ -305,18 +305,23 @@ copies dropped (this applies with Allow multiple reserves off):
 - Reservers <= copies: no roll. One click assigns one copy to each
   reserver, with a single combined announcement. Any leftover copy is
   released to a plain Open Roll.
-- Reservers > copies: one combined roll covering every copy: a single
-  announcement, and every timer starts from the same click. A single
-  roll counts toward every copy's standings, and once a copy is
-  assigned, that winner is excluded from the others. The top N rollers
-  (N = number of copies) each get one. Clicking Stop on one copy also
-  finalizes every other copy still rolling, each to its own top roller.
+- Reservers > copies: one combined roll covering every copy, announced
+  once as "[Item] x2" with one shared timer. Each person rolls once,
+  and when the roll ends the top N different rollers (N = number of
+  copies) each get one copy. Clicking Stop on any copy ends the roll
+  for all of them.
 - A Plus reserve counts as one extra chance to roll for that person, not
   an extra distinct reserver, so it never changes the comparison.
 
 With Allow multiple reserves on, none of this applies: each copy is
 handled completely on its own, since the point of that setting is
 letting the same person win more than one copy.
+
+Copies nobody reserved work the same way as a combined roll: the row
+shows "No SoftRes (2 copies -- one roll for all)", and Open Roll on
+either copy starts one roll for both. For example, if Brad rolls 95,
+Moradladdy 80 and Knightdeath 40, Brad gets the first copy and
+Moradladdy the second.
 
 Absent reservers
 ~~~~~~~~~~~~~~~~

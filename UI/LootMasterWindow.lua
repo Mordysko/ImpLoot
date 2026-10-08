@@ -863,6 +863,11 @@ function LootMasterWindow:PopulateRow(row, entry)
         local soleReserver = (not multiCopyDecision) and entry.Mode == "SoftReserve"
             and ImpLoot.SoftReserve:GetSoleReserver(entry.ItemID)
 
+        -- Two or more unreserved copies from the same corpse
+        -- are rolled for once, together (see StartGroupRoll).
+        local openRollGroup = entry.Mode == "OpenRoll"
+            and ImpLoot.LootMaster:GetOpenRollCopyGroup(entry)
+
         if multiCopyDecision and multiCopyDecision.Type == "DirectAssign" then
 
             -- As many (or fewer) distinct reservers as
@@ -922,6 +927,10 @@ function LootMasterWindow:PopulateRow(row, entry)
                 row.InfoText:SetText("Preselected: " .. table.concat(names, ", "))
             end
 
+        elseif openRollGroup then
+
+            row.InfoText:SetText("No SoftRes (" .. #openRollGroup .. " copies -- one roll for all)")
+
         else
 
             row.InfoText:SetText("No SoftRes")
@@ -956,6 +965,26 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                 ImpLoot.LootMaster:AssignSoleReserver(entry.QueueID, soleReserver)
                 return
+
+            end
+
+            if openRollGroup then
+
+                -- Re-checked at click time in case a copy was
+                -- removed or started since the row was drawn.
+                local group = ImpLoot.LootMaster:GetOpenRollCopyGroup(entry)
+
+                if group then
+
+                    local ok, msg = ImpLoot.LootMaster:StartGroupRoll(group)
+
+                    if not ok then
+                        ImpLoot:Print(msg)
+                    end
+
+                    return
+
+                end
 
             end
 

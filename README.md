@@ -1,4 +1,6 @@
-<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/f804cb3b-140c-4f44-9a3e-ff1ec124193e" />
+<p align="center">
+  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
+</p>
 
 # ImpLoot
 
@@ -52,8 +54,6 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
 
-<img width="825" height="542" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/aab835dc-3791-4f58-8240-c07fc672ca79" />
-
 ### What you can do with an item
 
 These work on any item in the loot list:
@@ -73,11 +73,6 @@ Open the planning tab on the right edge of the window and choose **Wishlist**.
 - An item added more than once shows its count (for example `x2`). `Alt`+click an item in the wishlist to remove one copy. Click an item to jump to the boss that drops it.
 - Switch between **All Items**, **By Raid** (grouped by raid and difficulty, such as "Icecrown Citadel 10 - Heroic") and **By Slot**.
 
-<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/7665d067-8154-4313-8eea-7c783ca638b6" />
-<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/ead5b9e5-1307-4718-a7b5-8d9d3a33fa87" />
-<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/eb85115c-154a-4203-9cb5-38998f0c1afb" />
-
-
 ### Characters
 
 The **Characters** page lists every character you've logged in with ImpLoot. Pick one to view and edit its wishlists from any character, which is handy for planning an alt's gear without logging onto it. Choosing a character here only changes which wishlist you're looking at; it never affects the character you're actually playing.
@@ -86,8 +81,6 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
-<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/7f9c6049-f9a9-4d56-8a16-f2278836c03c" />
-
 ### Compare
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
@@ -95,8 +88,6 @@ The **Compare** drawer is the tab on the left edge of the window. It holds two i
 - While the drawer is open, `Alt`+click on an item in the loot list fills **slot 1**, and `Alt`+right-click fills **slot 2**. (This replaces `Alt`+click adding to your wishlist for as long as the drawer is open.)
 - Click a slot to **lock** it so it isn't replaced, and click again to unlock. Right-click a slot to remove its item (a locked slot has to be unlocked first). `Ctrl`+click a slot to try the item on.
 - Items have to fit the same slot to be compared. Main-hand, one-hand and two-hand weapons can be compared with each other.
-
-<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/170c60a2-f07d-48ee-8885-7403c7bcfd33" />
 
 ### Raid Notes
 
@@ -110,7 +101,7 @@ When the Master Looter announces an item that's one of your Soft Reserves, or an
 
 *The rest of this guide, up to Slash commands, is for whoever is running loot as Master Looter.*
 
-1. **Before raid:** if you're running Soft Reserves, open ImpLoot (`/il`), go to the Loot panel, click **Import CSV** and paste your SoftRes.it export. Both current SoftRes.it CSV formats are supported.
+1. **Before raid:** if you're running Soft Reserves, open ImpLoot (`/il`), open the Soft Reserve window (the **Soft Reserve** button in the Loot Master window), click **Import CSV** and paste your SoftRes.it export. Both current SoftRes.it CSV formats are supported.
 2. **Loot drops.** As Master Looter, the Loot Master window opens with the items in the queue. Nobody else in the raid sees it.
 3. **Click Open Roll** on an item (**Announce** if it's Soft Reserved). This announces it to the raid, with the reserver names for a Soft Reserved item, and starts the roll timer. A live countdown shows next to the button.
 4. **End the roll.** Let the timer run out, or click **Stop** to end it early. The winner is announced the moment the roll ends. Clicking Stop yourself always assigns the item to whoever is currently winning (if anyone has rolled), regardless of your Auto Assign setting.
@@ -140,7 +131,7 @@ The **Soft Reserve** button on the Loot Master window opens the same window stra
 
 ### Importing
 
-- Click **Import CSV** on the Loot panel and paste your SoftRes.it export. A counter next to the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file).
+- Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter next to the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away.
 

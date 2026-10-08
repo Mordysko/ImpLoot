@@ -50,7 +50,7 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
-<img width="825" height="542" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/3dc5ecea-4c99-4af3-bc0b-7355eb2f4081" />
+<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/c573db9b-9780-4e5c-856d-b8b28e2d7c61" />
 
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
 
@@ -139,11 +139,15 @@ The **Soft Reserve** button on the Loot Master window opens the same window stra
 
 ### Importing
 
+<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/e6dae1a8-773c-48f8-8ae2-d671ad3e4892" />
+
 - Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter next to the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away.
 
 ### Editing by hand
+
+<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/5244bad1-016b-4a4d-877b-1590dada7919" />
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
 

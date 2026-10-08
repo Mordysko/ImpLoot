@@ -295,7 +295,7 @@ end
 -- Get Total Reserve Count
 --
 -- Sum of every individual reserve entry across every
--- item -- for the counter shown next to the Import CSV
+-- item -- for the counter shown under the Import CSV
 -- button, so it's obvious at a glance whether SRs are
 -- currently loaded at all without opening anything.
 -------------------------------------------------

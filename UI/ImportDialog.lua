@@ -14,8 +14,9 @@ local ImportDialog = ImpLoot.UI.ImportDialog
 -------------------------------------------------
 
 -- Called by SummaryWindow once its frame exists: puts the
--- "Import CSV" button and the SR counter on the Soft Reserve
--- view's top row (where Add Soft Reserve sits while editing).
+-- "Import CSV" button on the Soft Reserve view's top row
+-- (where Add Soft Reserve sits while editing), with the SR
+-- counter on its own line just underneath.
 -- SummaryWindow shows/hides them via SetChromeShown.
 function ImportDialog:Attach(summaryFrame, anchorFrame)
 
@@ -25,7 +26,7 @@ function ImportDialog:Attach(summaryFrame, anchorFrame)
     self.OpenButton = openButton
 
     openButton:SetSize(100, 20)
-    openButton:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 2, -6)
+    openButton:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 2, -2)
     openButton:SetText("Import CSV")
     openButton:Hide()
 
@@ -37,11 +38,13 @@ function ImportDialog:Attach(summaryFrame, anchorFrame)
     -- so it's obvious at a glance whether an import is
     -- actually in effect. Shows the import date and, if
     -- the list was manually edited afterwards, the edit
-    -- date too.
+    -- date too. It sits under the button rather than beside
+    -- it so the longer "edited" text can't run off the edge.
     -------------------------------------------------
 
     local counterText = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    counterText:SetPoint("LEFT", openButton, "RIGHT", 8, 0)
+    counterText:SetPoint("TOPLEFT", openButton, "BOTTOMLEFT", 1, -3)
+    counterText:SetJustifyH("LEFT")
     counterText:Hide()
     self.CounterText = counterText
 

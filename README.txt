@@ -235,7 +235,7 @@ Importing
 
 - Open the Soft Reserve window and click Import CSV (top left; it is
   hidden while you are editing) and paste your SoftRes.it export. A
-  counter next to the button shows how many reserves are loaded and the
+  counter under the button shows how many reserves are loaded and the
   date of the last import (the date you imported it in-game, not
   anything from the file). If you edit the list afterwards, the counter
   also shows the date of the last edit.

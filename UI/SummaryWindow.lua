@@ -20,6 +20,11 @@ local CARD_GAP = 6
 
 -- Gap between the window edge and the reserve cards, both sides
 local SR_SIDE_MARGIN = 10
+
+-- Where the reserve card list starts, measured down from the
+-- title bar: room for the Import CSV row plus the SR counter
+-- line beneath it.
+local SR_LIST_TOP_OFFSET = -40
 local ITEM_ROW_HEIGHT = 16
 
 -------------------------------------------------
@@ -116,8 +121,8 @@ function SummaryWindow:Initialize()
     --
     -- "Edit Soft Reserves" sits by the close button; once
     -- clicked, "Add Soft Reserve" and "Save" appear on the
-    -- row below (the one Post to raid / Clear use on the
-    -- other view) and each player's card gets an Edit button.
+    -- row below (level with Import CSV, which they replace)
+    -- and each player's card gets an Edit button.
     -- All shown/hidden by UpdateEditChrome.
     -------------------------------------------------
 
@@ -131,18 +136,19 @@ function SummaryWindow:Initialize()
 
     local addButton = ImpLoot.Theme:CreateMenuButton(frame)
     addButton:SetSize(120, 20)
-    addButton:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 2, -6)
+    addButton:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 2, -2)
     addButton:SetText("Add Soft Reserve")
     addButton:Hide()
     addButton:SetScript("OnClick", function() self:OpenEditor(nil) end)
     self.AddButton = addButton
 
-    -- Import CSV + SR counter share this row when not editing.
+    -- Import CSV sits on this row when not editing, with the
+    -- SR counter on its own line underneath.
     ImpLoot.UI.ImportDialog:Attach(frame, titleBar)
 
     local saveButton = ImpLoot.Theme:CreateMenuButton(frame)
     saveButton:SetSize(70, 20)
-    saveButton:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", -2, -6)
+    saveButton:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", -2, -2)
     saveButton:SetText("Save")
     saveButton:Hide()
     saveButton:SetScript("OnClick", function() self:SaveEdits() end)
@@ -199,7 +205,10 @@ function SummaryWindow:Initialize()
     -- Equal margins left and right so the reserve cards sit centred
     -- in the window. (This view shows scroll arrows, not a scrollbar,
     -- so nothing needs reserving down the right-hand side.)
-    scrollFrame:SetPoint("TOPLEFT", postButton, "BOTTOMLEFT", SR_SIDE_MARGIN - 6, -8)
+    -- The top sits below the SR counter line (under Import CSV),
+    -- a little lower than the Who won what table, and stays put
+    -- while editing so the cards don't jump.
+    scrollFrame:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", SR_SIDE_MARGIN - 4, SR_LIST_TOP_OFFSET)
     scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SR_SIDE_MARGIN, 10)
 
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)

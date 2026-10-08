@@ -851,7 +851,7 @@ end
 -------------------------------------------------
 -- Join With Ampersand
 --
--- "Rad" / "Rad & Smeb" / "Rad, Smeb, & Mordy" --
+-- "Brad" / "Brad & Knightdeath" / "Brad, Knightdeath, & Moradladdy" --
 -- comma-separated with an Oxford-comma "&" before
 -- the last name.
 -------------------------------------------------

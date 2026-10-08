@@ -200,7 +200,7 @@ end
 -- Items Within A List
 --
 -- candidates is up to 5 entries, each either
--- { Type = "Player", Value = "Rad" } or
+-- { Type = "Player", Value = "Brad" } or
 -- { Type = "Class", Value = "Warrior" }.
 -------------------------------------------------
 
@@ -598,9 +598,9 @@ end
 --
 --   itemID, mode, candidate, candidate, ...;
 --
--- e.g. "45533, prio, Mordality, hunter;" -- Dark Edge
+-- e.g. "45533, prio, Moradladdy, hunter;" -- Dark Edge
 -- of Depravity, Priority mode, candidate 1 is the
--- player Mordality, candidate 2 is any Hunter.
+-- player Moradladdy, candidate 2 is any Hunter.
 --
 -- mode is one of: prio=Priority, vote=Vote, fun=Funnel,
 -- pres=Preselected. Item IDs (not names) are used

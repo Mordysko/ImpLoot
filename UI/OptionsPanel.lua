@@ -1084,7 +1084,7 @@ function OptionsPanel:BuildAboutPanel()
         "finishing something you don't want to risk losing is a cheap safety net.\n\n" ..
         "Priority List Import/Export (in the Loot Priority window) uses a compact " ..
         "text format: \"itemID, mode, candidate, candidate;\" per item, e.g. " ..
-        "\"45533, prio, Mordality, hunter;\" -- mode is prio/vote/fun/pres for " ..
+        "\"45533, prio, Moradladdy, hunter;\" -- mode is prio/vote/fun/pres for " ..
         "Priority/Vote/Funnel/Preselected, and a candidate is either a player name " ..
         "or a class name (meaning \"any <class>\"). See the README for the full guide.\n\n" ..
         "Thanks to Xolo for testing."

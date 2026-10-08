@@ -17,6 +17,9 @@ local WINDOW_WIDTH = 400
 local WINDOW_HEIGHT = 420
 local CARD_PADDING = 6
 local CARD_GAP = 6
+
+-- Gap between the window edge and the reserve cards, both sides
+local SR_SIDE_MARGIN = 10
 local ITEM_ROW_HEIGHT = 16
 
 -------------------------------------------------
@@ -190,11 +193,14 @@ function SummaryWindow:Initialize()
 
     self.ScrollFrame = scrollFrame
 
-    scrollFrame:SetPoint("TOPLEFT", postButton, "BOTTOMLEFT", -2, -8)
-    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 10)
+    -- Equal margins left and right so the reserve cards sit centred
+    -- in the window. (This view shows scroll arrows, not a scrollbar,
+    -- so nothing needs reserving down the right-hand side.)
+    scrollFrame:SetPoint("TOPLEFT", postButton, "BOTTOMLEFT", SR_SIDE_MARGIN - 6, -8)
+    scrollFrame:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -SR_SIDE_MARGIN, 10)
 
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-    scrollChild:SetWidth(WINDOW_WIDTH - 36)
+    scrollChild:SetWidth(WINDOW_WIDTH - (SR_SIDE_MARGIN * 2))
     scrollChild:SetHeight(1)
 
     self.ScrollChild = scrollChild

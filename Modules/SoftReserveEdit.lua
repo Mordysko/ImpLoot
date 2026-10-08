@@ -323,6 +323,7 @@ function SoftReserve:CommitDraft(draft)
 
     self.State.Reserves = reserves
     self.State.Remaining = {}
+    self.State.EditedDate = date and date("%Y-%m-%d") or nil
 
     return count
 

@@ -137,6 +137,9 @@ function SummaryWindow:Initialize()
     addButton:SetScript("OnClick", function() self:OpenEditor(nil) end)
     self.AddButton = addButton
 
+    -- Import CSV + SR counter share this row when not editing.
+    ImpLoot.UI.ImportDialog:Attach(frame, titleBar)
+
     local saveButton = ImpLoot.Theme:CreateMenuButton(frame)
     saveButton:SetSize(70, 20)
     saveButton:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", -2, -6)
@@ -1226,6 +1229,7 @@ function SummaryWindow:UpdateEditChrome()
 
             self.AddButton:Show()
             self.SaveButton:Show()
+            ImpLoot.UI.ImportDialog:SetChromeShown(false)
 
         else
 
@@ -1234,6 +1238,7 @@ function SummaryWindow:UpdateEditChrome()
 
             self.AddButton:Hide()
             self.SaveButton:Hide()
+            ImpLoot.UI.ImportDialog:SetChromeShown(true)
 
         end
 
@@ -1242,6 +1247,7 @@ function SummaryWindow:UpdateEditChrome()
         self.EditModeButton:Hide()
         self.AddButton:Hide()
         self.SaveButton:Hide()
+        ImpLoot.UI.ImportDialog:SetChromeShown(false)
 
     end
 

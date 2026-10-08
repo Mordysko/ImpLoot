@@ -13,18 +13,21 @@ local ImportDialog = ImpLoot.UI.ImportDialog
 -- Initialize
 -------------------------------------------------
 
-function ImportDialog:Initialize(mainWindowFrame)
+-- Called by SummaryWindow once its frame exists: puts the
+-- "Import CSV" button and the SR counter on the Soft Reserve
+-- view's top row (where Add Soft Reserve sits while editing).
+-- SummaryWindow shows/hides them via SetChromeShown.
+function ImportDialog:Attach(summaryFrame, anchorFrame)
 
-    -------------------------------------------------
-    -- Open Button
-    -------------------------------------------------
+    self.SummaryFrame = summaryFrame
 
-    local openButton = ImpLoot.Theme:CreateMenuButton(mainWindowFrame)
+    local openButton = ImpLoot.Theme:CreateMenuButton(summaryFrame)
     self.OpenButton = openButton
 
-    openButton:SetSize(100, 24)
-    openButton:SetPoint("BOTTOMRIGHT", -5, 5)
+    openButton:SetSize(100, 20)
+    openButton:SetPoint("TOPLEFT", anchorFrame, "BOTTOMLEFT", 2, -6)
     openButton:SetText("Import CSV")
+    openButton:Hide()
 
     -------------------------------------------------
     -- SR Counter
@@ -32,57 +35,83 @@ function ImportDialog:Initialize(mainWindowFrame)
     -- Shows how many soft reserves are currently loaded
     -- (persisted across reloads -- see SoftReserve.lua)
     -- so it's obvious at a glance whether an import is
-    -- actually in effect without opening the dialog.
-    -- Also shows the date of the last import in brackets
-    -- -- the SoftRes.it export's own Date column is a
-    -- per-reservation submission timestamp rather than a
-    -- single raid date, so there's nothing in the CSV
-    -- itself worth showing instead.
+    -- actually in effect. Shows the import date and, if
+    -- the list was manually edited afterwards, the edit
+    -- date too.
     -------------------------------------------------
 
-    local counterText = mainWindowFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    counterText:SetPoint("RIGHT", openButton, "LEFT", -8, 0)
+    local counterText = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    counterText:SetPoint("LEFT", openButton, "RIGHT", 8, 0)
+    counterText:Hide()
     self.CounterText = counterText
-
-    function self:UpdateCounter()
-
-        local count = ImpLoot.SoftReserve:GetTotalReserveCount()
-
-        if count > 0 then
-
-            local text = count .. " SR" .. (count == 1 and "" or "s") .. " loaded"
-            local importDate = ImpLoot.SoftReserve:GetImportDate()
-
-            if importDate then
-                text = text .. " (" .. importDate .. ")"
-            end
-
-            counterText:SetText(text)
-
-        else
-            counterText:SetText("No SRs loaded")
-        end
-
-    end
-
-    self:UpdateCounter()
 
     openButton:SetScript("OnClick", function()
 
-        -- Recomputed every time, not just once at Initialize --
-        -- the Main Window's own strata can change later via the
-        -- Window Layering options panel, and this always needs
-        -- to end up one level above whatever it currently is.
-        self.Window:SetFrameStrata(ImpLoot.Theme:GetStrataAbove(mainWindowFrame:GetFrameStrata()))
+        -- Recomputed every time -- window strata can change via
+        -- the Window Layering options; this must always sit one
+        -- level above the Soft Reserve window.
+        self.Window:SetFrameStrata(ImpLoot.Theme:GetStrataAbove(summaryFrame:GetFrameStrata()))
 
         self.Window:Show()
     end)
+
+    self:UpdateCounter()
+
+end
+
+function ImportDialog:SetChromeShown(shown)
+
+    if not self.OpenButton then
+        return
+    end
+
+    if shown then
+        self.OpenButton:Show()
+        self.CounterText:Show()
+    else
+        self.OpenButton:Hide()
+        self.CounterText:Hide()
+    end
+
+end
+
+function ImportDialog:UpdateCounter()
+
+    if not self.CounterText then
+        return
+    end
+
+    local count = ImpLoot.SoftReserve:GetTotalReserveCount()
+
+    if count > 0 then
+
+        local text = count .. " SR" .. (count == 1 and "" or "s") .. " loaded"
+        local importDate = ImpLoot.SoftReserve:GetImportDate()
+        local editedDate = ImpLoot.SoftReserve:GetEditedDate()
+
+        if importDate and editedDate then
+            text = text .. " (" .. importDate .. ", edited " .. editedDate .. ")"
+        elseif editedDate then
+            text = text .. " (edited " .. editedDate .. ")"
+        elseif importDate then
+            text = text .. " (" .. importDate .. ")"
+        end
+
+        self.CounterText:SetText(text)
+
+    else
+        self.CounterText:SetText("No SRs loaded")
+    end
+
+end
+
+function ImportDialog:Initialize(mainWindowFrame)
 
     -------------------------------------------------
     -- Window
     -------------------------------------------------
 
-    local window = CreateFrame("Frame", nil, mainWindowFrame)
+    local window = CreateFrame("Frame", nil, UIParent)
     self.Window = window
 
     window:SetSize(500, 350)

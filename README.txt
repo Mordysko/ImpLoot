@@ -167,8 +167,9 @@ A TYPICAL RAID NIGHT
 The rest of this guide, up to Slash commands, is for whoever is running
 loot as Master Looter.
 
-1. Before raid: if you're running Soft Reserves, open ImpLoot (/il), go
-   to the Loot panel, click Import CSV and paste your SoftRes.it export.
+1. Before raid: if you're running Soft Reserves, open ImpLoot (/il),
+   open the Soft Reserve window (the Soft Reserve button in the Loot
+   Master window), click Import CSV and paste your SoftRes.it export.
    Both current SoftRes.it CSV formats are supported.
 2. Loot drops. As Master Looter, the Loot Master window opens with the
    items in the queue. Nobody else in the raid sees it.
@@ -232,10 +233,12 @@ SOFT RESERVES
 Importing
 ~~~~~~~~~
 
-- Click Import CSV on the Loot panel and paste your SoftRes.it export. A
+- Open the Soft Reserve window and click Import CSV (top left; it is
+  hidden while you are editing) and paste your SoftRes.it export. A
   counter next to the button shows how many reserves are loaded and the
   date of the last import (the date you imported it in-game, not
-  anything from the file).
+  anything from the file). If you edit the list afterwards, the counter
+  also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing
   replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list

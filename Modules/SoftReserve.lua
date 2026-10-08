@@ -197,6 +197,7 @@ function ImpLoot.SoftReserve:Import(csv)
 
     self.State.Reserves = {}
     self.State.ImportDate = date("%Y-%m-%d")
+    self.State.EditedDate = nil
 
     -------------------------------------------------
     -- Remaining Slots Must Be Recomputed, Not Reused
@@ -321,6 +322,12 @@ end
 -- a single raid-wide date, so there's nothing in the CSV
 -- itself to show instead.
 -------------------------------------------------
+
+-- Date of the last manual edit saved on top of the import (nil if
+-- the list is exactly as imported).
+function ImpLoot.SoftReserve:GetEditedDate()
+    return self.State.EditedDate
+end
 
 function ImpLoot.SoftReserve:GetImportDate()
     return self.State.ImportDate

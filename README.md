@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
-</p>
+<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/f804cb3b-140c-4f44-9a3e-ff1ec124193e" />
 
 # ImpLoot
 
@@ -54,6 +52,8 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
 
+<img width="825" height="542" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/aab835dc-3791-4f58-8240-c07fc672ca79" />
+
 ### What you can do with an item
 
 These work on any item in the loot list:
@@ -73,6 +73,11 @@ Open the planning tab on the right edge of the window and choose **Wishlist**.
 - An item added more than once shows its count (for example `x2`). `Alt`+click an item in the wishlist to remove one copy. Click an item to jump to the boss that drops it.
 - Switch between **All Items**, **By Raid** (grouped by raid and difficulty, such as "Icecrown Citadel 10 - Heroic") and **By Slot**.
 
+<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/7665d067-8154-4313-8eea-7c783ca638b6" />
+<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/ead5b9e5-1307-4718-a7b5-8d9d3a33fa87" />
+<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/eb85115c-154a-4203-9cb5-38998f0c1afb" />
+
+
 ### Characters
 
 The **Characters** page lists every character you've logged in with ImpLoot. Pick one to view and edit its wishlists from any character, which is handy for planning an alt's gear without logging onto it. Choosing a character here only changes which wishlist you're looking at; it never affects the character you're actually playing.
@@ -81,6 +86,8 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
+<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/7f9c6049-f9a9-4d56-8a16-f2278836c03c" />
+
 ### Compare
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
@@ -88,6 +95,8 @@ The **Compare** drawer is the tab on the left edge of the window. It holds two i
 - While the drawer is open, `Alt`+click on an item in the loot list fills **slot 1**, and `Alt`+right-click fills **slot 2**. (This replaces `Alt`+click adding to your wishlist for as long as the drawer is open.)
 - Click a slot to **lock** it so it isn't replaced, and click again to unlock. Right-click a slot to remove its item (a locked slot has to be unlocked first). `Ctrl`+click a slot to try the item on.
 - Items have to fit the same slot to be compared. Main-hand, one-hand and two-hand weapons can be compared with each other.
+
+<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/170c60a2-f07d-48ee-8885-7403c7bcfd33" />
 
 ### Raid Notes
 

@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
-</p>
+<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/8f03e2f1-344b-4e3a-8162-32e06f4a0c23" />
 
 # ImpLoot
 
@@ -52,6 +50,8 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
+<img width="825" height="542" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/3dc5ecea-4c99-4af3-bc0b-7355eb2f4081" />
+
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
 
 ### What you can do with an item
@@ -66,6 +66,10 @@ These work on any item in the loot list:
 
 ### Wishlists
 
+<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/089eee3b-9f9f-454b-ad08-712f748fd1db" />
+<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/73070420-577f-4f89-99a1-ac20858bd4ea" />
+<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/d7f54746-2b96-4189-8cd3-7406eacbd6f1" />
+
 Open the planning tab on the right edge of the window and choose **Wishlist**.
 
 - Make as many named wishlists as you like (for example "Ulduar - Discipline"), and rename or delete them whenever you want.
@@ -79,9 +83,13 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 ### Raid Planner
 
+<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/1913fb84-01ee-4672-a755-c6ab37d259dc" />
+
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
 ### Compare
+
+<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/2435110f-8f6e-4bbb-b8c2-99579e77da8e" />
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
 

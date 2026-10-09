@@ -337,6 +337,27 @@ still named, marked like "Alice & (Carol - Absent) & Bob".
 LOOT PRIORITY LISTS
 -------------------
 
+Class slots ("Any Warrior")
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the next slot on a Priority item is a class, clicking Assign opens
+a list beside the Loot Master window of every player of that class in
+the raid. Click a name to give them the item.
+
+- The class stays at the top until every one of them has the item, so
+  the next copy goes to another Warrior. Anyone who already has one is
+  greyed out.
+- Once every Warrior in the raid has one, Warrior is removed from that
+  item's list and the next slot (e.g. Any Hunter) moves up.
+- "Skip Warriors" removes the class early, for example if the rest
+  pass.
+- This only changes the list for the current raid. Clear Raid History
+  puts it back.
+
+For example, with "Any Warrior > Any Hunter" and Brad and Knightdeath
+as the raid's Warriors: the first copy goes to whichever you pick, the
+second to the other, and the third is picked from the Hunters.
+
 Class spec labels
 ~~~~~~~~~~~~~~~~~
 
@@ -461,8 +482,5 @@ implootCC@gmail.com
 
 Not yet built, or intentionally left as-is for now:
 
-- Loot Council items won by a Class-type slot (e.g. "Any Warrior") still
-  need the Master Looter to pick who gets it manually. There's no
-  automatic class-based detection yet.
 - A "Rules" announcement feature (posting loot rules to the raid on
   demand) was discussed but not built.

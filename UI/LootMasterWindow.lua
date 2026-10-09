@@ -761,11 +761,9 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                     local top = currentRemaining[1]
 
+                    -- "Any Warrior": pick which Warrior from a list
                     if top.Type == "Class" then
-                        ImpLoot:Print(
-                            "Any " .. top.Value .. " is next in priority for " .. displayName ..
-                            " -- assign it to a specific player via /il or trade."
-                        )
+                        self:ToggleClassPicker(row, entry, listName, top)
                         return
                     end
 
@@ -1070,6 +1068,264 @@ function LootMasterWindow:PopulateRow(row, entry)
 end
 
 -------------------------------------------------
+-- Class Picker
+--
+-- Opened by Assign on a Loot Priority item whose next
+-- slot is a class ("Any Warrior"). Lists every player
+-- of that class in the raid, beside the Loot Master
+-- window; clicking a name assigns the item to them.
+-- Anyone who already got this item is greyed out. Once
+-- every one of them has it, the class drops off the
+-- list automatically (see LootMaster:RecordWinForExclusion)
+-- and the next slot moves up. "Skip" drops it early.
+-------------------------------------------------
+
+local PICKER_WIDTH = 170
+local PICKER_ROW_HEIGHT = 18
+local PICKER_ROW_GAP = 2
+
+function LootMasterWindow:GetClassPicker()
+
+    if self.ClassPicker then
+        return self.ClassPicker
+    end
+
+    local picker = CreateFrame("Frame", nil, self.Frame)
+    picker:SetWidth(PICKER_WIDTH)
+    picker:SetFrameLevel(self.Frame:GetFrameLevel() + 20)
+    picker:SetClampedToScreen(true)
+    picker:EnableMouse(true)
+
+    ImpLoot.Theme:ApplyPanelStyle(picker)
+
+    local title = picker:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 8, -8)
+    title:SetPoint("RIGHT", -24, 0)
+    title:SetJustifyH("LEFT")
+    picker.Title = title
+
+    local closeButton = CreateFrame("Button", nil, picker, "UIPanelCloseButton")
+    closeButton:SetSize(22, 22)
+    closeButton:SetPoint("TOPRIGHT", 0, 0)
+    closeButton:SetScript("OnClick", function() picker:Hide() end)
+
+    local emptyText = picker:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    emptyText:SetJustifyH("LEFT")
+    emptyText:SetWidth(PICKER_WIDTH - 16)
+    picker.EmptyText = emptyText
+
+    local skipButton = ImpLoot.Theme:CreateMenuButton(picker)
+    skipButton:SetSize(PICKER_WIDTH - 16, 20)
+    picker.SkipButton = skipButton
+
+    picker.NameButtons = {}
+
+    picker:Hide()
+
+    self.ClassPicker = picker
+
+    return picker
+
+end
+
+function LootMasterWindow:ToggleClassPicker(row, entry, listName, candidate)
+
+    local picker = self:GetClassPicker()
+
+    if picker:IsShown() and picker.QueueID == entry.QueueID then
+        picker:Hide()
+        return
+    end
+
+    self:ShowClassPicker(row, entry, listName, candidate)
+
+end
+
+function LootMasterWindow:ShowClassPicker(row, entry, listName, candidate)
+
+    local picker = self:GetClassPicker()
+
+    picker.QueueID = entry.QueueID
+    picker.ListName = listName
+    picker.ClassName = candidate.Value
+
+    local className = candidate.Value
+    local r, g, b = ImpLoot.Theme:GetClassColor(className)
+
+    local label = "Any " .. className
+
+    if candidate.Spec then
+        label = label .. " (" .. candidate.Spec .. ")"
+    end
+
+    picker.Title:SetText(label)
+    picker.Title:SetTextColor(r, g, b)
+
+    local members = ImpLoot.LootMaster:GetGroupMembersOfClass(className)
+    local winners = ImpLoot.LootCouncil:GetWinners(listName, entry.ItemID)
+
+    for _, button in ipairs(picker.NameButtons) do
+        button:Hide()
+    end
+
+    local y = 30
+
+    for i, member in ipairs(members) do
+
+        local button = picker.NameButtons[i]
+
+        if not button then
+            button = ImpLoot.Theme:CreateMenuButton(picker)
+            button:SetSize(PICKER_WIDTH - 16, PICKER_ROW_HEIGHT)
+            picker.NameButtons[i] = button
+        end
+
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", 8, -y)
+
+        local text = member.Name
+        local hasOne = winners[member.Name]
+
+        if hasOne then
+            text = text .. " (has one)"
+        elseif not member.Online then
+            text = text .. " (offline)"
+        end
+
+        button:SetText(text)
+
+        local fontString = button:GetFontString()
+
+        if hasOne then
+
+            button:Disable()
+
+            if fontString then
+                fontString:SetTextColor(0.5, 0.5, 0.5)
+            end
+
+        else
+
+            button:Enable()
+
+            if fontString then
+                fontString:SetTextColor(r, g, b)
+            end
+
+        end
+
+        local playerName = member.Name
+
+        button:SetScript("OnClick", function()
+
+            picker:Hide()
+            ImpLoot.LootMaster:RequestAssign(entry.QueueID, playerName, className)
+
+        end)
+
+        button:Show()
+
+        y = y + PICKER_ROW_HEIGHT + PICKER_ROW_GAP
+
+    end
+
+    local waiting = 0
+
+    for _, member in ipairs(members) do
+        if not winners[member.Name] then
+            waiting = waiting + 1
+        end
+    end
+
+    if waiting == 0 then
+
+        picker.EmptyText:ClearAllPoints()
+        picker.EmptyText:SetPoint("TOPLEFT", 8, -y)
+
+        if #members == 0 then
+            picker.EmptyText:SetText("No " .. className .. "s in the raid.")
+        else
+            picker.EmptyText:SetText("Every " .. className .. " already has one.")
+        end
+
+        picker.EmptyText:Show()
+
+        y = y + picker.EmptyText:GetStringHeight() + 6
+
+    else
+
+        picker.EmptyText:Hide()
+
+    end
+
+    y = y + 4
+
+    picker.SkipButton:ClearAllPoints()
+    picker.SkipButton:SetPoint("TOPLEFT", 8, -y)
+    picker.SkipButton:SetText("Skip " .. className .. "s")
+
+    picker.SkipButton:SetScript("OnClick", function()
+
+        picker:Hide()
+
+        if ImpLoot.LootCouncil:RemoveCandidate(listName, entry.ItemID, "Class", className) then
+            ImpLoot:Print(className .. " skipped for " .. (entry.ItemLink or "this item") .. " -- the next in priority moves up.")
+        end
+
+        ImpLoot.Events:Fire("LootQueueChanged")
+
+    end)
+
+    y = y + 20 + 8
+
+    picker:SetHeight(y)
+
+    picker:ClearAllPoints()
+    picker:SetPoint("TOPRIGHT", row, "TOPLEFT", -8, 0)
+
+    picker:Show()
+
+end
+
+-- Called at the end of every Refresh: keeps an open picker
+-- pinned to its item's row (rows are rebuilt each refresh)
+-- and closes it once that item no longer needs a pick.
+function LootMasterWindow:RefreshClassPicker()
+
+    local picker = self.ClassPicker
+
+    if not picker or not picker:IsShown() then
+        return
+    end
+
+    local entry = ImpLoot.LootMaster:GetEntry(picker.QueueID)
+
+    if not entry or entry.State == "Resolved" then
+        picker:Hide()
+        return
+    end
+
+    local top = ImpLoot.LootCouncil:GetRemainingCandidates(picker.ListName, entry.ItemID)[1]
+
+    if not top or top.Type ~= "Class" or top.Value ~= picker.ClassName then
+        picker:Hide()
+        return
+    end
+
+    for _, row in ipairs(self.RowWidgets) do
+
+        if row:IsShown() and row.Entry == entry then
+            self:ShowClassPicker(row, entry, picker.ListName, top)
+            return
+        end
+
+    end
+
+    picker:Hide()
+
+end
+
+-------------------------------------------------
 -- Update Row Timer Text
 --
 -- Sets a single row's countdown number from its
@@ -1194,6 +1450,8 @@ function LootMasterWindow:Refresh()
     end
 
     self.ScrollChild:SetHeight(math.max(y, 1))
+
+    self:RefreshClassPicker()
 
     if self.ScrollFrame.UpdateScrollChildRect then
         self.ScrollFrame:UpdateScrollChildRect()

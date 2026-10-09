@@ -393,6 +393,84 @@ function ImpLoot.LootCouncil:RecordWin(listName, itemID, winnerType, winnerValue
 
 end
 
+-------------------------------------------------
+-- Record Class Slot Win
+--
+-- A Class slot ("Any Warrior") covers every player of
+-- that class, so one win doesn't remove it -- it only
+-- logs who got the item. The slot is removed once every
+-- player of that class in the raid has one (see
+-- LootMaster:RecordWinForExclusion) or the loot master
+-- skips it (RemoveCandidate).
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:RecordClassSlotWin(listName, itemID, className, playerName)
+
+    local state = self.DB.ListState[listName]
+
+    if not state then
+        return
+    end
+
+    state.WonLog[itemID] = state.WonLog[itemID] or {}
+
+    table.insert(state.WonLog[itemID], {
+        Winner = playerName,
+        MatchedType = "Class",
+        MatchedValue = className,
+    })
+
+end
+
+-------------------------------------------------
+-- Remove Candidate
+--
+-- Drops the first remaining slot matching this type and
+-- value; everyone below moves up. Only touches this
+-- raid's working state, never the saved list (Clear Raid
+-- History restores it).
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:RemoveCandidate(listName, itemID, candidateType, value)
+
+    local remaining = self:GetRemainingCandidates(listName, itemID)
+
+    for i, candidate in ipairs(remaining) do
+
+        if candidate.Type == candidateType and candidate.Value == value then
+            table.remove(remaining, i)
+            return true
+        end
+
+    end
+
+    return false
+
+end
+
+-------------------------------------------------
+-- Get Winners
+--
+-- Set of short names (no realm) who have already
+-- received this item from this list this raid.
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:GetWinners(listName, itemID)
+
+    local winners = {}
+
+    for _, won in ipairs(self:GetWonLog(listName, itemID)) do
+
+        if won.Winner then
+            winners[won.Winner:match("^([^%-]+)") or won.Winner] = true
+        end
+
+    end
+
+    return winners
+
+end
+
 function ImpLoot.LootCouncil:GetWonLog(listName, itemID)
 
     local state = self.DB.ListState[listName]

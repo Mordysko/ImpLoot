@@ -80,7 +80,7 @@ StaticPopupDialogs["IMPLOOT_CONFIRM_LEGENDARY_ASSIGN"] = {
     button2 = "Cancel",
 
     OnAccept = function(_, data)
-        ImpLoot.LootMaster:Assign(data.QueueID, data.WinnerName)
+        ImpLoot.LootMaster:Assign(data.QueueID, data.WinnerName, data.ClassSlot)
     end,
 
     timeout = 0,
@@ -157,7 +157,11 @@ end
 -- everything else assigns immediately exactly as before.
 -------------------------------------------------
 
-function ImpLoot.LootMaster:RequestAssign(queueID, winnerName)
+-- `classSlot` (optional) is the class name when the winner
+-- was picked from a Loot Priority class slot ("Any Warrior"),
+-- so the win is logged against that slot (see
+-- RecordWinForExclusion).
+function ImpLoot.LootMaster:RequestAssign(queueID, winnerName, classSlot)
 
     local entry = self:GetEntry(queueID)
 
@@ -173,14 +177,14 @@ function ImpLoot.LootMaster:RequestAssign(queueID, winnerName)
             "IMPLOOT_CONFIRM_LEGENDARY_ASSIGN",
             entry.ItemLink or entry.ItemID,
             winnerName,
-            { QueueID = queueID, WinnerName = winnerName }
+            { QueueID = queueID, WinnerName = winnerName, ClassSlot = classSlot }
         )
 
         return
 
     end
 
-    self:Assign(queueID, winnerName)
+    self:Assign(queueID, winnerName, classSlot)
 
 end
 
@@ -1271,6 +1275,63 @@ function ImpLoot.LootMaster:GetRaidRosterNames()
 end
 
 -------------------------------------------------
+-- Get Group Members Of Class
+--
+-- Everyone in the raid (or party, or just yourself when
+-- solo) whose class matches, e.g. "Warrior" or "Death
+-- Knight". Compared on the game's own class token, so
+-- spelling/spacing of the list's class name doesn't
+-- matter. Returns { Name =, Online = } sorted by name.
+-------------------------------------------------
+
+local function NormalizeClass(class)
+    return class and class:upper():gsub("%s+", "") or ""
+end
+
+function ImpLoot.LootMaster:GetGroupMembersOfClass(className)
+
+    local wanted = NormalizeClass(className)
+    local members = {}
+
+    local function Consider(name, classToken, online)
+
+        if name and NormalizeClass(classToken) == wanted then
+            table.insert(members, { Name = name, Online = online and true or false })
+        end
+
+    end
+
+    local numRaid = GetNumRaidMembers and GetNumRaidMembers() or 0
+
+    if numRaid > 0 then
+
+        for i = 1, numRaid do
+            local name, _, _, _, _, classToken, _, online = GetRaidRosterInfo(i)
+            Consider(name, classToken, online)
+        end
+
+    else
+
+        local _, myToken = UnitClass("player")
+        Consider(UnitName("player"), myToken, true)
+
+        local numParty = GetNumPartyMembers and GetNumPartyMembers() or 0
+
+        for i = 1, numParty do
+            local unit = "party" .. i
+            local _, token = UnitClass(unit)
+            Consider(UnitName(unit), token, UnitIsConnected and UnitIsConnected(unit))
+        end
+
+    end
+
+    table.sort(members, function(a, b) return a.Name < b.Name end)
+
+    return members
+
+end
+
+-------------------------------------------------
 -- Is Player Present
 --
 -- Whether a name belongs to someone currently in the
@@ -2211,7 +2272,7 @@ end
 -- "Assign" from the loot master's point of view.
 -------------------------------------------------
 
-function ImpLoot.LootMaster:RecordWinForExclusion(entry, winnerName)
+function ImpLoot.LootMaster:RecordWinForExclusion(entry, winnerName, classSlot)
 
     if entry.Mode == "SoftReserve" then
 
@@ -2223,6 +2284,44 @@ function ImpLoot.LootMaster:RecordWinForExclusion(entry, winnerName)
 
         if not listName then
             return
+        end
+
+        -------------------------------------------------
+        -- Picked From A Class Slot ("Any Warrior")
+        --
+        -- Log the win but keep the slot, so the next copy
+        -- goes to another Warrior. Once every Warrior in the
+        -- raid has one, the slot is removed and whoever's
+        -- next (e.g. "Any Hunter") moves up.
+        -------------------------------------------------
+
+        if classSlot then
+
+            ImpLoot.LootCouncil:RecordClassSlotWin(listName, entry.ItemID, classSlot, winnerName)
+
+            local winners = ImpLoot.LootCouncil:GetWinners(listName, entry.ItemID)
+            local stillWaiting = 0
+
+            for _, member in ipairs(self:GetGroupMembersOfClass(classSlot)) do
+
+                if not winners[member.Name] then
+                    stillWaiting = stillWaiting + 1
+                end
+
+            end
+
+            if stillWaiting == 0
+            and ImpLoot.LootCouncil:RemoveCandidate(listName, entry.ItemID, "Class", classSlot) then
+
+                ImpLoot:Print(
+                    "Every " .. classSlot .. " in the raid now has " .. (entry.ItemLink or "this item")
+                    .. " -- " .. classSlot .. " removed from its priority list."
+                )
+
+            end
+
+            return
+
         end
 
         local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
@@ -2239,10 +2338,8 @@ function ImpLoot.LootMaster:RecordWinForExclusion(entry, winnerName)
 
         end
 
-        -- A Class-type slot needs the winner's class, which isn't
-        -- derivable from just a name here -- the vote UI (not built
-        -- yet) will need to supply that explicitly when it resolves
-        -- a Class candidate.
+        -- Class-slot wins arrive with `classSlot` set (handled
+        -- above, from the class picker in the Loot Master window).
 
     end
 
@@ -2346,7 +2443,7 @@ function ImpLoot.LootMaster:ClearLog()
     ImpLootDB.LootMasterLog = self.Log
 end
 
-function ImpLoot.LootMaster:Assign(queueID, winnerName)
+function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
 
     local entry = self:GetEntry(queueID)
 
@@ -2354,7 +2451,7 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName)
         return false, "Item not found in queue."
     end
 
-    self:RecordWinForExclusion(entry, winnerName)
+    self:RecordWinForExclusion(entry, winnerName, classSlot)
 
     -------------------------------------------------
     -- Two Copies, One Roll: Exclude The Winner From

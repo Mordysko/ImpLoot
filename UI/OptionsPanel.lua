@@ -622,12 +622,14 @@ local ANNOUNCEMENT_LABELS = {
     LCVoteCalled = "Loot Council Vote Called",
     FunnelAssigned = "Funnel Assigned",
     PreselectedAnnounced = "Preselected Roll Announced",
+    PriorityAssigned = "Loot Priority Assigned",
+    VoteAssigned = "Loot Council Vote Assigned",
 }
 
 local ANNOUNCEMENT_ORDER = {
     "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "MultiCopyDirectAssigned", "WinnerAnnounced",
     "EligibleClasses", "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled",
-    "FunnelAssigned", "PreselectedAnnounced",
+    "FunnelAssigned", "PreselectedAnnounced", "PriorityAssigned", "VoteAssigned",
 }
 
 function OptionsPanel:BuildAnnouncementsPanel()

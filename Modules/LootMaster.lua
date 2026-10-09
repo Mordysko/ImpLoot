@@ -2556,20 +2556,30 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
 
             end
 
-            local rollText = "N/A"
-            local rangeText = "N/A"
-
             if winnerRoll then
-                rollText = tostring(winnerRoll.Roll)
-                rangeText = tostring(winnerRoll.Min) .. "-" .. tostring(winnerRoll.Max)
-            end
 
-            ImpLoot.Announcements:Announce("WinnerAnnounced", {
-                item = entry.ItemLink,
-                winner = winnerName,
-                roll = rollText,
-                range = rangeText,
-            })
+                -- A Preselected roll: say what they rolled
+                ImpLoot.Announcements:Announce("WinnerAnnounced", {
+                    item = entry.ItemLink,
+                    winner = winnerName,
+                    roll = tostring(winnerRoll.Roll),
+                    range = tostring(winnerRoll.Min) .. "-" .. tostring(winnerRoll.Max),
+                })
+
+            else
+
+                -- No roll happened (Priority list order or a
+                -- council vote), so a "wins with a roll of"
+                -- message would only read "N/A".
+                local announcementType = (councilItem and councilItem.Mode == "Vote")
+                    and "VoteAssigned" or "PriorityAssigned"
+
+                ImpLoot.Announcements:Announce(announcementType, {
+                    item = entry.ItemLink,
+                    player = winnerName,
+                })
+
+            end
 
         end
 

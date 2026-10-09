@@ -89,6 +89,18 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    PriorityAssigned = {
+        Enabled = true,
+        Text = "{item} goes to {player} (loot priority).",
+        Channel = "Auto",
+    },
+
+    VoteAssigned = {
+        Enabled = true,
+        Text = "{item} goes to {player} (Loot Council vote).",
+        Channel = "Auto",
+    },
+
 }
 
 -------------------------------------------------

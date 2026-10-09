@@ -1,4 +1,6 @@
-<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/8f03e2f1-344b-4e3a-8162-32e06f4a0c23" />
+<p align="center">
+  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
+</p>
 
 # ImpLoot
 
@@ -50,8 +52,6 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
-<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/c573db9b-9780-4e5c-856d-b8b28e2d7c61" />
-
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
 
 ### What you can do with an item
@@ -66,10 +66,6 @@ These work on any item in the loot list:
 
 ### Wishlists
 
-<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/089eee3b-9f9f-454b-ad08-712f748fd1db" />
-<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/73070420-577f-4f89-99a1-ac20858bd4ea" />
-<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/d7f54746-2b96-4189-8cd3-7406eacbd6f1" />
-
 Open the planning tab on the right edge of the window and choose **Wishlist**.
 
 - Make as many named wishlists as you like (for example "Ulduar - Discipline"), and rename or delete them whenever you want.
@@ -83,13 +79,9 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 ### Raid Planner
 
-<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/1913fb84-01ee-4672-a755-c6ab37d259dc" />
-
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
 ### Compare
-
-<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/2435110f-8f6e-4bbb-b8c2-99579e77da8e" />
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
 
@@ -139,15 +131,11 @@ The **Soft Reserve** button on the Loot Master window opens the same window stra
 
 ### Importing
 
-<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/e6dae1a8-773c-48f8-8ae2-d671ad3e4892" />
-
-- Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter next to the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
+- Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter under the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away.
 
 ### Editing by hand
-
-<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/5244bad1-016b-4a4d-877b-1590dada7919" />
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
 
@@ -169,16 +157,29 @@ When all of a Soft Reserved item's remaining reserves belong to one person (one 
 When two or more copies of the same item drop from the same corpse, ImpLoot compares how many distinct people reserved it against how many copies dropped (this applies with **Allow multiple reserves** off):
 
 - **Reservers ≤ copies:** no roll. One click assigns one copy to each reserver, with a single combined announcement. Any leftover copy is released to a plain Open Roll.
-- **Reservers > copies:** one combined roll covering every copy: a single announcement, and every timer starts from the same click. A single roll counts toward every copy's standings, and once a copy is assigned, that winner is excluded from the others. The top N rollers (N = number of copies) each get one. Clicking **Stop** on one copy also finalizes every other copy still rolling, each to its own top roller.
+- **Reservers > copies:** one combined roll covering every copy, announced once as `[Item] x2` with one shared timer. Each person rolls once, and when the roll ends the top N different rollers (N = number of copies) each get one copy. Clicking **Stop** on any copy ends the roll for all of them.
 - A **Plus** reserve counts as one extra chance to roll for that person, not an extra distinct reserver, so it never changes the comparison.
 
 With **Allow multiple reserves** on, none of this applies: each copy is handled completely on its own, since the point of that setting is letting the same person win more than one copy.
+
+Copies nobody reserved work the same way as a combined roll: the row shows *No SoftRes (2 copies -- one roll for all)*, and **Open Roll** on either copy starts one roll for both. For example, if Brad rolls 95, Moradladdy 80 and Knightdeath 40, Brad gets the first copy and Moradladdy the second.
 
 ### Absent reservers
 
 Only people actually in the raid count as reservers: for the sole-reserver shortcut, the multiple-copies comparison, and the "Reserved by" text in the Loot Master window. Offline still counts as present (they're in the group and may reconnect). A sole reserver who is absent, or an item where every reserver is absent, falls back to a plain Open Roll. The chat announcement is the one place absent reservers are still named, marked like "Alice & (Carol - Absent) & Bob".
 
 ## Loot Priority lists
+
+### Class slots ("Any Warrior")
+
+When the next slot on a **Priority** item is a class, clicking **Assign** opens a list beside the Loot Master window of every player of that class in the raid. Click a name to give them the item.
+
+- The class stays at the top until every one of them has the item, so the next copy goes to another Warrior. Anyone who already has one is greyed out.
+- Once every Warrior in the raid has one, Warrior is removed from that item's list and the next slot (e.g. *Any Hunter*) moves up.
+- **Skip Warriors** removes the class early, for example if the rest pass.
+- This only changes the list for the current raid. **Clear Raid History** puts it back.
+
+For example, with *Any Warrior > Any Hunter* and Brad and Knightdeath as the raid's Warriors: the first copy goes to whichever you pick, the second to the other, and the third is picked from the Hunters.
 
 ### Class spec labels
 
@@ -255,5 +256,4 @@ This is a beta. If something breaks, behaves oddly, or you have a suggestion, pl
 
 Not yet built, or intentionally left as-is for now:
 
-- Loot Council items won by a Class-type slot (e.g. "Any Warrior") still need the Master Looter to pick who gets it manually. There's no automatic class-based detection yet.
 - A "Rules" announcement feature (posting loot rules to the raid on demand) was discussed but not built.

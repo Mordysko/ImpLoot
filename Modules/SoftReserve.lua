@@ -8,6 +8,9 @@ ImpLoot.SoftReserve.Defaults = {
     AllowMultipleReserves = true,
     ExcludePreviousWinners = true,
     MaxReservesPerPlayer = 3,
+    -- Reloading from the after-import prompt also starts a
+    -- fresh Who won what (same as its Clear button)
+    ClearWhoWonWhatOnImportReload = false,
 }
 
 -------------------------------------------------
@@ -31,7 +34,16 @@ StaticPopupDialogs["IMPLOOT_RELOAD_AFTER_SR_IMPORT"] = {
     button2 = "Later",
 
     OnAccept = function()
+
+        local settings = ImpLoot.SoftReserve.State and ImpLoot.SoftReserve.State.Settings
+
+        if settings and settings.ClearWhoWonWhatOnImportReload then
+            -- Nothing is lost: entries stay in the loot history
+            ImpLoot.LootMaster:ClearLog()
+        end
+
         ReloadUI()
+
     end,
 
     timeout = 0,

@@ -135,7 +135,7 @@ function ImpLoot.LootMaster:GetPlayerItemCount(playerName, itemID)
 
     local count = 0
 
-    for _, logEntry in ipairs(self.Log or {}) do
+    for _, logEntry in ipairs(self:GetSessionLog()) do
 
         if logEntry.Winner == playerName and logEntry.ItemID == itemID then
             count = count + 1
@@ -213,6 +213,8 @@ function ImpLoot.LootMaster:AssignSoleReserver(queueID, winnerName)
         winner = winnerName,
     })
 
+    entry.AssignNote = "Only reserver"
+
     self:RequestAssign(queueID, winnerName)
 
 end
@@ -246,6 +248,21 @@ function ImpLoot.LootMaster:Initialize()
 
     ImpLootDB.LootMasterLog = ImpLootDB.LootMasterLog or {}
     self.Log = ImpLootDB.LootMasterLog
+
+    -- Every history entry gets a permanent Id (for editing and
+    -- syncing later). Entries saved before Ids existed get one now.
+    ImpLootDB.LootMasterLogNextId = ImpLootDB.LootMasterLogNextId or 1
+
+    for _, logEntry in ipairs(self.Log) do
+
+        if not logEntry.Id then
+            logEntry.Id = ImpLootDB.LootMasterLogNextId
+            ImpLootDB.LootMasterLogNextId = ImpLootDB.LootMasterLogNextId + 1
+        elseif logEntry.Id >= ImpLootDB.LootMasterLogNextId then
+            ImpLootDB.LootMasterLogNextId = logEntry.Id + 1
+        end
+
+    end
 
     self.Queue = {}
     self.NextQueueID = 1
@@ -396,6 +413,30 @@ function ImpLoot.LootMaster:DetermineMode(itemID)
 end
 
 -------------------------------------------------
+-- Reevaluate Pending Modes
+--
+-- After the active priority list changes, items still
+-- waiting in the queue are sorted again: onto the new
+-- list's Loot Council handling, or off it to Soft
+-- Reserve / open roll. Anything already rolling, voting
+-- or assigned is left alone.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:ReevaluatePendingModes()
+
+    for _, entry in ipairs(self.Queue or {}) do
+
+        if entry.State == "Pending" then
+            entry.Mode = self:DetermineMode(entry.ItemID)
+        end
+
+    end
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+end
+
+-------------------------------------------------
 -- Should Queue Item
 --
 -- The Minimum Quality setting only ever applies to an
@@ -447,25 +488,88 @@ end
 
 function ImpLoot.LootMaster:OnLootOpened()
 
-    local corpseGUID = nil
+    -------------------------------------------------
+    -- Corpse Or Chest
+    --
+    -- A dead NPC targeted while looting is the corpse.
+    -- Anything else (a chest: Gunship, Dreamwalker, the
+    -- Ulduar keepers...) is named after the boss that
+    -- drops these items -- the one just killed if it
+    -- drops them (see LootHistory:GuessBoss) -- so
+    -- reopening the same chest still matches its own
+    -- queue entries.
+    -------------------------------------------------
 
-    if UnitExists and UnitExists("target") then
-        corpseGUID = UnitGUID("target")
+    -------------------------------------------------
+    -- Which Corpse / Chest Is This?
+    --
+    -- Needs to come out the same every time the SAME
+    -- loot is opened, whatever you happen to have
+    -- targeted -- otherwise walking away and reopening a
+    -- boss looked like a new boss (and Auto-clear wiped
+    -- the queue, rolls in progress included).
+    --
+    --   A raid boss (by name, whether you targeted the
+    --   corpse or not): "boss:<name>"
+    --   Any other targeted corpse (trash): its own GUID
+    --   Anything else, e.g. an untargeted chest: the boss
+    --   whose loot table has these items, or "unknown"
+    -------------------------------------------------
+
+    local corpseGUID, bossName
+
+    local targetIsCorpse = UnitExists and UnitExists("target")
+        and UnitIsDead and UnitIsDead("target")
+        and not (UnitIsPlayer and UnitIsPlayer("target"))
+
+    if targetIsCorpse then
+        bossName = UnitName("target")
     end
 
-    if not corpseGUID then
-        corpseGUID = "session-" .. tostring(self.NextQueueID)
+    local numItems = GetNumLootItems and GetNumLootItems() or 0
+
+    local function KnownBoss(name)
+        return name and ImpLoot.LootHistory and ImpLoot.LootHistory:IsKnownBoss(name)
+    end
+
+    if not KnownBoss(bossName) then
+
+        local firstItemID = nil
+
+        for slot = 1, numItems do
+
+            if LootSlotIsItem(slot) then
+                firstItemID = self:ExtractItemID(GetLootSlotLink(slot))
+                if firstItemID then break end
+            end
+
+        end
+
+        local guessed = firstItemID and ImpLoot.LootHistory and ImpLoot.LootHistory:GuessBoss(firstItemID)
+
+        if guessed and guessed ~= "Trash" then
+            bossName = guessed
+        elseif not targetIsCorpse then
+            bossName = nil
+        end
+
+    end
+
+    if KnownBoss(bossName) then
+        corpseGUID = "boss:" .. bossName
+    elseif targetIsCorpse then
+        corpseGUID = UnitGUID("target")
+    else
+        corpseGUID = "chest:" .. (bossName or "unknown")
     end
 
     -------------------------------------------------
     -- Auto-Clear On New Boss
     --
-    -- Compares against the PREVIOUS corpse's GUID
-    -- before it gets overwritten below. Re-opening the
-    -- same corpse (closed and reopened to check for
-    -- missed items) keeps the same GUID, so that never
-    -- triggers a clear -- only a genuinely different
-    -- corpse does.
+    -- Only for a genuinely different boss/corpse (see
+    -- above), and never while something is still being
+    -- rolled or voted on -- that would throw the roll
+    -- away. Then it waits, and says so.
     -------------------------------------------------
 
     if self.Settings.AutoClearOnNewBoss
@@ -473,20 +577,25 @@ function ImpLoot.LootMaster:OnLootOpened()
     and self.CurrentCorpseGUID ~= corpseGUID
     and #self.Queue > 0 then
 
-        self:ClearQueue()
-        ImpLoot:Print("New boss detected -- loot queue cleared.")
+        local busy = false
+
+        for _, entry in ipairs(self.Queue) do
+            if entry.State == "Rolling" or entry.State == "Voting" then
+                busy = true
+                break
+            end
+        end
+
+        if busy then
+            ImpLoot:Print("New boss looted -- the queue wasn't cleared because a roll or vote is still in progress.")
+        else
+            self:ClearQueue()
+            ImpLoot:Print("New boss detected -- loot queue cleared.")
+        end
 
     end
 
     self.CurrentCorpseGUID = corpseGUID
-
-    local bossName = nil
-
-    if UnitExists and UnitExists("target") then
-        bossName = UnitName("target")
-    end
-
-    local numItems = GetNumLootItems and GetNumLootItems() or 0
 
     -------------------------------------------------
     -- Track which existing queue entries get matched
@@ -502,6 +611,7 @@ function ImpLoot.LootMaster:OnLootOpened()
     -------------------------------------------------
 
     local matchedThisPass = {}
+    local newLinks = {}
 
     for slot = 1, numItems do
 
@@ -515,14 +625,89 @@ function ImpLoot.LootMaster:OnLootOpened()
                 local _, _, _, _, slotQuality = GetLootSlotInfo(slot)
 
                 if self:ShouldQueueItem(itemID, slotQuality) then
+
+                    local nextIdBefore = self.NextQueueID
                     local entry = self:AddToQueue(itemID, link, bossName, corpseGUID, slot, matchedThisPass)
                     matchedThisPass[entry.QueueID] = true
+
+                    -- New this time (not a reopened corpse's item)
+                    if entry.QueueID >= nextIdBefore then
+                        table.insert(newLinks, link)
+                    end
+
                 end
 
             end
 
         end
 
+    end
+
+    if #newLinks > 0 and self:IsMasterLooter() then
+        self:AnnounceDrops(bossName, newLinks)
+    end
+
+    -- Items won while the loot was closed: hand them over
+    -- now (with Auto-assign on), or the row offers Assign
+    if self.Settings.AutoAssignToRollWinner then
+
+        for _, entry in ipairs(self.Queue) do
+
+            if entry.State == "Awarded" and entry.CorpseGUID == corpseGUID and entry.Assignable then
+                self:GiveAwarded(entry.QueueID, true)
+            end
+
+        end
+
+    end
+
+end
+
+-------------------------------------------------
+-- Announce Drops
+--
+-- "Loot from Lord Marrowgar: [item] [item] ..." in raid
+-- chat, once per corpse or chest (reopening it only
+-- posts items that weren't there before -- normally
+-- none). Split over several lines if the links don't
+-- fit in one chat message. On/off, wording and channel
+-- are in Options -> Announcements ("Boss Loot Posted").
+-------------------------------------------------
+
+local CHAT_LIMIT = 250
+
+function ImpLoot.LootMaster:AnnounceDrops(bossName, links)
+
+    local Announcements = ImpLoot.Announcements
+    local settings = Announcements:GetSettings("LootDropsAnnounced")
+
+    if not settings or not settings.Enabled then
+        return
+    end
+
+    local boss = bossName or "the chest"
+    local line = ""
+
+    local function Fits(items)
+        local text = Announcements:FormatText("LootDropsAnnounced", { boss = boss, items = items })
+        return text and #text <= CHAT_LIMIT
+    end
+
+    for _, link in ipairs(links) do
+
+        local candidate = (line == "") and link or (line .. " " .. link)
+
+        if line ~= "" and not Fits(candidate) then
+            Announcements:Announce("LootDropsAnnounced", { boss = boss, items = line })
+            line = link
+        else
+            line = candidate
+        end
+
+    end
+
+    if line ~= "" then
+        Announcements:Announce("LootDropsAnnounced", { boss = boss, items = line })
     end
 
 end
@@ -946,6 +1131,32 @@ ImpLoot.LootMaster.TokenClassGroups = TOKEN_CLASS_GROUPS
 -- for together as one group (see StartGroupRoll) -- the
 -- chat announcement then reads "[Item] x2" so the raid
 -- knows one roll covers every copy.
+-------------------------------------------------
+-- One Roll At A Time
+--
+-- While an item is being rolled for (or several copies
+-- of one item, rolled together), no other roll can be
+-- started: its Open Roll / Announce button is greyed
+-- out and starting one any other way is refused, until
+-- the current roll has finished (its timer, or its own
+-- Stop). A tie reroll is the same roll carrying on.
+-------------------------------------------------
+
+-- The entry currently being rolled for, or nil
+function ImpLoot.LootMaster:GetRollInProgress()
+
+    for _, entry in ipairs(self.Queue or {}) do
+
+        if entry.State == "Rolling" then
+            return entry
+        end
+
+    end
+
+    return nil
+
+end
+
 function ImpLoot.LootMaster:AnnounceItem(queueID, copies)
 
     local entry = self:GetEntry(queueID)
@@ -954,10 +1165,39 @@ function ImpLoot.LootMaster:AnnounceItem(queueID, copies)
         return false, "Item not found in queue."
     end
 
+    local busy = self:GetRollInProgress()
+
+    if busy and busy.QueueID ~= queueID then
+        return false, "Finish the roll on " .. (busy.ItemLink or "the current item") .. " first -- one roll at a time."
+    end
+
     local announcedLink = entry.ItemLink
 
     if copies and copies > 1 then
         announcedLink = (entry.ItemLink or "") .. " x" .. copies
+    end
+
+    -------------------------------------------------
+    -- Who Can Use It (Open Roll Only)
+    --
+    -- Tier tokens and class-locked gear name their classes
+    -- right after the item, in the same message: "[Item]
+    -- (Paladin, Priest, Warlock) available now for an open
+    -- roll...". Only for an Open Roll -- a Soft Reserve or
+    -- Preselected roll is limited to its own players
+    -- anyway. Tokens' classes come from their name (see
+    -- SoftReserve:GetItemClasses).
+    -------------------------------------------------
+
+    if entry.Mode == "OpenRoll" then
+
+        local item = ImpLoot.Database:FindItemByID(entry.ItemID)
+        local classes = item and ImpLoot.SoftReserve:GetItemClasses(item)
+
+        if classes and #classes > 0 then
+            announcedLink = (announcedLink or "") .. " (" .. table.concat(classes, ", ") .. ")"
+        end
+
     end
 
     local listName, councilItem
@@ -1022,27 +1262,6 @@ function ImpLoot.LootMaster:AnnounceItem(queueID, copies)
 
     end
 
-    -- "Can be used by: <classes>" only makes sense for an Open
-    -- Roll, where anyone of those classes may roll. A Soft
-    -- Reserve roll is limited to its reservers, and a
-    -- Preselected one to its listed players, so the class line
-    -- there just reads like a second, open invitation.
-    local item = entry.Mode == "OpenRoll"
-        and ImpLoot.Database:FindItemByID(entry.ItemID)
-
-    -- Class-locked gear lists its own classes; tier tokens are
-    -- worked out from their name (see SoftReserve:GetItemClasses)
-    local classes = item and ImpLoot.SoftReserve:GetItemClasses(item)
-
-    if classes and #classes > 0 then
-
-        ImpLoot.Announcements:Announce("EligibleClasses", {
-            item = entry.ItemLink,
-            classes = table.concat(classes, ", "),
-        })
-
-    end
-
     self:StartRoll(queueID)
 
     return true
@@ -1085,13 +1304,21 @@ function ImpLoot.LootMaster:CallVote(queueID)
     entry.State = "Voting"
     entry.ActiveVoteID = voteID
     entry.Votes = {}
+    entry.Runoff = nil
+    entry.RunoffCandidates = nil
 
     ImpLoot.Announcements:Announce("LCVoteCalled", {
         item = entry.ItemLink,
     })
 
     if ImpLoot.Comms then
-        ImpLoot.Comms:SendVoteCall(entry.ItemID, voteID, candidates)
+
+        local sent = ImpLoot.Comms:SendVoteCall(entry.ItemID, voteID, candidates)
+
+        if sent == 0 then
+            ImpLoot:Print("No Loot Council members are in the raid to vote -- add them in the Loot Council / Priority window.")
+        end
+
     end
 
     ImpLoot.Events:Fire("LootQueueChanged")
@@ -1110,9 +1337,42 @@ end
 
 function ImpLoot.LootMaster:RecordVoteCast(voteID, voterName, candidateType, candidateValue)
 
+    -- Only council members' votes count
+    local isMember = false
+    local voter = voterName and (voterName:match("^([^%-]+)") or voterName):lower()
+
+    for _, member in ipairs(ImpLoot.LootCouncil:GetMembers()) do
+        if (member:match("^([^%-]+)") or member):lower() == voter then
+            isMember = true
+            break
+        end
+    end
+
+    if not isMember then
+        return false
+    end
+
     for _, entry in ipairs(self.Queue) do
 
         if entry.ActiveVoteID == voteID then
+
+            -- A second vote only counts its own candidates
+            if entry.Runoff then
+
+                local allowed = false
+
+                for _, candidate in ipairs(entry.RunoffCandidates or {}) do
+                    if candidate.Type == candidateType and candidate.Value == candidateValue then
+                        allowed = true
+                        break
+                    end
+                end
+
+                if not allowed then
+                    return false
+                end
+
+            end
 
             entry.Votes[voterName] = {
                 Type = candidateType,
@@ -1175,6 +1435,98 @@ function ImpLoot.LootMaster:GetVoteTally(queueID)
 end
 
 -------------------------------------------------
+-- Vote Leaders / Second Vote (Runoff)
+--
+-- A stalemate is two or more candidates sharing the
+-- most votes. Then, instead of assigning, the loot
+-- master runs a second vote between only those tied
+-- candidates (normally the top two) -- same council,
+-- fresh votes. If that ties as well, the loot master
+-- decides between them (see the Loot Master window).
+-------------------------------------------------
+
+-- Returns the tally, the candidates sharing the most
+-- votes, and whether that's a tie.
+function ImpLoot.LootMaster:GetVoteLeaders(queueID)
+
+    local tally = self:GetVoteTally(queueID)
+    local leaders = {}
+
+    if #tally == 0 then
+        return tally, leaders, false
+    end
+
+    for _, t in ipairs(tally) do
+        if t.Count == tally[1].Count then
+            table.insert(leaders, t)
+        end
+    end
+
+    return tally, leaders, #leaders > 1
+
+end
+
+function ImpLoot.LootMaster:StartRunoff(queueID)
+
+    local entry = self:GetEntry(queueID)
+
+    if not entry or entry.State ~= "Voting" then
+        return false
+    end
+
+    local _, leaders, isTie = self:GetVoteLeaders(queueID)
+
+    if not isTie then
+        return false
+    end
+
+    -- Keep each tied candidate's spec label, if it had one
+    local listName = ImpLoot.LootCouncil:GetActiveListName()
+    local remaining = listName and ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID) or {}
+
+    local candidates, names = {}, {}
+
+    for _, leader in ipairs(leaders) do
+
+        local spec = nil
+
+        for _, c in ipairs(remaining) do
+            if c.Type == leader.Type and c.Value == leader.Value then
+                spec = c.Spec
+                break
+            end
+        end
+
+        table.insert(candidates, { Type = leader.Type, Value = leader.Value, Spec = spec })
+        table.insert(names, leader.Type == "Class" and ("Any " .. leader.Value) or leader.Value)
+
+    end
+
+    -- "R" on the end tells the vote popup it's a second vote
+    self.NextVoteID = (self.NextVoteID or 0) + 1
+    local voteID = "V" .. self.NextVoteID .. "R"
+
+    entry.ActiveVoteID = voteID
+    entry.Votes = {}
+    entry.Runoff = true
+    entry.RunoffCandidates = candidates
+
+    ImpLoot.Announcements:Announce("LCRunoffCalled", {
+        item = entry.ItemLink,
+        candidates = self:JoinWithAmpersand(names),
+    })
+
+    if ImpLoot.Comms then
+        ImpLoot.Comms:SendVoteCall(entry.ItemID, voteID, candidates)
+    end
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+    return true
+
+end
+
+-------------------------------------------------
 -- Start / Stop Roll
 --
 -- Only one item can be actively rolling at a time --
@@ -1206,6 +1558,7 @@ function ImpLoot.LootMaster:StartRoll(queueID)
     entry.State = "Rolling"
     entry.Rolls = {}
     entry.RollGroup = nil
+    entry.RerollPlayers = nil
 
     if self.Settings.RollDuration and self.Settings.RollDuration > 0 then
 
@@ -1479,6 +1832,14 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
 
     ImpLoot.Events:Fire("LootQueueChanged")
 
+    -- Two or more players share the top roll: they reroll
+    local tied = self:GetTiedAtTop(entry.Rolls)
+
+    if tied then
+        self:StartTieReroll({ entry }, tied, entry.Rolls[1].Roll)
+        return
+    end
+
     -------------------------------------------------
     -- Winner Announcement
     --
@@ -1543,6 +1904,8 @@ function ImpLoot.LootMaster:FinalizeRoll(queueID, isManualStop)
                 item = entry.ItemLink,
             })
 
+            entry.AssignNote = "Disenchant (no rolls)"
+            entry.AssignResult = "DE"
             self:RequestAssign(queueID, disenchanter)
 
         end
@@ -1589,6 +1952,11 @@ end
 -------------------------------------------------
 
 function ImpLoot.LootMaster:GetMaxRollsForPlayer(entry, playerName)
+
+    -- A tie reroll: only the tied players, once each
+    if entry.RerollPlayers then
+        return entry.RerollPlayers[playerName] and 1 or 0
+    end
 
     if entry.Mode == "OpenRoll" then
         return 1
@@ -1935,6 +2303,7 @@ function ImpLoot.LootMaster:ExecuteDirectAssign(decision)
     })
 
     for i, reserver in ipairs(reservers) do
+        group[i].AssignNote = "Soft reserve (one copy each)"
         self:RequestAssign(group[i].QueueID, reserver)
     end
 
@@ -2079,6 +2448,85 @@ function ImpLoot.LootMaster:GetRollGroupEntries(entry)
 end
 
 -------------------------------------------------
+-- Ties
+--
+-- When the best roll is shared, nobody has won yet:
+-- the tied players (only them) roll again, with a
+-- fresh timer, and the result is decided as usual.
+-- A second tie just rerolls again.
+-------------------------------------------------
+
+-- The players sharing the best roll (same roll type and
+-- number), or nil when there's a single best roll.
+function ImpLoot.LootMaster:GetTiedAtTop(rolls)
+
+    local top = rolls and rolls[1]
+
+    if not top then
+        return nil
+    end
+
+    local tied, seen = {}, {}
+
+    for _, roll in ipairs(rolls) do
+
+        if roll.Type ~= top.Type or roll.Roll ~= top.Roll then
+            break
+        end
+
+        if not seen[roll.Player] then
+            seen[roll.Player] = true
+            table.insert(tied, roll.Player)
+        end
+
+    end
+
+    return (#tied > 1) and tied or nil
+
+end
+
+function ImpLoot.LootMaster:StartTieReroll(entries, players, rollValue)
+
+    local allowed = {}
+
+    for _, player in ipairs(players) do
+        allowed[player] = true
+    end
+
+    local ids = {}
+
+    for _, e in ipairs(entries) do
+        self:StartRoll(e.QueueID)
+        e.RerollPlayers = allowed
+        table.insert(ids, e.QueueID)
+    end
+
+    local leader = entries[1]
+
+    -- Several copies left: they reroll as one group
+    if #entries > 1 then
+
+        for _, e in ipairs(entries) do
+            e.RollGroup = ids
+            e.RollEndTime = leader.RollEndTime
+        end
+
+    end
+
+    self.ActiveRollQueueID = leader.QueueID
+
+    ImpLoot.Announcements:Announce("RollTie", {
+        item = leader.ItemLink,
+        roll = tostring(rollValue),
+        players = self:JoinWithAmpersand(players),
+        seconds = self.Settings.RollDuration,
+    })
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+end
+
+-------------------------------------------------
 -- Finalize Group Roll
 --
 -- Ends every copy's roll at once and works out one
@@ -2122,20 +2570,82 @@ function ImpLoot.LootMaster:FinalizeGroupRoll(group, isManualStop)
     ImpLoot.Events:Fire("LootQueueChanged")
 
     -- Every copy holds the same mirrored, already-sorted rolls.
-    local winners = {}
+    -- Each player's best roll, best first:
+    local ranked = {}
     local seen = {}
 
     for _, roll in ipairs(copies[1].Rolls) do
 
-        if #winners >= #copies then
-            break
-        end
-
         if not seen[roll.Player] then
             seen[roll.Player] = true
-            table.insert(winners, roll)
+            table.insert(ranked, roll)
         end
 
+    end
+
+    local function SameRoll(a, b)
+        return a and b and a.Type == b.Type and a.Roll == b.Roll
+    end
+
+    -------------------------------------------------
+    -- A Tie For The Last Copy
+    --
+    -- e.g. 2 copies, rolls 90 / 36 / 36: the 90 wins a
+    -- copy, and the two 36s reroll for the other one.
+    -- (Ties among players who all get a copy don't
+    -- matter.)
+    -------------------------------------------------
+
+    local count = #copies
+
+    if #ranked > count and SameRoll(ranked[count], ranked[count + 1]) then
+
+        local tieRoll = ranked[count]
+        local clear, tiedPlayers = {}, {}
+
+        for _, roll in ipairs(ranked) do
+
+            if SameRoll(roll, tieRoll) then
+                table.insert(tiedPlayers, roll.Player)
+            elseif #tiedPlayers == 0 then
+                table.insert(clear, roll)
+            end
+
+        end
+
+        -- The clear winners keep their copies...
+        local rerollCopies = {}
+
+        for i = #clear + 1, count do
+            table.insert(rerollCopies, copies[i])
+        end
+
+        for i, roll in ipairs(clear) do
+
+            ImpLoot.Announcements:Announce("WinnerAnnounced", {
+                item = copies[i].ItemLink,
+                winner = roll.Player,
+                roll = tostring(roll.Roll),
+                range = tostring(roll.Min) .. "-" .. tostring(roll.Max),
+            })
+
+            if isManualStop or (self.Settings.AutoFinalizeOnTimeout and self.Settings.AutoAssignToRollWinner) then
+                self:RequestAssign(copies[i].QueueID, roll.Player)
+            end
+
+        end
+
+        -- ...and the tied players reroll for the rest
+        self:StartTieReroll(rerollCopies, tiedPlayers, tieRoll.Roll)
+
+        return
+
+    end
+
+    local winners = {}
+
+    for i = 1, math.min(count, #ranked) do
+        winners[i] = ranked[i]
     end
 
     for i, roll in ipairs(winners) do
@@ -2177,6 +2687,8 @@ function ImpLoot.LootMaster:FinalizeGroupRoll(group, isManualStop)
                 item = copy.ItemLink,
             })
 
+            copy.AssignNote = "Disenchant (no rolls)"
+            copy.AssignResult = "DE"
             self:RequestAssign(copy.QueueID, disenchanter)
 
         end
@@ -2355,43 +2867,141 @@ end
 -- too, and anyone else running the addon who's curious.
 -------------------------------------------------
 
-function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName, mode, resultLabel)
+-- `details` (optional) carries the richer history fields:
+-- ItemName, Quality, WinnerClass, Raid, Size, Heroic, Note,
+-- Recorder. Anything missing (e.g. a message from an older
+-- ImpLoot) is filled in from this client where it can be.
+function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName, mode, resultLabel, details)
 
     local now = time and time() or 0
 
+    details = details or {}
+
     -------------------------------------------------
-    -- Guard Against An Exact Duplicate
+    -- Upgrade A Chat-Captured Entry
     --
-    -- The same item, winner and boss logged again
-    -- within a few seconds of the most recent entry is
-    -- never a second, genuine resolution -- it's the
-    -- same one arriving twice (an addon message echo,
-    -- a double-fired event, etc). Checking only the
-    -- most recent entry, not the whole log, is
-    -- deliberate: two separate, real wins of the same
-    -- item by the same person (different raid nights,
-    -- or legitimately winning two copies under Allow
-    -- Multiple Reserves) must still both be recorded.
+    -- On a raider's client the "receives loot" chat line
+    -- can arrive just before the loot master's own
+    -- "assigned" message for the same item. That chat
+    -- entry (see LootHistory) is the same drop -- fill in
+    -- how it was won instead of adding it twice. Only
+    -- within a few minutes, so a later, separate win of
+    -- the same item is never merged into it.
     -------------------------------------------------
 
-    local lastEntry = self.Log[#self.Log]
+    if mode then
 
-    if lastEntry
-    and lastEntry.ItemID == itemID
-    and lastEntry.Winner == winnerName
-    and lastEntry.BossName == bossName
-    and (now - lastEntry.Timestamp) < 5 then
+        local function short(name)
+            return name and (name:match("^([^%-]+)") or name):lower() or ""
+        end
 
-        return
+        for i = #self.Log, 1, -1 do
+
+            local logEntry = self.Log[i]
+
+            if (now - (logEntry.Timestamp or 0)) > 300 then
+                break
+            end
+
+            if logEntry.Source == "Chat"
+            and logEntry.ItemID == itemID
+            and short(logEntry.Winner) == short(winnerName) then
+
+                logEntry.Source = nil
+                logEntry.Mode = mode
+                logEntry.ResultLabel = resultLabel
+                logEntry.Note = details.Note or logEntry.Note
+                logEntry.BossName = bossName or logEntry.BossName
+                logEntry.WinnerClass = details.WinnerClass or logEntry.WinnerClass
+                logEntry.Recorder = details.Recorder or logEntry.Recorder
+                logEntry.RecorderId = details.RecorderId
+
+                return
+
+            end
+
+        end
 
     end
 
+    -------------------------------------------------
+    -- Guard Against The Same Message Twice
+    --
+    -- Every entry carries the Id it has in its recorder's
+    -- own history (RecorderId). The same recorder + Id
+    -- arriving again is the same resolution, not a second
+    -- one. Two genuine copies won by the same player each
+    -- have their own Id, so both are kept.
+    --
+    -- An older ImpLoot sends no Id: for those, fall back to
+    -- the old rule (same item, winner and boss within a
+    -- few seconds of the last entry is a repeat).
+    -------------------------------------------------
+
+    if details.Recorder and details.RecorderId then
+
+        for i = #self.Log, 1, -1 do
+
+            local logEntry = self.Log[i]
+
+            if logEntry.Recorder == details.Recorder
+            and logEntry.RecorderId == details.RecorderId then
+                return
+            end
+
+        end
+
+    elseif details.Remote then
+
+        local lastEntry = self.Log[#self.Log]
+
+        if lastEntry
+        and lastEntry.ItemID == itemID
+        and lastEntry.Winner == winnerName
+        and lastEntry.BossName == bossName
+        and (now - (lastEntry.Timestamp or 0)) < 5 then
+            return
+        end
+
+    end
+
+    local raidName, size, heroic = self:GetRaidContext()
+
+    if not details.Raid then
+        details.Raid, details.Size, details.Heroic = raidName, size, heroic
+    end
+
+    local cached = ImpLoot.ItemCache and ImpLoot.ItemCache:GetItem(itemID)
+
+    local id = ImpLootDB.LootMasterLogNextId or 1
+    ImpLootDB.LootMasterLogNextId = id + 1
+
+    -- Logged by this client: its own Id is the recorder's Id
+    local recorder = details.Recorder or (UnitName and UnitName("player"))
+    local recorderId = details.RecorderId
+
+    if not details.Remote then
+        recorderId = id
+    end
+
     table.insert(self.Log, {
+        Id = id,
         ItemID = itemID,
+        ItemName = details.ItemName or (cached and cached.Name),
+        Quality = details.Quality or (cached and cached.Quality),
         Winner = winnerName,
+        WinnerClass = details.WinnerClass or self:GetClassForPlayer(winnerName),
         BossName = bossName,
+        Raid = details.Raid,
+        Size = details.Size,
+        Heroic = details.Heroic,
         Mode = mode,
         ResultLabel = resultLabel,
+        Note = details.Note,
+        Recorder = recorder,
+        RecorderId = recorderId,
+        Source = details.Source,
+        Received = details.Received,
         Timestamp = now,
     })
 
@@ -2409,6 +3019,12 @@ end
 -------------------------------------------------
 
 function ImpLoot.LootMaster:GetResultLabel(entry, winnerName)
+
+    -- Set by the path that made the assignment, e.g. "DE"
+    -- for an item nobody rolled on going to the disenchanter
+    if entry.AssignResult then
+        return entry.AssignResult
+    end
 
     if entry.Mode == "SoftReserve" then
         return "SR"
@@ -2434,13 +3050,280 @@ function ImpLoot.LootMaster:GetResultLabel(entry, winnerName)
 
 end
 
+-------------------------------------------------
+-- Raid Context
+--
+-- Instance name, size (10/25) and whether it's heroic,
+-- for the history. nil outside a raid instance. Heroic
+-- covers both the old difficulty picker (3/4) and ICC's
+-- dynamic heroic toggle.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetRaidContext()
+
+    if not (IsInInstance and GetInstanceInfo) then
+        return nil
+    end
+
+    local _, instanceType = IsInInstance()
+
+    if instanceType ~= "raid" then
+        return nil
+    end
+
+    local name, _, difficultyIndex, _, maxPlayers, dynamicDifficulty, isDynamic = GetInstanceInfo()
+
+    difficultyIndex = difficultyIndex or 1
+
+    local size = (maxPlayers and maxPlayers > 0) and maxPlayers
+        or ((difficultyIndex == 1 or difficultyIndex == 3) and 10 or 25)
+
+    local heroic = (difficultyIndex == 3 or difficultyIndex == 4)
+        or (isDynamic and dynamicDifficulty == 1) or false
+
+    return name, size, heroic
+
+end
+
+-- "Icecrown Citadel 25H", "Naxxramas 10", or nil
+function ImpLoot.LootMaster:FormatRaidLabel(logEntry)
+
+    if not logEntry.Raid then
+        return nil
+    end
+
+    local label = logEntry.Raid
+
+    if logEntry.Size then
+        label = label .. " " .. logEntry.Size .. (logEntry.Heroic and "H" or "")
+    end
+
+    return label
+
+end
+
+-------------------------------------------------
+-- Get Class For Player
+--
+-- The game's class token ("WARRIOR", "DEATHKNIGHT")
+-- for a group member, or nil if they aren't in it.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetClassForPlayer(playerName)
+
+    if not playerName then
+        return nil
+    end
+
+    local short = playerName:match("^([^%-]+)") or playerName
+
+    if UnitName and UnitName("player") == short then
+        local _, token = UnitClass("player")
+        return token
+    end
+
+    local numRaid = GetNumRaidMembers and GetNumRaidMembers() or 0
+
+    if numRaid > 0 then
+
+        for i = 1, numRaid do
+
+            local name, _, _, _, _, token = GetRaidRosterInfo(i)
+
+            if name == short then
+                return token
+            end
+
+        end
+
+    else
+
+        local numParty = GetNumPartyMembers and GetNumPartyMembers() or 0
+
+        for i = 1, numParty do
+
+            local unit = "party" .. i
+
+            if UnitName(unit) == short then
+                local _, token = UnitClass(unit)
+                return token
+            end
+
+        end
+
+    end
+
+    return nil
+
+end
+
+-------------------------------------------------
+-- Describe Win
+--
+-- A short note on how the item was won, kept with the
+-- history entry: "Rolled 95 (MS)", "Soft reserve,
+-- rolled 87", "Loot priority (Any Warrior)", "Council
+-- vote", "Disenchant (no rolls)" and so on.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:DescribeWin(entry, winnerName, classSlot)
+
+    if entry.AssignNote then
+        return entry.AssignNote
+    end
+
+    local winnerRoll = nil
+
+    for _, roll in ipairs(entry.Rolls or {}) do
+
+        if roll.Player == winnerName then
+            winnerRoll = roll
+            break
+        end
+
+    end
+
+    if entry.Mode == "SoftReserve" then
+
+        if winnerRoll then
+            return "Soft reserve, rolled " .. winnerRoll.Roll
+        end
+
+        return "Soft reserve"
+
+    end
+
+    if entry.Mode == "LootCouncil" then
+
+        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local councilItem = listName and ImpLoot.LootCouncil:GetItem(listName, entry.ItemID)
+        local lcMode = councilItem and councilItem.Mode
+
+        if lcMode == "Priority" then
+            return classSlot and ("Loot priority (Any " .. classSlot .. ")") or "Loot priority"
+        elseif lcMode == "Vote" then
+            return "Council vote"
+        elseif lcMode == "Funnel" then
+            return "Funnel"
+        elseif lcMode == "Preselected" then
+            return winnerRoll and ("Preselected, rolled " .. winnerRoll.Roll) or "Preselected"
+        end
+
+        return "Loot council"
+
+    end
+
+    if winnerRoll then
+        return "Rolled " .. winnerRoll.Roll .. " (" .. (winnerRoll.Type or "MS") .. ")"
+    end
+
+    return "Assigned"
+
+end
+
+-------------------------------------------------
+-- Log, Session Log, Clear
+--
+-- The log is the permanent loot history (see the
+-- History window). The Summary window's Who won what
+-- shows only the current session: everything since its
+-- Clear button was last pressed. Clear just moves that
+-- starting point -- the history keeps every entry.
+-------------------------------------------------
+
 function ImpLoot.LootMaster:GetLog()
     return self.Log
 end
 
+function ImpLoot.LootMaster:GetSessionLog()
+
+    local startId = ImpLootDB.LootMasterSessionStartId or 0
+    local startTime = ImpLootDB.LootMasterSessionStartTime or 0
+    local session = {}
+
+    -- By Id AND time: an older entry that arrives later by
+    -- history sync gets a new Id, but doesn't belong here.
+    for _, logEntry in ipairs(self.Log) do
+
+        if (logEntry.Id or 0) > startId
+        and (logEntry.Timestamp or 0) >= startTime then
+            table.insert(session, logEntry)
+        end
+
+    end
+
+    return session
+
+end
+
 function ImpLoot.LootMaster:ClearLog()
-    self.Log = {}
-    ImpLootDB.LootMasterLog = self.Log
+    ImpLootDB.LootMasterSessionStartId = (ImpLootDB.LootMasterLogNextId or 1) - 1
+    ImpLootDB.LootMasterSessionStartTime = time()
+end
+
+-------------------------------------------------
+-- Give Awarded / Mark Traded
+--
+-- For an item already won but not yet handed over
+-- (State "Awarded", see Assign). GiveAwarded hands it
+-- over with Master Loot -- needs the loot open.
+-- MarkTraded is for when it was traded instead.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GiveAwarded(queueID, quiet)
+
+    local entry = self:GetEntry(queueID)
+
+    if not entry or entry.State ~= "Awarded" then
+        return false
+    end
+
+    if not (entry.Assignable and entry.LootSlot and self:IsMasterLooter()) then
+
+        if not quiet then
+            ImpLoot:Print("Open the loot to hand " .. (entry.ItemLink or "it") .. " to " .. entry.Winner .. ".")
+        end
+
+        return false
+
+    end
+
+    local candidateIndex = self:FindCandidateIndex(entry.Winner)
+
+    if not candidateIndex then
+
+        if not quiet then
+            ImpLoot:Print(entry.Winner .. " can't receive " .. (entry.ItemLink or "it") .. " right now (too far away?). Try again, or trade it.")
+        end
+
+        return false
+
+    end
+
+    GiveMasterLoot(entry.LootSlot, candidateIndex)
+
+    entry.State = "Resolved"
+    entry.TradeOnly = nil
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+    return true
+
+end
+
+function ImpLoot.LootMaster:MarkTraded(queueID)
+
+    local entry = self:GetEntry(queueID)
+
+    if not entry or entry.State ~= "Awarded" then
+        return
+    end
+
+    entry.State = "Resolved"
+    entry.TradeOnly = true
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
 end
 
 function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
@@ -2506,10 +3389,35 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
     if not resultMessage then
 
         entry.Winner = winnerName
-        entry.State = "Resolved"
-        entry.TradeOnly = true
 
-        resultMessage = "Recorded -- trade this item to " .. winnerName .. "."
+        if entry.CorpseGUID then
+
+            -------------------------------------------------
+            -- Won, Not Yet Handed Over ("Awarded")
+            --
+            -- The item is still on the corpse / in the chest
+            -- (e.g. the roll ended while you'd walked away
+            -- and the loot window was closed). Reopening the
+            -- loot attaches to this entry instead of listing
+            -- the item again; then it's handed over (see
+            -- GiveAwarded) -- automatically with Auto-assign
+            -- on, or with the row's Assign button.
+            -------------------------------------------------
+
+            entry.State = "Awarded"
+            entry.TradeOnly = nil
+
+            resultMessage = winnerName .. " won it -- open the loot again to hand it over."
+
+        else
+
+            -- Added by hand (/il): never on a corpse, so trade it
+            entry.State = "Resolved"
+            entry.TradeOnly = true
+
+            resultMessage = "Recorded -- trade this item to " .. winnerName .. "."
+
+        end
 
     end
 
@@ -2587,12 +3495,32 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
 
     local resultLabel = self:GetResultLabel(entry, winnerName)
 
-    self:LogResolution(entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel)
+    local cached = ImpLoot.ItemCache and ImpLoot.ItemCache:GetItem(entry.ItemID)
+    local raidName, size, heroic = self:GetRaidContext()
+
+    local details = {
+        ItemName = (cached and cached.Name) or (entry.ItemLink and entry.ItemLink:match("%[(.-)%]")),
+        Quality = (cached and cached.Quality) or self:GetItemQuality(entry.ItemID),
+        WinnerClass = self:GetClassForPlayer(winnerName),
+        Raid = raidName,
+        Size = size,
+        Heroic = heroic,
+        Note = self:DescribeWin(entry, winnerName, classSlot),
+        Recorder = UnitName("player"),
+    }
+
+    entry.AssignNote = nil
+    entry.AssignResult = nil
+
+    self:LogResolution(entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel, details)
+
+    local logged = self.Log[#self.Log]
+    details.RecorderId = logged and logged.Recorder == details.Recorder and logged.RecorderId or nil
 
     if ImpLoot.Comms then
 
         ImpLoot.Comms:SendResolved(
-            entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel
+            entry.ItemID, winnerName, entry.BossName, entry.Mode, resultLabel, details
         )
 
     end

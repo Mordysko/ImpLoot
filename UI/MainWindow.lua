@@ -115,6 +115,14 @@ function MainWindow:Initialize()
     title:SetPoint("CENTER")
     title:SetText("ImpLoot")
 
+    -- ImpLoot emblem in the top-left corner, sized to sit
+    -- inside the header (36 tall) with a small margin.
+    local emblem = header:CreateTexture(nil, "OVERLAY")
+    emblem:SetSize(32, 32)
+    emblem:SetPoint("LEFT", header, "LEFT", 4, 0)
+    emblem:SetTexture("Interface\\AddOns\\ImpLoot\\Media\\ImpLootIcon")
+    self.Emblem = emblem
+
     local closeButton = CreateFrame("Button", nil, header, "UIPanelCloseButton")
     closeButton:SetPoint("RIGHT", 2, 0)
 

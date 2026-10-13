@@ -342,6 +342,12 @@ function LootPanel:Clear()
 
     end
 
+    -- Section headings too, so switching raids doesn't leave
+    -- the last view's headings (e.g. Extra Drops) behind.
+    if self.HeaderWidgets then
+        self:ResetLootHeaders()
+    end
+
 end
 
 -------------------------------------------------
@@ -986,6 +992,70 @@ function LootPanel:RefreshItem(itemID)
 end
 
 -------------------------------------------------
+-- Loot Sort Order
+--
+-- Inside every loot section: gear you can equip first,
+-- then other items (tier tokens, bags, reagents), then
+-- quest items, then mounts -- alphabetical within each.
+-------------------------------------------------
+
+local EQUIP_SLOTS = {
+    ["Head"] = true, ["Neck"] = true, ["Shoulder"] = true, ["Back"] = true,
+    ["Chest"] = true, ["Wrist"] = true, ["Hands"] = true, ["Waist"] = true,
+    ["Legs"] = true, ["Feet"] = true, ["Finger"] = true, ["Trinket"] = true,
+    ["One-Hand"] = true, ["Main Hand"] = true, ["Off Hand"] = true,
+    ["Two-Hand"] = true, ["Ranged"] = true, ["Shield"] = true,
+    ["Relic"] = true, ["Thrown"] = true, ["Staff"] = true, ["Fist Weapon"] = true,
+}
+
+local function LootSortRank(item)
+
+    if item.Slot == "Mount" then
+        return 4
+    end
+
+    if item.Slot == "Quest" then
+        return 3
+    end
+
+    if not item.Token and item.Type ~= "TIER_TOKEN"
+    and item.Slot and EQUIP_SLOTS[item.Slot] then
+        return 1
+    end
+
+    return 2
+
+end
+
+local function LootSortID(item)
+    return (item.IDs and (item.IDs.Normal or item.IDs.Heroic)) or 0
+end
+
+local function LootSortCompare(a, b)
+
+    local rankA, rankB = LootSortRank(a), LootSortRank(b)
+
+    if rankA ~= rankB then
+        return rankA < rankB
+    end
+
+    local nameA = string.lower(a.Name or "")
+    local nameB = string.lower(b.Name or "")
+
+    if nameA ~= nameB then
+        return nameA < nameB
+    end
+
+    return LootSortID(a) < LootSortID(b)
+
+end
+
+LootPanel.SortLootItems = function(items)
+    table.sort(items, LootSortCompare)
+    return items
+end
+
+-------------------------------------------------
 -- Populate For Boss
 -------------------------------------------------
 
@@ -1034,10 +1104,11 @@ function LootPanel:PopulateForBoss(boss)
     end
 
     -------------------------------------------------
-    -- Vault of Archavon: Three Main Headings
+    -- Vault of Archavon: Four Main Headings
     --
-    -- Tier Tokens, PvP Season Gear, Non-Set Epics (the
-    -- class-agnostic wrist/waist/feet accessories) --
+    -- Tier Pieces, PvP Season Gear, Non-Set Epics (the
+    -- class-agnostic wrist/waist/feet accessories) and
+    -- Mount (Alliance and Horde mammoths) --
     -- each of the first two sub-divided by spec where
     -- the class actually has more than one (e.g. Death
     -- Knight: Tanking / DPS). Everywhere else keeps the
@@ -1050,15 +1121,22 @@ function LootPanel:PopulateForBoss(boss)
     local raidName = type(raid) == "table" and raid.Name or raid
     local isVoA = (raidName == "Vault of Archavon")
 
-    local MAIN_ORDER = { "Tier Tokens", "PvP Season Gear", "Non-Set Epics" }
+    local MAIN_ORDER = { "Tier Pieces", "PvP Season Gear", "Non-Set Epics", "Mount" }
 
     local function ClassifyVoAItem(item)
+
+        -- Mounts: one heading, split into Alliance / Horde
+        -- (carried in BonusLootGroup) since both versions
+        -- share a name.
+        if item.Slot == "Mount" then
+            return "Mount", item.BonusLootGroup
+        end
 
         if item.Classes and #item.Classes > 1 then
             return "Non-Set Epics", nil
         end
 
-        local main = "Tier Tokens"
+        local main = "Tier Pieces"
 
         if item.Name:find("^Hateful")
         or item.Name:find("^Deadly")
@@ -1072,7 +1150,7 @@ function LootPanel:PopulateForBoss(boss)
 
         local sub = item.BonusLootGroup
 
-        if sub == "Tier Tokens" or sub == "PvP Season Gear" then
+        if sub == "Tier Tokens" or sub == "Tier Pieces" or sub == "PvP Season Gear" then
             sub = nil
         end
 
@@ -1171,6 +1249,8 @@ function LootPanel:PopulateForBoss(boss)
     -------------------------------------------------
 
     local function renderGrid(items, startY)
+
+        LootPanel.SortLootItems(items)
 
         for i, item in ipairs(items) do
 
@@ -1490,12 +1570,21 @@ function LootPanel:PopulateTrash()
 
     local displayIndex = 0
 
+    local trashItems = {}
+
     for _, item in ipairs(raid.Trash) do
 
-        local availableIn = item.AvailableIn
+        if item.AvailableIn and item.AvailableIn[selectedDifficulty] then
+            table.insert(trashItems, item)
+        end
 
-        if availableIn
-        and availableIn[selectedDifficulty] then
+    end
+
+    LootPanel.SortLootItems(trashItems)
+
+    for _, item in ipairs(trashItems) do
+
+        do
 
             displayIndex = displayIndex + 1
 
@@ -1615,6 +1704,8 @@ function LootPanel:PopulateExtraDrops()
     -------------------------------------------------
 
     local function renderGrid(items, startY)
+
+        LootPanel.SortLootItems(items)
 
         for i, item in ipairs(items) do
 

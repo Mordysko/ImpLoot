@@ -382,7 +382,7 @@ local VOA_RAID = {
                         Heroic = nil,
                     },
                     Quality = 4,
-                    Slot = "Legs",
+                    Slot = "Hands",
                     Token = false,
                     Classes = { "Paladin" },
                     Notes = nil,
@@ -3199,6 +3199,46 @@ local VOA_RAID = {
                     BonusLootGroup = "Restoration",
                 },
 
+
+                -------------------------------------------------
+                -- Mount (10 and 25 Man)
+                -------------------------------------------------
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 43959,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Alliance",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 44083,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Horde",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
             },
 
         },
@@ -3969,7 +4009,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Valorous Kirin'dor Gauntlets",
+                    Name = "Valorous Kirin Tor Gauntlets",
                     IDs = {
                         Normal = 46131,
                         Heroic = nil,
@@ -3984,7 +4024,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Valorous Kirin'dor Leggings",
+                    Name = "Valorous Kirin Tor Leggings",
                     IDs = {
                         Normal = 45367,
                         Heroic = nil,
@@ -5713,7 +5753,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Conqueror's Kirin'dor Gauntlets",
+                    Name = "Conqueror's Kirin Tor Gauntlets",
                     IDs = {
                         Normal = 46132,
                         Heroic = nil,
@@ -5728,7 +5768,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Conqueror's Kirin'dor Leggings",
+                    Name = "Conqueror's Kirin Tor Leggings",
                     IDs = {
                         Normal = 46133,
                         Heroic = nil,
@@ -6717,6 +6757,46 @@ local VOA_RAID = {
                     BonusLootGroup = "PvP Season Gear",
                 },
 
+
+                -------------------------------------------------
+                -- Mount (10 and 25 Man)
+                -------------------------------------------------
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 43959,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Alliance",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 44083,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Horde",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
             },
 
         },
@@ -8183,7 +8263,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Gloves of Conquest",
+                    Name = "Malfurion's Gloves of Conquest",
                     IDs = {
                         Normal = 48162,
                         Heroic = nil,
@@ -8199,7 +8279,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Trousers of Conquest",
+                    Name = "Malfurion's Trousers of Conquest",
                     IDs = {
                         Normal = 48160,
                         Heroic = nil,
@@ -8277,7 +8357,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Handgrips of Conquest",
+                    Name = "Malfurion's Handgrips of Conquest",
                     IDs = {
                         Normal = 48213,
                         Heroic = nil,
@@ -8293,7 +8373,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Legguards of Conquest",
+                    Name = "Malfurion's Legguards of Conquest",
                     IDs = {
                         Normal = 48215,
                         Heroic = nil,
@@ -8371,7 +8451,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Handguards of Conquest",
+                    Name = "Malfurion's Handguards of Conquest",
                     IDs = {
                         Normal = 48132,
                         Heroic = nil,
@@ -8387,7 +8467,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Leggings of Conquest",
+                    Name = "Malfurion's Leggings of Conquest",
                     IDs = {
                         Normal = 48130,
                         Heroic = nil,
@@ -10588,7 +10668,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Gloves of Triumph",
+                    Name = "Malfurion's Gloves of Triumph",
                     IDs = {
                         Normal = 48163,
                         Heroic = nil,
@@ -10604,7 +10684,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Trousers of Triumph",
+                    Name = "Malfurion's Trousers of Triumph",
                     IDs = {
                         Normal = 48165,
                         Heroic = nil,
@@ -10682,7 +10762,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Handgrips of Triumph",
+                    Name = "Malfurion's Handgrips of Triumph",
                     IDs = {
                         Normal = 48212,
                         Heroic = nil,
@@ -10698,7 +10778,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Legguards of Triumph",
+                    Name = "Malfurion's Legguards of Triumph",
                     IDs = {
                         Normal = 48210,
                         Heroic = nil,
@@ -10776,7 +10856,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Handguards of Triumph",
+                    Name = "Malfurion's Handguards of Triumph",
                     IDs = {
                         Normal = 48133,
                         Heroic = nil,
@@ -10792,7 +10872,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Stormrage's Leggings of Triumph",
+                    Name = "Malfurion's Leggings of Triumph",
                     IDs = {
                         Normal = 48135,
                         Heroic = nil,
@@ -11587,6 +11667,46 @@ local VOA_RAID = {
                     BonusLootGroup = "PvP Season Gear",
                 },
 
+
+                -------------------------------------------------
+                -- Mount (10 and 25 Man)
+                -------------------------------------------------
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 43959,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Alliance",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 44083,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Horde",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
             },
 
         },
@@ -12477,7 +12597,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Gloves",
+                    Name = "Lasherweave Gloves",
                     IDs = {
                         Normal = 50822,
                         Heroic = nil,
@@ -12492,7 +12612,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Trousers",
+                    Name = "Lasherweave Trousers",
                     IDs = {
                         Normal = 50820,
                         Heroic = nil,
@@ -12537,7 +12657,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Handgrips",
+                    Name = "Lasherweave Handgrips",
                     IDs = {
                         Normal = 50827,
                         Heroic = nil,
@@ -12552,7 +12672,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Legguards",
+                    Name = "Lasherweave Legguards",
                     IDs = {
                         Normal = 50825,
                         Heroic = nil,
@@ -12597,7 +12717,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Gauntlets",
+                    Name = "Lasherweave Gauntlets",
                     IDs = {
                         Normal = 50107,
                         Heroic = nil,
@@ -12612,7 +12732,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Lasherweave's Legplates",
+                    Name = "Lasherweave Legplates",
                     IDs = {
                         Normal = 50109,
                         Heroic = nil,
@@ -13411,7 +13531,7 @@ local VOA_RAID = {
                 -------------------------------------------------
 
                 {
-                    Name = "Ymirjar Lord's Gauntlets",
+                    Name = "Sanctified Ymirjar Lord's Gauntlets",
                     IDs = {
                         Normal = 51213,
                         Heroic = nil,
@@ -13426,7 +13546,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Ymirjar Lord's Legplates",
+                    Name = "Sanctified Ymirjar Lord's Legplates",
                     IDs = {
                         Normal = 51211,
                         Heroic = nil,
@@ -13471,7 +13591,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Ymirjar Lord's Handguards",
+                    Name = "Sanctified Ymirjar Lord's Handguards",
                     IDs = {
                         Normal = 51217,
                         Heroic = nil,
@@ -13486,7 +13606,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Ymirjar Lord's Legguards",
+                    Name = "Sanctified Ymirjar Lord's Legguards",
                     IDs = {
                         Normal = 51216,
                         Heroic = nil,
@@ -14281,7 +14401,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Gloves",
+                    Name = "Sanctified Lasherweave Gloves",
                     IDs = {
                         Normal = 51148,
                         Heroic = nil,
@@ -14296,7 +14416,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Trousers",
+                    Name = "Sanctified Lasherweave Trousers",
                     IDs = {
                         Normal = 51146,
                         Heroic = nil,
@@ -14341,7 +14461,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Handgrips",
+                    Name = "Sanctified Lasherweave Handgrips",
                     IDs = {
                         Normal = 51144,
                         Heroic = nil,
@@ -14356,7 +14476,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Legguards",
+                    Name = "Sanctified Lasherweave Legguards",
                     IDs = {
                         Normal = 51142,
                         Heroic = nil,
@@ -14401,7 +14521,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Gauntlets",
+                    Name = "Sanctified Lasherweave Gauntlets",
                     IDs = {
                         Normal = 51138,
                         Heroic = nil,
@@ -14416,7 +14536,7 @@ local VOA_RAID = {
                 },
 
                 {
-                    Name = "Sanctified Lasherweave's Legplates",
+                    Name = "Sanctified Lasherweave Legplates",
                     IDs = {
                         Normal = 51136,
                         Heroic = nil,
@@ -15210,6 +15330,46 @@ local VOA_RAID = {
                     BonusLootGroup = "PvP Season Gear",
                 },
 
+
+                -------------------------------------------------
+                -- Mount (10 and 25 Man)
+                -------------------------------------------------
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 43959,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Alliance",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
+
+                {
+                    Name = "Reins of the Grand Black War Mammoth",
+                    IDs = {
+                        Normal = 44083,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Mount",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    BonusLootGroup = "Horde",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
+                },
             },
 
         },

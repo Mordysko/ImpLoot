@@ -114,12 +114,11 @@ function BossPanel:Initialize(mainWindowFrame, header)
     end)
 
     -------------------------------------------------
-    -- Difficulty Toggle
+    -- Difficulty Toggle (Normal / Heroic)
     --
-    -- Doubles as the Horde/Alliance toggle for Trial of
-    -- the Crusader, which has no true Heroic mode --
-    -- that raid tracks a separate Faction state instead,
-    -- purely to pick which faction's loot list to show.
+    -- Sits beside the raid size toggle on every raid so
+    -- the two always stay in the same place. Raids with
+    -- no Heroic mode show it greyed out on "Normal".
     -------------------------------------------------
 
     local difficultyToggle = ImpLoot.Theme:CreateMenuButton(frame)
@@ -135,50 +134,56 @@ function BossPanel:Initialize(mainWindowFrame, header)
 
     difficultyToggle:SetScript("OnClick", function()
 
-        local raid = ImpLoot.SelectedRaid
-        local raidName = type(raid) == "table" and raid.Name or raid
+        if not self:RaidHasHeroic() then
+            return
+        end
 
-        if raidName == "Trial of the Crusader"
-            or raidName == "Vault of Archavon" then
-
-            if self.Faction == "Horde" then
-                self.Faction = "Alliance"
-            else
-                self.Faction = "Horde"
-            end
-
-            difficultyToggle:SetText(self.Faction)
-
+        if self.Difficulty == "Normal" then
+            self.Difficulty = "Heroic"
         else
-
-            if self.Difficulty == "Normal" then
-                self.Difficulty = "Heroic"
-                difficultyToggle:SetText("Heroic")
-            else
-                self.Difficulty = "Normal"
-                difficultyToggle:SetText("Normal")
-            end
-
+            self.Difficulty = "Normal"
         end
 
-        if ImpLoot.SelectedBoss then
+        difficultyToggle:SetText(self.Difficulty)
 
-            ImpLoot.UI.LootPanel:PopulateForBoss(
-                ImpLoot.SelectedBoss
-            )
+        self:RebuildBossListKeepSelection()
 
-        elseif self.TrashButton and self.TrashButton.Selected then
+        self:RefreshLootView()
 
-            ImpLoot.UI.LootPanel:PopulateTrash()
-
-        elseif self.ExtraDropsButton and self.ExtraDropsButton.Selected then
-
-            ImpLoot.UI.LootPanel:PopulateExtraDrops()
-
-        end
     end)
 
-    difficultyToggle:Hide()
+    -------------------------------------------------
+    -- Faction Toggle (Horde / Alliance)
+    --
+    -- Only for loot that differs by faction: Trial of
+    -- the Crusader, and Koralon in Vault of Archavon.
+    -- Sits under the difficulty toggle, on the same row
+    -- as the "Bosses" title, and is hidden elsewhere.
+    -------------------------------------------------
+
+    local factionToggle = ImpLoot.Theme:CreateMenuButton(frame)
+    self.FactionToggle = factionToggle
+
+    factionToggle:SetSize(65, 22)
+    factionToggle:SetPoint("TOPLEFT", difficultyToggle, "BOTTOMLEFT", 0, -4)
+
+    factionToggle:SetText(self.Faction)
+
+    factionToggle:SetScript("OnClick", function()
+
+        if self.Faction == "Horde" then
+            self.Faction = "Alliance"
+        else
+            self.Faction = "Horde"
+        end
+
+        factionToggle:SetText(self.Faction)
+
+        self:RefreshLootView()
+
+    end)
+
+    factionToggle:Hide()
 
     -------------------------------------------------
     -- The Vault of Archavon class dropdown lives in
@@ -196,9 +201,11 @@ function BossPanel:Initialize(mainWindowFrame, header)
 
     function BossPanel:GetSelectedDifficulty()
 
+        local heroic = (self.Difficulty == "Heroic") and self:RaidHasHeroic()
+
         if self.RaidSize == 10 then
 
-            if self.Difficulty == "Heroic" then
+            if heroic then
                 return "10 Heroic"
             end
 
@@ -206,7 +213,7 @@ function BossPanel:Initialize(mainWindowFrame, header)
 
         elseif self.RaidSize == 25 then
 
-            if self.Difficulty == "Heroic" then
+            if heroic then
                 return "25 Heroic"
             end
 
@@ -581,13 +588,7 @@ function BossPanel:UpdateDifficultyToggle()
     end
 
     local raid = ImpLoot.SelectedRaid
-    local raidName = nil
-
-    if type(raid) == "table" then
-        raidName = raid.Name
-    else
-        raidName = raid
-    end
+    local raidName = type(raid) == "table" and raid.Name or raid
 
     if ImpLoot.UI.LootPanel
     and ImpLoot.UI.LootPanel.UpdateClassDropdown then
@@ -596,37 +597,179 @@ function BossPanel:UpdateDifficultyToggle()
 
     end
 
-    if raidName == "Trial of the Crusader" then
+    -------------------------------------------------
+    -- Normal / Heroic: always shown, greyed out on
+    -- raids that have no Heroic mode.
+    -------------------------------------------------
 
-        self.DifficultyToggle:Show()
-        self.DifficultyToggle:SetText(self.Faction or "Horde")
+    self.DifficultyToggle:Show()
 
-    elseif raidName == "Vault of Archavon" then
+    if self:RaidHasHeroic() then
 
-        -- Only Koralon has faction-specific loot -- the toggle
-        -- would just be dead weight on the other three bosses.
-        local boss = ImpLoot.SelectedBoss
-
-        if boss and boss.Name == "Koralon the Flame Watcher" then
-
-            self.DifficultyToggle:Show()
-            self.DifficultyToggle:SetText(self.Faction or "Horde")
-
-        else
-
-            self.DifficultyToggle:Hide()
-
-        end
-
-    elseif raidName == "Icecrown Citadel"
-        or raidName == "Ruby Sanctum" then
-
-        self.DifficultyToggle:Show()
+        self.DifficultyToggle:Enable()
         self.DifficultyToggle:SetText(self.Difficulty or "Normal")
 
     else
 
-        self.DifficultyToggle:Hide()
+        self.DifficultyToggle:SetText("Normal")
+        self.DifficultyToggle:Disable()
+
+    end
+
+    -------------------------------------------------
+    -- Horde / Alliance: Trial of the Crusader, and
+    -- Koralon only in Vault of Archavon.
+    -------------------------------------------------
+
+    local showFaction = false
+
+    if raidName == "Trial of the Crusader" then
+
+        showFaction = true
+
+    elseif raidName == "Vault of Archavon" then
+
+        local boss = ImpLoot.SelectedBoss
+        showFaction = (boss and boss.Name == "Koralon the Flame Watcher") and true or false
+
+    end
+
+    if self.FactionToggle then
+
+        if showFaction then
+            self.FactionToggle:SetText(self.Faction or "Horde")
+            self.FactionToggle:Show()
+        else
+            self.FactionToggle:Hide()
+        end
+
+    end
+
+    -------------------------------------------------
+    -- Push the boss list down a little in raids that
+    -- use the faction toggle, so the first boss button
+    -- doesn't touch it. Done for the whole raid (not
+    -- just Koralon) so the list doesn't jump when you
+    -- click between Vault of Archavon bosses.
+    -------------------------------------------------
+
+    local factionRaid = (raidName == "Trial of the Crusader" or raidName == "Vault of Archavon")
+
+    if self.Content and self.Frame then
+
+        self.Content:ClearAllPoints()
+        self.Content:SetPoint("TOPLEFT", self.Frame, "TOPLEFT", 6, factionRaid and -66 or -58)
+        self.Content:SetPoint("BOTTOMRIGHT", self.Frame, "BOTTOMRIGHT", -6, 6)
+
+    end
+
+end
+
+-------------------------------------------------
+-- Raid Has Heroic
+--
+-- True when the selected raid lists a Heroic
+-- difficulty (ICC, Ruby Sanctum, Trial of the
+-- Crusader).
+-------------------------------------------------
+
+function BossPanel:RaidHasHeroic(raid)
+
+    raid = raid or ImpLoot.SelectedRaid
+
+    if type(raid) ~= "table" or not raid.Difficulties then
+        return false
+    end
+
+    for _, difficulty in ipairs(raid.Difficulties) do
+
+        if difficulty == "10 Heroic" or difficulty == "25 Heroic" then
+            return true
+        end
+
+    end
+
+    return false
+
+end
+
+-------------------------------------------------
+-- Rebuild Boss List, Keeping The Selection
+--
+-- After a Normal / Heroic switch, so Heroic-only
+-- entries appear or disappear. If the selected entry
+-- is one that just disappeared, the loot list is
+-- cleared rather than left showing nothing useful.
+-------------------------------------------------
+
+function BossPanel:RebuildBossListKeepSelection()
+
+    local raid = ImpLoot.SelectedRaid
+
+    if type(raid) ~= "table" or not raid.Bosses then
+        return
+    end
+
+    local hasHeroicOnly = false
+
+    for _, boss in ipairs(raid.Bosses) do
+        if boss.HeroicOnly then
+            hasHeroicOnly = true
+        end
+    end
+
+    if not hasHeroicOnly then
+        return
+    end
+
+    local boss = ImpLoot.SelectedBoss
+    local extraSelected = self.ExtraDropsButton and self.ExtraDropsButton.Selected
+    local trashSelected = self.TrashButton and self.TrashButton.Selected
+
+    if boss and boss.HeroicOnly and self.Difficulty ~= "Heroic" then
+
+        ImpLoot.SelectedBoss = nil
+        ImpLoot.SelectedLoot = nil
+        boss = nil
+
+        ImpLoot.UI.LootPanel:Clear()
+
+    end
+
+    self:Populate()
+
+    if boss then
+        self:HighlightForBoss(boss)
+    elseif extraSelected and self.ExtraDropsButton then
+        self:Highlight(self.ExtraDropsButton)
+    elseif trashSelected and self.TrashButton then
+        self:Highlight(self.TrashButton)
+    end
+
+end
+
+-------------------------------------------------
+-- Refresh Loot View
+--
+-- Re-draws whatever the loot panel is showing after
+-- a size / difficulty / faction change.
+-------------------------------------------------
+
+function BossPanel:RefreshLootView()
+
+    if ImpLoot.SelectedBoss then
+
+        ImpLoot.UI.LootPanel:PopulateForBoss(
+            ImpLoot.SelectedBoss
+        )
+
+    elseif self.TrashButton and self.TrashButton.Selected then
+
+        ImpLoot.UI.LootPanel:PopulateTrash()
+
+    elseif self.ExtraDropsButton and self.ExtraDropsButton.Selected then
+
+        ImpLoot.UI.LootPanel:PopulateExtraDrops()
 
     end
 
@@ -756,7 +899,13 @@ function BossPanel:Populate()
     local Layout = ImpLoot.UI.Layout
     local y = -30
 
+    local heroicSelected = self:RaidHasHeroic(raid) and self.Difficulty == "Heroic"
+
     for _, boss in ipairs(raid.Bosses) do
+
+        -- Heroic-only entries (Trial's Argent Crusade Tribute)
+        -- are hidden while Normal is selected.
+        if heroicSelected or not boss.HeroicOnly then
 
         self.ButtonCursor = self.ButtonCursor + 1
 
@@ -792,6 +941,8 @@ function BossPanel:Populate()
         table.insert(self.Buttons, button)
 
         y = y - 20
+
+        end
 
     end
 

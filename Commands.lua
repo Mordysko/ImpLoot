@@ -51,6 +51,16 @@ SlashCmdList["IMPLOOT"] = function(msg)
 
     end
 
+    if command == "history" then
+
+        if ImpLoot.UI and ImpLoot.UI.HistoryWindow and ImpLoot.UI.HistoryWindow.Frame then
+            ImpLoot.UI.HistoryWindow:Toggle()
+        end
+
+        return
+
+    end
+
     if command == "reset" then
 
         if rest == "confirm" then

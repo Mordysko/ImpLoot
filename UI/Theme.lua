@@ -86,6 +86,38 @@ function ImpLoot.Theme:ApplyPanelStyle(frame)
 end
 
 -------------------------------------------------
+-- Apply Solid Panel Style
+--
+-- Same border as ApplyPanelStyle but a fully opaque
+-- background, for pop-out panels that sit on top of
+-- another window -- so what's behind doesn't show
+-- through and stack up.
+-------------------------------------------------
+
+function ImpLoot.Theme:ApplySolidPanelStyle(frame)
+
+    local colors = self.Colors
+
+    frame:SetBackdrop({
+        bgFile = "Interface\\Buttons\\WHITE8X8",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = false,
+        edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+    })
+
+    frame:SetBackdropColor(0.06, 0.06, 0.06, 1)
+
+    frame:SetBackdropBorderColor(
+        colors.Border[1],
+        colors.Border[2],
+        colors.Border[3],
+        colors.Border[4]
+    )
+
+end
+
+-------------------------------------------------
 -- Create Menu Button
 -------------------------------------------------
 

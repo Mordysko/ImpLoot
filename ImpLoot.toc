@@ -2,7 +2,7 @@
 ## Title: ImpLoot
 ## Notes: Loot management with Soft Reserve support.
 ## Author: Mordy
-## Version: 1.0.0-beta.78
+## Version: 1.0.0-beta.78-exp.34
 
 ## SavedVariables: ImpLootDB
 
@@ -20,6 +20,8 @@ Modules\SoftReserve.lua
 Modules\SoftReserveEdit.lua
 Modules\LootCouncil.lua
 Modules\LootMaster.lua
+Modules\LootHistory.lua
+Modules\HistorySync.lua
 Modules\Announcements.lua
 Modules\Comms.lua
 Modules\Wishlist.lua
@@ -44,6 +46,7 @@ UI\LootMasterWindow.lua
 UI\ReservePopup.lua
 UI\VotePopup.lua
 UI\SummaryWindow.lua
+UI\HistoryWindow.lua
 UI\SoftReserveEditor.lua
 UI\OptionsPanel.lua
 UI\MinimapButton.lua

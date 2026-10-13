@@ -186,9 +186,10 @@ function LootMasterWindow:Initialize()
 
     self.PriorityButton = priorityButton
 
-    local clearAllButton = ImpLoot.Theme:CreateMenuButton(frame)
-    clearAllButton:SetSize(65, 20)
-    clearAllButton:SetPoint("LEFT", priorityButton, "RIGHT", 4, 0)
+    -- Clear All lives in the title bar, by the attach button
+    local clearAllButton = ImpLoot.Theme:CreateMenuButton(titleBar)
+    clearAllButton:SetSize(65, 18)
+    clearAllButton:SetPoint("RIGHT", self.AttachButton, "LEFT", -6, 0)
     clearAllButton:SetText("Clear All")
 
     clearAllButton:SetScript("OnClick", function()
@@ -196,6 +197,63 @@ function LootMasterWindow:Initialize()
     end)
 
     self.ClearAllButton = clearAllButton
+
+    -------------------------------------------------
+    -- Active Priority List
+    --
+    -- Which Loot Council / Priority list loot uses right
+    -- now -- or none. Pick "None" when raiding with a
+    -- group your lists weren't made for. Editing a list
+    -- in the Priority window never changes this.
+    -------------------------------------------------
+
+    local listButton = ImpLoot.Theme:CreateMenuButton(frame)
+    listButton:SetSize(120, 20)
+    listButton:SetPoint("LEFT", priorityButton, "RIGHT", 4, 0)
+    self.ActiveListButton = listButton
+
+    self.ListMenuFrame = CreateFrame("Frame", "ImpLootActiveListMenu", UIParent, "UIDropDownMenuTemplate")
+
+    listButton:SetScript("OnClick", function(button)
+
+        local current = ImpLoot.LootCouncil:GetActiveListName()
+
+        local menu = {
+            { text = "Active priority list", isTitle = true, notCheckable = true },
+            { text = "None", checked = (current == nil), func = function()
+                ImpLoot.LootCouncil:SetActiveList(nil)
+            end },
+        }
+
+        for _, name in ipairs(ImpLoot.LootCouncil:GetListNames()) do
+
+            table.insert(menu, {
+                text = name,
+                checked = (current == name),
+                func = function() ImpLoot.LootCouncil:SetActiveList(name) end,
+            })
+
+        end
+
+        EasyMenu(menu, self.ListMenuFrame, button, 0, 0, "MENU")
+
+    end)
+
+    listButton:SetScript("OnEnter", function(button)
+        GameTooltip:SetOwner(button, "ANCHOR_TOP")
+        GameTooltip:AddLine("Active priority list")
+        GameTooltip:AddLine("The Loot Council / Priority list loot uses. None: no list -- every item goes to Soft Reserve or an open roll.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+
+    listButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    self:UpdateActiveListButton()
+
+    ImpLoot.Events:Register("ActivePriorityListChanged", function()
+        self:UpdateActiveListButton()
+        ImpLoot.LootMaster:ReevaluatePendingModes()
+    end)
 
     local softReserveButton = ImpLoot.Theme:CreateMenuButton(frame)
     softReserveButton:SetSize(90, 20)
@@ -616,6 +674,7 @@ function LootMasterWindow:PopulateRow(row, entry)
     end
 
     row.ActionButton:Hide()
+    row.ActionButton:Enable()
     row.ActionButton:SetScript("OnClick", nil)
     row.TimerText:Hide()
 
@@ -634,7 +693,57 @@ function LootMasterWindow:PopulateRow(row, entry)
     local lcListName = entry.Mode == "LootCouncil" and ImpLoot.LootCouncil:GetActiveListName()
     local lcCouncilItem = lcListName and ImpLoot.LootCouncil:GetItem(lcListName, entry.ItemID)
 
-    if entry.Mode == "LootCouncil" and lcCouncilItem and lcCouncilItem.Mode ~= "Preselected" then
+    -- Assigned rows are dimmed: what's left to hand out
+    -- stands out at a glance
+    row:SetAlpha(entry.State == "Resolved" and 0.6 or 1)
+
+    -------------------------------------------------
+    -- Already Assigned (Checked First, Any Mode)
+    --
+    -- Must come before the Loot Council branch below:
+    -- that branch shows Vote / Priority / Funnel buttons
+    -- for an LC item whatever its state, so an assigned
+    -- LC item used to fall back to "LC Vote" (or
+    -- "Assign" -- risking handing it out twice).
+    -------------------------------------------------
+
+    if entry.State == "Resolved" then
+
+        local winnerLine = "Winner: " .. (entry.Winner or "?")
+
+        if entry.TradeOnly then
+            winnerLine = winnerLine .. " (trade it)"
+        end
+
+        row.InfoText:SetText(winnerLine)
+
+    -------------------------------------------------
+    -- Won, Not Yet Handed Over
+    -------------------------------------------------
+
+    elseif entry.State == "Awarded" then
+
+        if entry.Assignable then
+
+            row.InfoText:SetText("Winner: " .. (entry.Winner or "?") .. " -- ready to hand over")
+            row.ActionButton:SetText("Assign")
+            row.ActionButton:SetScript("OnClick", function()
+                ImpLoot.LootMaster:GiveAwarded(entry.QueueID)
+            end)
+
+        else
+
+            row.InfoText:SetText("Winner: " .. (entry.Winner or "?") .. " -- open the loot to hand it over, or trade it")
+            row.ActionButton:SetText("Traded")
+            row.ActionButton:SetScript("OnClick", function()
+                ImpLoot.LootMaster:MarkTraded(entry.QueueID)
+            end)
+
+        end
+
+        row.ActionButton:Show()
+
+    elseif entry.Mode == "LootCouncil" and lcCouncilItem and lcCouncilItem.Mode ~= "Preselected" then
 
         local listName = lcListName
         local councilItem = lcCouncilItem
@@ -775,24 +884,52 @@ function LootMasterWindow:PopulateRow(row, entry)
 
         elseif entry.State == "Voting" then
 
-            local tally = ImpLoot.LootMaster:GetVoteTally(entry.QueueID)
+            local tally, _, isTie = ImpLoot.LootMaster:GetVoteLeaders(entry.QueueID)
             local lines = {}
 
-            for _, t in ipairs(tally) do
-                table.insert(lines, t.Value .. " -- " .. t.Count .. (t.Count == 1 and " vote" or " votes"))
+            if entry.Runoff then
+                table.insert(lines, "|cffffd100Second vote (tie):|r")
             end
 
-            row.InfoText:SetText(#lines > 0 and table.concat(lines, "\n") or "Voting -- no votes yet.")
+            for _, t in ipairs(tally) do
+                local label = (t.Type == "Class") and ("Any " .. t.Value) or t.Value
+                table.insert(lines, label .. " -- " .. t.Count .. (t.Count == 1 and " vote" or " votes"))
+            end
 
-            row.ActionButton:SetText("Assign")
+            if #tally == 0 then
+                table.insert(lines, "Voting -- no votes yet.")
+            end
+
+            row.InfoText:SetText(table.concat(lines, "\n"))
+
+            -- Tied at the top: a second vote between the tied
+            -- candidates; tied again: the loot master decides
+            if isTie and not entry.Runoff then
+                row.ActionButton:SetText("Second Vote")
+            elseif isTie then
+                row.ActionButton:SetText("Decide")
+            else
+                row.ActionButton:SetText("Assign")
+            end
+
             row.ActionButton:Show()
 
-            row.ActionButton:SetScript("OnClick", function()
+            row.ActionButton:SetScript("OnClick", function(button)
 
-                local currentTally = ImpLoot.LootMaster:GetVoteTally(entry.QueueID)
+                local currentTally, leaders, tied = ImpLoot.LootMaster:GetVoteLeaders(entry.QueueID)
 
                 if #currentTally == 0 then
                     ImpLoot:Print("No votes yet for " .. displayName .. ".")
+                    return
+                end
+
+                if tied and not entry.Runoff then
+                    ImpLoot.LootMaster:StartRunoff(entry.QueueID)
+                    return
+                end
+
+                if tied then
+                    self:ShowDecideMenu(button, entry, leaders, displayName)
                     return
                 end
 
@@ -938,7 +1075,15 @@ function LootMasterWindow:PopulateRow(row, entry)
         if (multiCopyDecision and multiCopyDecision.Type == "DirectAssign") or soleReserver then
             row.ActionButton:SetText("Assign")
         else
+
             row.ActionButton:SetText(entry.Mode == "SoftReserve" and "Announce" or "Open Roll")
+
+            -- One roll at a time: greyed out while another
+            -- item's roll is running
+            if ImpLoot.LootMaster:GetRollInProgress() then
+                row.ActionButton:Disable()
+            end
+
         end
 
         row.ActionButton:Show()
@@ -1000,7 +1145,24 @@ function LootMasterWindow:PopulateRow(row, entry)
 
     elseif entry.State == "Rolling" then
 
-        row.InfoText:SetText(self:FormatStandings(entry))
+        local standings = self:FormatStandings(entry)
+
+        -- A tie reroll: say who's rolling
+        if entry.RerollPlayers then
+
+            local names = {}
+
+            for name in pairs(entry.RerollPlayers) do
+                table.insert(names, name)
+            end
+
+            table.sort(names)
+
+            standings = "|cffffd100Tie reroll: " .. table.concat(names, " & ") .. "|r\n" .. (standings or "")
+
+        end
+
+        row.InfoText:SetText(standings)
 
         row.ActionButton:SetText("Stop")
         row.ActionButton:Show()
@@ -1039,20 +1201,6 @@ function LootMasterWindow:PopulateRow(row, entry)
 
         end)
 
-    -------------------------------------------------
-    -- Resolved
-    -------------------------------------------------
-
-    elseif entry.State == "Resolved" then
-
-        local winnerLine = "Winner: " .. (entry.Winner or "?")
-
-        if entry.TradeOnly then
-            winnerLine = winnerLine .. " (trade it)"
-        end
-
-        row.InfoText:SetText(winnerLine)
-
     end
 
     -------------------------------------------------
@@ -1064,6 +1212,69 @@ function LootMasterWindow:PopulateRow(row, entry)
     end)
 
     row:Show()
+
+end
+
+function LootMasterWindow:UpdateActiveListButton()
+
+    local button = self.ActiveListButton
+
+    if not button then
+        return
+    end
+
+    local name = ImpLoot.LootCouncil:GetActiveListName()
+
+    if name then
+        button:SetText(name)
+    else
+        button:SetText("|cff888888No priority list|r")
+    end
+
+end
+
+-------------------------------------------------
+-- Decide Menu
+--
+-- A second vote that ties again: the loot master picks
+-- between the still-tied candidates from a small menu.
+-------------------------------------------------
+
+function LootMasterWindow:ShowDecideMenu(anchor, entry, leaders, displayName)
+
+    if not self.DecideMenuFrame then
+        self.DecideMenuFrame = CreateFrame("Frame", "ImpLootDecideMenu", UIParent, "UIDropDownMenuTemplate")
+    end
+
+    local menu = {
+        { text = "Still tied -- give " .. displayName .. " to:", isTitle = true, notCheckable = true },
+    }
+
+    for _, leader in ipairs(leaders) do
+
+        local label = (leader.Type == "Class") and ("Any " .. leader.Value) or leader.Value
+
+        table.insert(menu, {
+            text = label,
+            notCheckable = true,
+            func = function()
+
+                if leader.Type == "Class" then
+                    ImpLoot:Print("Any " .. leader.Value .. " won the vote for " .. displayName ..
+                        " -- assign it to a specific player via /il or trade.")
+                    return
+                end
+
+                ImpLoot.LootMaster:RequestAssign(entry.QueueID, leader.Value)
+
+            end,
+        })
+
+    end
+
+    table.insert(menu, { text = "Cancel", notCheckable = true })
+
+    EasyMenu(menu, self.DecideMenuFrame, anchor, 0, 0, "MENU")
 
 end
 

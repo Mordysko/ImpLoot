@@ -123,6 +123,12 @@ function VotePopup:ShowNext()
     local displayName = (cached and cached.Name) or ("Item " .. next.ItemID)
 
     local r, g, b = ImpLoot.Theme:GetQualityColor(cached and cached.Quality)
+
+    -- A second vote after a tie (its vote ID ends in "R")
+    if type(next.VoteID) == "string" and next.VoteID:sub(-1) == "R" then
+        displayName = displayName .. " |cffffffff(second vote)|r"
+    end
+
     self.TitleText:SetText(displayName)
     self.TitleText:SetTextColor(r, g, b)
 

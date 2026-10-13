@@ -42,6 +42,36 @@ function ImportDialog:Attach(summaryFrame, anchorFrame)
     -- it so the longer "edited" text can't run off the edge.
     -------------------------------------------------
 
+    -------------------------------------------------
+    -- By Player / By Boss
+    --
+    -- Switches how the Soft Reserve window lists the
+    -- reserves (see SummaryWindow:RenderReservesByBoss).
+    -- Shows the current view; click for the other one.
+    -- Hidden while editing, along with Import CSV.
+    -------------------------------------------------
+
+    local viewButton = ImpLoot.Theme:CreateMenuButton(summaryFrame)
+    viewButton:SetSize(80, 20)
+    viewButton:SetPoint("LEFT", openButton, "RIGHT", 4, 0)
+    viewButton:Hide()
+    self.ViewButton = viewButton
+
+    viewButton:SetScript("OnClick", function()
+        ImpLoot.UI.SummaryWindow:ToggleReserveView()
+    end)
+
+    viewButton:SetScript("OnEnter", function(button)
+        local other = (ImpLoot.UI.SummaryWindow:GetReserveView() == "Boss") and "player" or "boss"
+        GameTooltip:SetOwner(button, "ANCHOR_TOP")
+        GameTooltip:AddLine("Show reserves by " .. other)
+        GameTooltip:Show()
+    end)
+
+    viewButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    self:UpdateViewButton()
+
     local counterText = summaryFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     counterText:SetPoint("TOPLEFT", openButton, "BOTTOMLEFT", 1, -3)
     counterText:SetJustifyH("LEFT")
@@ -70,11 +100,27 @@ function ImportDialog:SetChromeShown(shown)
 
     if shown then
         self.OpenButton:Show()
+        self.ViewButton:Show()
         self.CounterText:Show()
     else
         self.OpenButton:Hide()
+        self.ViewButton:Hide()
         self.CounterText:Hide()
     end
+
+end
+
+function ImportDialog:UpdateViewButton()
+
+    if not self.ViewButton then
+        return
+    end
+
+    local byBoss = ImpLoot.UI.SummaryWindow
+        and ImpLoot.UI.SummaryWindow.GetReserveView
+        and ImpLoot.UI.SummaryWindow:GetReserveView() == "Boss"
+
+    self.ViewButton:SetText(byBoss and "By Boss" or "By Player")
 
 end
 

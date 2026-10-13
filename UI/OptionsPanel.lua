@@ -391,8 +391,9 @@ function OptionsPanel:BuildMainPanel()
     body:SetText(
         "Loot management with Soft Reserve support.\n\n" ..
         "Use the categories on the left to configure Loot Master " ..
-        "timing, Soft Reserve rules, announcement text and channels, " ..
-        "and the Loot Council roster.\n\n" ..
+        "timing, Soft Reserve rules, and announcement text and channels. " ..
+        "Loot Council members and disenchanters are set per list in the " ..
+        "Loot Council / Priority window.\n\n" ..
         "|cffffd200Slash Commands|r\n" ..
         "|cffffffff/il|r -- toggle the main window\n" ..
         "|cffffffff/il <item link>|r -- manually add an item to the Loot Master queue\n" ..
@@ -402,7 +403,8 @@ function OptionsPanel:BuildMainPanel()
     )
 
     local minimapWidget = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
-    minimapWidget:SetPoint("TOPLEFT", 16, -220)
+    -- Under the text above, however long it runs
+    minimapWidget:SetPoint("TOPLEFT", body, "BOTTOMLEFT", -2, -14)
     minimapWidget:SetSize(24, 24)
 
     local minimapLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
@@ -526,6 +528,22 @@ function OptionsPanel:BuildLootMasterPanel()
         function(v) Settings.ManualItemAutoRoll = v end)
     table.insert(panel.Widgets, widget)
 
+    y = y - 10
+
+    widget, y = CreateCheckboxRow(panel, "Record raid loot seen in chat (epic and better)", y,
+        function() return ImpLoot.LootHistory.Settings.RecordFromChat end,
+        function(v) ImpLoot.LootHistory.Settings.RecordFromChat = v end)
+    table.insert(panel.Widgets, widget)
+
+    widget, y = CreateNumberRow(panel, "Sync loot history every (minutes, 0 = off):", y,
+        function() return ImpLoot.LootHistory.Settings.SyncInterval end,
+        function(v)
+            v = math.floor(tonumber(v) or 0)
+            if v < 0 then v = 0 end
+            ImpLoot.LootHistory.Settings.SyncInterval = v
+        end)
+    table.insert(panel.Widgets, widget)
+
     self.LootMasterPanel = panel
 
     return panel
@@ -555,6 +573,11 @@ function OptionsPanel:BuildSoftReservePanel()
     widget, y = CreateCheckboxRow(panel, "Exclude previous winners on repeat drops", y,
         function() return ImpLoot.SoftReserve:GetSettings().ExcludePreviousWinners end,
         function(v) ImpLoot.SoftReserve:SetSetting("ExcludePreviousWinners", v) end)
+    table.insert(panel.Widgets, widget)
+
+    widget, y = CreateCheckboxRow(panel, "Clear Who won what when reloading after an import", y,
+        function() return ImpLoot.SoftReserve:GetSettings().ClearWhoWonWhatOnImportReload end,
+        function(v) ImpLoot.SoftReserve:SetSetting("ClearWhoWonWhatOnImportReload", v) end)
     table.insert(panel.Widgets, widget)
 
     y = y - 10
@@ -615,20 +638,22 @@ local ANNOUNCEMENT_LABELS = {
     SoleReserverAssigned = "Sole Reserver Assigned",
     MultiCopyDirectAssigned = "Multi-Copy Direct Assigned",
     WinnerAnnounced = "Winner Announced",
-    EligibleClasses = "Eligible Classes",
+    RollTie = "Roll Tie (Reroll)",
     NoRollsDisenchant = "No Rolls (Disenchanter)",
     RollTimeRemaining = "Roll Time Remaining",
     RollCountdown = "Roll Countdown",
     LCVoteCalled = "Loot Council Vote Called",
+    LCRunoffCalled = "Loot Council Second Vote",
     FunnelAssigned = "Funnel Assigned",
     PreselectedAnnounced = "Preselected Roll Announced",
     PriorityAssigned = "Loot Priority Assigned",
+    LootDropsAnnounced = "Boss Loot Posted",
     VoteAssigned = "Loot Council Vote Assigned",
 }
 
 local ANNOUNCEMENT_ORDER = {
-    "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "MultiCopyDirectAssigned", "WinnerAnnounced",
-    "EligibleClasses", "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled",
+    "LootDropsAnnounced", "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "MultiCopyDirectAssigned", "WinnerAnnounced", "RollTie",
+    "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled", "LCRunoffCalled",
     "FunnelAssigned", "PreselectedAnnounced", "PriorityAssigned", "VoteAssigned",
 }
 
@@ -792,223 +817,6 @@ function OptionsPanel:BuildAnnouncementsPanel()
 end
 
 -------------------------------------------------
--- Loot Council Panel
---
--- Roster and disenchanter fallback list only -- the
--- per-item priority lists themselves live in the Loot
--- Master window, not here.
--------------------------------------------------
-
-function OptionsPanel:BuildLootCouncilPanel()
-
-    local panel = CreatePanel("Loot Council", "ImpLoot", "Loot Council")
-
-    -------------------------------------------------
-    -- Members
-    -------------------------------------------------
-
-    local membersHeader = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    membersHeader:SetPoint("TOPLEFT", 16, -50)
-    membersHeader:SetText("Council Members")
-
-    local memberBox = CreateFrame("EditBox", GenerateWidgetName("MemberBox"), panel, "InputBoxTemplate")
-    memberBox:SetSize(112, 20)
-    memberBox:SetPoint("TOPLEFT", 16, -72)
-    memberBox:SetAutoFocus(false)
-    self.MemberBox = memberBox
-
-    local memberAddButton = ImpLoot.Theme:CreateMenuButton(panel)
-    memberAddButton:SetSize(50, 20)
-    memberAddButton:SetPoint("LEFT", memberBox, "RIGHT", 6, 0)
-    memberAddButton:SetText("Add")
-
-    memberAddButton:SetScript("OnClick", function()
-
-        local name = memberBox:GetText()
-
-        if name and name ~= "" then
-
-            ImpLoot.LootCouncil:AddMember(name)
-            memberBox:SetText("")
-            self:RefreshCouncilLists()
-
-        end
-
-    end)
-
-    self.MemberRows = {}
-    self.MemberListTop = -100
-
-    -------------------------------------------------
-    -- Disenchanters
-    -------------------------------------------------
-
-    local disenchantHeader = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    disenchantHeader:SetPoint("TOPLEFT", 200, -50)
-    disenchantHeader:SetText("Disenchanters (in priority order)")
-
-    local disenchantBox = CreateFrame("EditBox", GenerateWidgetName("DisenchantBox"), panel, "InputBoxTemplate")
-    disenchantBox:SetSize(112, 20)
-    disenchantBox:SetPoint("TOPLEFT", 200, -72)
-    disenchantBox:SetAutoFocus(false)
-    self.DisenchantBox = disenchantBox
-
-    local disenchantAddButton = ImpLoot.Theme:CreateMenuButton(panel)
-    disenchantAddButton:SetSize(50, 20)
-    disenchantAddButton:SetPoint("LEFT", disenchantBox, "RIGHT", 6, 0)
-    disenchantAddButton:SetText("Add")
-
-    disenchantAddButton:SetScript("OnClick", function()
-
-        local name = disenchantBox:GetText()
-
-        if name and name ~= "" then
-
-            local current = {}
-
-            for _, entry in ipairs(ImpLoot.LootCouncil:GetDisenchanters()) do
-                table.insert(current, entry.Name)
-            end
-
-            table.insert(current, name)
-
-            ImpLoot.LootCouncil:SetDisenchanters(current)
-            disenchantBox:SetText("")
-            self:RefreshCouncilLists()
-
-        end
-
-    end)
-
-    self.DisenchantRows = {}
-    self.DisenchantListTop = -100
-
-    panel:HookScript("OnShow", function()
-        self:RefreshCouncilLists()
-    end)
-
-    self.LootCouncilPanel = panel
-
-    return panel
-
-end
-
--------------------------------------------------
--- Refresh Council Lists (Dynamic Rows)
---
--- Rebuilds both name lists -- called on panel show,
--- and again after every add/remove so the list stays
--- current without needing to close and reopen the
--- panel.
--------------------------------------------------
-
-function OptionsPanel:RefreshCouncilLists()
-
-    local panel = self.LootCouncilPanel
-
-    if not panel then
-        return
-    end
-
-    for _, row in ipairs(self.MemberRows) do
-        row:Hide()
-    end
-
-    for _, row in ipairs(self.DisenchantRows) do
-        row:Hide()
-    end
-
-    local y = self.MemberListTop
-
-    for i, name in ipairs(ImpLoot.LootCouncil:GetMembers()) do
-
-        local row = self.MemberRows[i]
-
-        if not row then
-
-            row = CreateFrame("Frame", nil, panel)
-            row:SetSize(160, 20)
-
-            row.Text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.Text:SetPoint("LEFT", 0, 0)
-
-            row.RemoveButton = CreateFrame("Button", nil, row)
-            row.RemoveButton:SetSize(14, 14)
-            row.RemoveButton:SetPoint("LEFT", row.Text, "RIGHT", 6, 0)
-            row.RemoveText = row.RemoveButton:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            row.RemoveText:SetAllPoints()
-            row.RemoveText:SetText("x")
-
-            self.MemberRows[i] = row
-
-        end
-
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", 16, y)
-        row.Text:SetText(name)
-
-        row.RemoveButton:SetScript("OnClick", function()
-            ImpLoot.LootCouncil:RemoveMember(name)
-            self:RefreshCouncilLists()
-        end)
-
-        row:Show()
-
-        y = y - 20
-
-    end
-
-    y = self.DisenchantListTop
-
-    for i, entry in ipairs(ImpLoot.LootCouncil:GetDisenchanters()) do
-
-        local row = self.DisenchantRows[i]
-
-        if not row then
-
-            row = CreateFrame("Frame", nil, panel)
-            row:SetSize(160, 20)
-
-            row.Text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            row.Text:SetPoint("LEFT", 0, 0)
-
-            row.RemoveButton = CreateFrame("Button", nil, row)
-            row.RemoveButton:SetSize(14, 14)
-            row.RemoveButton:SetPoint("LEFT", row.Text, "RIGHT", 6, 0)
-            row.RemoveText = row.RemoveButton:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-            row.RemoveText:SetAllPoints()
-            row.RemoveText:SetText("x")
-
-            self.DisenchantRows[i] = row
-
-        end
-
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", 200, y)
-        row.Text:SetText(i .. ". " .. entry.Name)
-
-        row.RemoveButton:SetScript("OnClick", function()
-
-            local remaining = {}
-
-            for j, e in ipairs(ImpLoot.LootCouncil:GetDisenchanters()) do
-                if j ~= i then table.insert(remaining, e.Name) end
-            end
-
-            ImpLoot.LootCouncil:SetDisenchanters(remaining)
-            self:RefreshCouncilLists()
-
-        end)
-
-        row:Show()
-
-        y = y - 20
-
-    end
-
-end
-
--------------------------------------------------
 -- Window Layering Panel
 -------------------------------------------------
 
@@ -1108,7 +916,6 @@ function OptionsPanel:Initialize()
     local lootMasterPanel = self:BuildLootMasterPanel()
     local softReservePanel = self:BuildSoftReservePanel()
     local announcementsPanel = self:BuildAnnouncementsPanel()
-    local lootCouncilPanel = self:BuildLootCouncilPanel()
     local windowLayeringPanel = self:BuildWindowLayeringPanel()
     local aboutPanel = self:BuildAboutPanel()
 
@@ -1116,7 +923,6 @@ function OptionsPanel:Initialize()
     InterfaceOptions_AddCategory(lootMasterPanel)
     InterfaceOptions_AddCategory(softReservePanel)
     InterfaceOptions_AddCategory(announcementsPanel)
-    InterfaceOptions_AddCategory(lootCouncilPanel)
     InterfaceOptions_AddCategory(windowLayeringPanel)
     InterfaceOptions_AddCategory(aboutPanel)
 

@@ -189,6 +189,19 @@ function SummaryWindow:Initialize()
         self:ShowExport()
     end)
 
+    -- Every raid, not just this session (see HistoryWindow).
+    -- This window turns into Loot history in place; its Back
+    -- button turns it back.
+    local historyButton = ImpLoot.Theme:CreateMenuButton(frame)
+    historyButton:SetSize(70, 20)
+    historyButton:SetPoint("TOPRIGHT", titleBar, "BOTTOMRIGHT", -2, -6)
+    historyButton:SetText("History")
+    self.HistoryButton = historyButton
+
+    historyButton:SetScript("OnClick", function()
+        ImpLoot.UI.HistoryWindow:OpenFromSummary()
+    end)
+
     -------------------------------------------------
     -- Scroll Content
     -------------------------------------------------
@@ -318,8 +331,10 @@ function SummaryWindow:Initialize()
 
     self.ExportScroll = exportScroll
 
-    exportScroll:SetPoint("TOPLEFT", postButton, "BOTTOMLEFT", -2, -8)
-    exportScroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 34)
+    -- Even 10px margins left and right; the top sits just
+    -- under the title bar (the button row is hidden here).
+    exportScroll:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 6, -6)
+    exportScroll:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 34)
     exportScroll:Hide()
 
     ImpLoot.Theme:ApplyPanelStyle(exportScroll)
@@ -327,9 +342,11 @@ function SummaryWindow:Initialize()
     local exportBox = CreateFrame("EditBox", nil, exportScroll)
     exportBox:SetMultiLine(true)
     exportBox:SetFontObject(GameFontHighlightSmall)
-    exportBox:SetWidth(WINDOW_WIDTH - 36)
+    exportBox:SetWidth(WINDOW_WIDTH - 20)
     exportBox:SetHeight(400)
     exportBox:SetAutoFocus(false)
+    -- Keeps the first line clear of the box's top edge
+    exportBox:SetTextInsets(6, 6, 6, 6)
 
     exportBox:SetScript("OnEscapePressed", function()
         self:HideExport()
@@ -369,7 +386,8 @@ function SummaryWindow:Initialize()
 
     local exportBackButton = ImpLoot.Theme:CreateMenuButton(frame)
     exportBackButton:SetSize(70, 20)
-    exportBackButton:SetPoint("BOTTOMLEFT", 2, 8)
+    -- Same gap from the left border as from the bottom
+    exportBackButton:SetPoint("BOTTOMLEFT", 8, 8)
     exportBackButton:SetText("Back")
     exportBackButton:Hide()
 
@@ -378,6 +396,19 @@ function SummaryWindow:Initialize()
     end)
 
     self.ExportBackButton = exportBackButton
+
+    -- Text / CSV switch, bottom right of the export view
+    -- (the Export button itself stays put on the list view)
+    local formatButton = ImpLoot.Theme:CreateMenuButton(frame)
+    formatButton:SetSize(70, 20)
+    formatButton:SetPoint("BOTTOMRIGHT", -8, 8)
+    formatButton:Hide()
+
+    formatButton:SetScript("OnClick", function()
+        self:ToggleExportFormat()
+    end)
+
+    self.ExportFormatButton = formatButton
 
     -------------------------------------------------
     -- "Who Won What" Is The Default View
@@ -439,11 +470,13 @@ function SummaryWindow:Show()
 
     self.ExportScroll:Hide()
     self.ExportBackButton:Hide()
+    self.ExportFormatButton:Hide()
 
     self.ResultsScroll:Show()
     self.PostButton:Show()
     self.ClearButton:Show()
     self.ExportButton:Show()
+    self.HistoryButton:Show()
 
     self.Title:SetText("Who won what")
 
@@ -502,7 +535,7 @@ end
 function SummaryWindow:FormatLine(entry)
 
     local cached = ImpLoot.ItemCache:GetItem(entry.ItemID)
-    local itemName = (cached and cached.Name) or ("Item " .. entry.ItemID)
+    local itemName = (cached and cached.Name) or entry.ItemName or ("Item " .. entry.ItemID)
 
     local line = entry.Winner .. " -- " .. itemName
 
@@ -681,6 +714,14 @@ function SummaryWindow:Refresh()
 
     end
 
+    -- "By Boss" (see the toggle next to Import CSV). Editing
+    -- always shows players, since that's what the Edit
+    -- buttons work on.
+    if self:GetReserveView() == "Boss" and not self.Editing then
+        self:RenderReservesByBoss()
+        return
+    end
+
     local groups = self:BuildPlayerGroups()
 
     if #groups == 0 then
@@ -741,9 +782,11 @@ function SummaryWindow:Refresh()
             end
 
             local qr, qg, qb = ImpLoot.Theme:GetQualityColor(quality)
+            row.Text:SetWidth(row:GetWidth() - 18)
             row.Text:SetText(itemName)
             row.Text:SetTextColor(qr, qg, qb)
 
+            row:SetHeight(ITEM_ROW_HEIGHT)
             row:ClearAllPoints()
             row:SetPoint("TOPLEFT", card, "TOPLEFT", CARD_PADDING, itemY)
             row:Show()
@@ -784,6 +827,323 @@ function SummaryWindow:Refresh()
 end
 
 -------------------------------------------------
+-- Soft Reserves By Boss
+--
+-- The other way to read the same reserves: one card
+-- per boss, in raid order, listing each of its reserved
+-- items with who reserved it underneath. An item that
+-- drops from more than one boss (tier tokens) appears
+-- under each of them. Anything the raid database
+-- doesn't know goes under the boss named in the import,
+-- or "Other".
+-------------------------------------------------
+
+function SummaryWindow:GetReserveView()
+    return ImpLootDB.SoftReserveView == "Boss" and "Boss" or "Player"
+end
+
+function SummaryWindow:ToggleReserveView()
+
+    ImpLootDB.SoftReserveView = (self:GetReserveView() == "Boss") and "Player" or "Boss"
+
+    ImpLoot.UI.ImportDialog:UpdateViewButton()
+
+    if self.ScrollFrame then
+        self.ScrollFrame:SetVerticalScroll(0)
+    end
+
+    self:Refresh()
+
+end
+
+local function ClassColored(name, class)
+
+    local r, g, b = ImpLoot.Theme:GetClassColor(class)
+
+    return string.format("|cff%02x%02x%02x%s|r",
+        math.floor(r * 255 + 0.5), math.floor(g * 255 + 0.5), math.floor(b * 255 + 0.5), name)
+
+end
+
+function SummaryWindow:BuildReserveBossGroups()
+
+    local draft = self.Draft or ImpLoot.SoftReserve:BuildDraft()
+
+    -- Each reserved item, with its reservers
+    local items = {}
+
+    for _, player in ipairs(draft) do
+
+        for _, reserved in ipairs(player.Items) do
+
+            local record = items[reserved.ItemID]
+
+            if not record then
+
+                record = {
+                    ItemID = reserved.ItemID,
+                    ItemName = reserved.ItemName,
+                    ImportBoss = reserved.Boss,
+                    Reservers = {},
+                    ByName = {},
+                }
+
+                items[reserved.ItemID] = record
+
+            end
+
+            local reserver = record.ByName[player.Player]
+
+            if reserver then
+                reserver.Count = reserver.Count + 1
+            else
+                reserver = { Name = player.Player, Class = player.Class, Count = 1 }
+                record.ByName[player.Player] = reserver
+                table.insert(record.Reservers, reserver)
+            end
+
+        end
+
+    end
+
+    local groups = {}
+    local byKey = {}
+
+    local function GroupFor(key, title, subtitle, raidOrder, bossOrder)
+
+        local group = byKey[key]
+
+        if not group then
+
+            group = {
+                Title = title,
+                Subtitle = subtitle,
+                RaidOrder = raidOrder,
+                BossOrder = bossOrder,
+                Items = {},
+            }
+
+            byKey[key] = group
+            table.insert(groups, group)
+
+        end
+
+        return group
+
+    end
+
+    local raids = ImpLoot.Database:GetRaidsInReleaseOrder()
+
+    for itemID, record in pairs(items) do
+
+        local placed = false
+
+        for raidOrder, raid in ipairs(raids) do
+
+            for _, boss in ipairs(raid.Bosses or {}) do
+
+                for _, item in ipairs(boss.Loot or {}) do
+
+                    if item.IDs and (item.IDs.Normal == itemID or item.IDs.Heroic == itemID) then
+
+                        local group = GroupFor(raid.Name .. "\001" .. boss.Name, boss.Name, raid.Name, raidOrder, boss.Index or 0)
+                        table.insert(group.Items, record)
+                        placed = true
+                        break
+
+                    end
+
+                end
+
+            end
+
+        end
+
+        if not placed then
+
+            local group
+
+            if record.ImportBoss and record.ImportBoss ~= "" then
+                group = GroupFor("import\001" .. record.ImportBoss, record.ImportBoss, nil, 998, 0)
+            else
+                group = GroupFor("other", "Other", nil, 999, 0)
+            end
+
+            table.insert(group.Items, record)
+
+        end
+
+    end
+
+    table.sort(groups, function(a, b)
+
+        if a.RaidOrder ~= b.RaidOrder then
+            return a.RaidOrder < b.RaidOrder
+        end
+
+        if a.BossOrder ~= b.BossOrder then
+            return a.BossOrder < b.BossOrder
+        end
+
+        return a.Title < b.Title
+
+    end)
+
+    local function NameOf(record)
+        local cached = ImpLoot.ItemCache:GetItem(record.ItemID)
+        return (cached and cached.Name) or record.ItemName or ("Item " .. record.ItemID)
+    end
+
+    for _, group in ipairs(groups) do
+
+        table.sort(group.Items, function(a, b)
+            return NameOf(a) < NameOf(b)
+        end)
+
+        for _, record in ipairs(group.Items) do
+            table.sort(record.Reservers, function(a, b) return a.Name < b.Name end)
+        end
+
+    end
+
+    return groups, NameOf
+
+end
+
+function SummaryWindow:RenderReservesByBoss()
+
+    local groups, NameOf = self:BuildReserveBossGroups()
+
+    if #groups == 0 then
+
+        local card = self:AcquireCard(1)
+        card.NameText:SetText("No SRs loaded.")
+        card.NameText:SetTextColor(0.6, 0.6, 0.6)
+        card.SpecText:SetText("")
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", self.ScrollChild, "TOPLEFT", 0, 0)
+        card:SetHeight(CARD_PADDING * 2 + 16)
+        card.DraftPlayer = nil
+        card.EditButton:Hide()
+        card:Show()
+
+        self.ScrollChild:SetHeight(card:GetHeight())
+
+        if self.ScrollFrame.UpdateScrollIndicators then
+            self.ScrollFrame:UpdateScrollIndicators()
+        end
+
+        return
+
+    end
+
+    local y = 0
+
+    for i, group in ipairs(groups) do
+
+        local card = self:AcquireCard(i)
+
+        card.NameText:SetText(group.Title)
+        card.NameText:SetTextColor(
+            ImpLoot.Theme.Colors.Text[1],
+            ImpLoot.Theme.Colors.Text[2],
+            ImpLoot.Theme.Colors.Text[3]
+        )
+
+        card.SpecText:SetText(group.Subtitle or "")
+        card.SpecText:SetTextColor(0.6, 0.6, 0.6)
+
+        card.DraftPlayer = nil
+        card.EditButton:Hide()
+
+        local headerHeight = CARD_PADDING + 16 + (group.Subtitle and 14 or 0) + 2
+        local itemY = -headerHeight
+        local rowIndex = 0
+
+        for _, record in ipairs(group.Items) do
+
+            -- The item
+            rowIndex = rowIndex + 1
+
+            local itemRow = self:AcquireCardItemRow(card, rowIndex)
+            local cached = ImpLoot.ItemCache:GetItem(record.ItemID)
+
+            if cached and cached.Texture then
+                itemRow.Icon:SetTexture(cached.Texture)
+                itemRow.Icon:Show()
+            else
+                itemRow.Icon:Hide()
+            end
+
+            itemRow.Text:SetWidth(itemRow:GetWidth() - 18)
+            itemRow.Text:SetText(NameOf(record))
+            itemRow.Text:SetTextColor(ImpLoot.Theme:GetQualityColor(cached and cached.Quality))
+
+            itemRow:SetHeight(ITEM_ROW_HEIGHT)
+            itemRow:ClearAllPoints()
+            itemRow:SetPoint("TOPLEFT", card, "TOPLEFT", CARD_PADDING, itemY)
+            itemRow:Show()
+
+            itemY = itemY - ITEM_ROW_HEIGHT
+
+            -- Who reserved it, class coloured, indented under it
+            rowIndex = rowIndex + 1
+
+            local namesRow = self:AcquireCardItemRow(card, rowIndex)
+            local names = {}
+
+            for _, reserver in ipairs(record.Reservers) do
+
+                local label = ClassColored(reserver.Name, reserver.Class)
+
+                if reserver.Count > 1 then
+                    label = label .. " |cffaaaaaa(x" .. reserver.Count .. ")|r"
+                end
+
+                table.insert(names, label)
+
+            end
+
+            namesRow.Icon:Hide()
+            namesRow.Text:SetWidth(namesRow:GetWidth() - 18)
+            namesRow.Text:SetText(table.concat(names, "|cffaaaaaa,|r "))
+            namesRow.Text:SetTextColor(1, 1, 1)
+
+            local namesHeight = math.max(ITEM_ROW_HEIGHT, namesRow.Text:GetStringHeight() + 2)
+
+            namesRow:SetHeight(namesHeight)
+            namesRow:ClearAllPoints()
+            namesRow:SetPoint("TOPLEFT", card, "TOPLEFT", CARD_PADDING, itemY)
+            namesRow:Show()
+
+            itemY = itemY - namesHeight - 2
+
+        end
+
+        local cardHeight = -itemY + CARD_PADDING
+
+        card:ClearAllPoints()
+        card:SetPoint("TOPLEFT", self.ScrollChild, "TOPLEFT", 0, -y)
+        card:SetHeight(cardHeight)
+        card:Show()
+
+        y = y + cardHeight + CARD_GAP
+
+    end
+
+    self.ScrollChild:SetHeight(math.max(y, 1))
+
+    if self.ScrollFrame.UpdateScrollChildRect then
+        self.ScrollFrame:UpdateScrollChildRect()
+    end
+
+    if self.ScrollFrame.UpdateScrollIndicators then
+        self.ScrollFrame:UpdateScrollIndicators()
+    end
+
+end
+
+-------------------------------------------------
 -- Build Boss Groups
 --
 -- Shared by the results table and GetExportText below
@@ -793,7 +1153,7 @@ end
 
 function SummaryWindow:BuildBossGroups()
 
-    local log = ImpLoot.LootMaster:GetLog()
+    local log = ImpLoot.LootMaster:GetSessionLog()
 
     local bucketsByBoss = {}
     local order = {}
@@ -846,26 +1206,61 @@ end
 -------------------------------------------------
 -- Get Export Text
 --
--- One line per item: Item,Winner,Roll -- no boss
--- headings, no quoting, just the three raw values a
--- spreadsheet column paste expects. Roll is whatever
--- GetResultLabel recorded at the moment the item was
--- assigned (SR/LC/MS/OS), blank if none applies.
+-- Two formats, picked with the Export button while the
+-- export view is open:
+--   Text  grouped by boss, one "Item - Winner (MS)"
+--         line per item, easy to read or paste
+--   CSV   Boss,Item,ItemID,Winner,Result with a
+--         heading row, for a spreadsheet
+-- Result is whatever GetResultLabel recorded when the
+-- item was assigned (SR/LC/MS/OS/DE), blank if none.
 -------------------------------------------------
 
-function SummaryWindow:GetExportText()
+function SummaryWindow:GetExportFormat()
+    return (ImpLootDB and ImpLootDB.SummaryExportFormat) or "Text"
+end
+
+function SummaryWindow:GetExportText(format)
+
+    format = format or self:GetExportFormat()
 
     local groups = self:BuildBossGroups()
     local lines = {}
 
+    if format == "CSV" then
+        table.insert(lines, ImpLoot.LootHistory.CSVLine({ "Boss", "Item", "ItemID", "Winner", "Result" }))
+    end
+
     for _, bucket in ipairs(groups) do
+
+        if format ~= "CSV" then
+
+            if #lines > 0 then
+                table.insert(lines, "")
+            end
+
+            table.insert(lines, bucket.BossName)
+
+        end
 
         for _, entry in ipairs(bucket.Entries) do
 
             local cached = ImpLoot.ItemCache:GetItem(entry.ItemID)
-            local itemName = (cached and cached.Name) or ("Item " .. entry.ItemID)
+            local itemName = (cached and cached.Name) or entry.ItemName or ("Item " .. entry.ItemID)
+            local result = entry.ResultLabel or ""
 
-            table.insert(lines, itemName .. "," .. entry.Winner .. "," .. (entry.ResultLabel or ""))
+            if format == "CSV" then
+
+                table.insert(lines, ImpLoot.LootHistory.CSVLine({
+                    bucket.BossName, itemName, entry.ItemID or "", entry.Winner or "", result,
+                }))
+
+            else
+
+                table.insert(lines, "  " .. itemName .. " - " .. (entry.Winner or "?")
+                    .. (result ~= "" and (" (" .. result .. ")") or ""))
+
+            end
 
         end
 
@@ -938,6 +1333,34 @@ function SummaryWindow:AcquireResultRow(index)
 
     row.RollText = rollText
 
+    -------------------------------------------------
+    -- History Details On Hover
+    --
+    -- When, where, and how it was won -- kept with each
+    -- entry but not given columns of their own, so the
+    -- table stays as compact as before.
+    -------------------------------------------------
+
+    row:EnableMouse(true)
+
+    row:SetScript("OnEnter", function(selfRow)
+
+        local logEntry = selfRow.LogEntry
+
+        if not logEntry then
+            return
+        end
+
+        GameTooltip:SetOwner(selfRow, "ANCHOR_RIGHT")
+        ImpLoot.LootHistory:AddTooltipLines(logEntry)
+        GameTooltip:Show()
+
+    end)
+
+    row:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
     self.ResultRowWidgets[index] = row
 
     return row
@@ -979,6 +1402,7 @@ function SummaryWindow:RenderResultsTable()
     headerRow.WinnerText:SetTextColor(1, 0.82, 0)
     headerRow.RollText:SetText("Roll")
     headerRow.RollText:SetTextColor(1, 0.82, 0)
+    headerRow.LogEntry = nil
     headerRow:ClearAllPoints()
     headerRow:SetPoint("TOPLEFT", self.ResultsChild, "TOPLEFT", 0, -y)
     headerRow:Show()
@@ -1033,15 +1457,17 @@ function SummaryWindow:RenderResultsTable()
             local row = self:AcquireResultRow(rowIndex)
 
             local cached = ImpLoot.ItemCache:GetItem(entry.ItemID)
-            local itemName = (cached and cached.Name) or ("Item " .. entry.ItemID)
-            local quality = cached and cached.Quality
+            local itemName = (cached and cached.Name) or entry.ItemName or ("Item " .. entry.ItemID)
+            local quality = (cached and cached.Quality) or entry.Quality
 
             local qr, qg, qb = ImpLoot.Theme:GetQualityColor(quality)
             row.ItemText:SetText(itemName)
             row.ItemText:SetTextColor(qr, qg, qb)
 
             row.WinnerText:SetText(entry.Winner)
-            row.WinnerText:SetTextColor(1, 1, 1)
+            row.WinnerText:SetTextColor(ImpLoot.Theme:GetClassColor(entry.WinnerClass))
+
+            row.LogEntry = entry
 
             row.RollText:SetText(entry.ResultLabel or "")
             row.RollText:SetTextColor(0.8, 0.8, 0.8)
@@ -1097,10 +1523,19 @@ end
 
 function SummaryWindow:ShowReserves()
 
+    -- The window may have been closed while on the export
+    -- view, which leaves those widgets shown underneath --
+    -- clear them so only the reserve cards appear.
+    self.ExportBox:ClearFocus()
+    self.ExportScroll:Hide()
+    self.ExportBackButton:Hide()
+    self.ExportFormatButton:Hide()
+
     self.ResultsScroll:Hide()
     self.PostButton:Hide()
     self.ClearButton:Hide()
     self.ExportButton:Hide()
+    self.HistoryButton:Hide()
 
     self.InReserves = true
 
@@ -1123,19 +1558,25 @@ end
 
 function SummaryWindow:ShowExport()
 
-    self.ExportBox:SetText(self:GetExportText())
+    local format = self:GetExportFormat()
+
+    self.ExportBox:SetText(self:GetExportText(format))
     self.ExportBox:SetFocus()
     self.ExportBox:HighlightText()
 
     self.ResultsScroll:Hide()
     self.PostButton:Hide()
     self.ClearButton:Hide()
+    self.HistoryButton:Hide()
     self.ExportButton:Hide()
+
+    self.ExportFormatButton:SetText(format)
+    self.ExportFormatButton:Show()
 
     self.ExportScroll:Show()
     self.ExportBackButton:Show()
 
-    self.Title:SetText("Exported Text")
+    self.Title:SetText("Export (" .. format .. ")")
 
     if self.ExportScroll.UpdateScrollIndicators then
         self.ExportScroll:UpdateScrollIndicators()
@@ -1143,9 +1584,19 @@ function SummaryWindow:ShowExport()
 
 end
 
+function SummaryWindow:ToggleExportFormat()
+
+    ImpLootDB = ImpLootDB or {}
+    ImpLootDB.SummaryExportFormat = (self:GetExportFormat() == "CSV") and "Text" or "CSV"
+
+    self:ShowExport()
+
+end
+
 function SummaryWindow:HideExport()
 
     self.ExportBox:ClearFocus()
+    self.ExportFormatButton:Hide()
 
     self.ExportScroll:Hide()
     self.ExportBackButton:Hide()
@@ -1154,6 +1605,7 @@ function SummaryWindow:HideExport()
     self.PostButton:Show()
     self.ClearButton:Show()
     self.ExportButton:Show()
+    self.HistoryButton:Show()
 
     self.Title:SetText("Who won what")
 
@@ -1168,7 +1620,7 @@ end
 
 function SummaryWindow:PostToRaid()
 
-    local log = ImpLoot.LootMaster:GetLog()
+    local log = ImpLoot.LootMaster:GetSessionLog()
 
     if #log == 0 then
         ImpLoot:Print("Nothing to post -- the summary is empty.")

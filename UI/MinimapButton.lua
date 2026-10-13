@@ -44,9 +44,9 @@ function MinimapButton:Initialize()
     button:SetMovable(true)
 
     local icon = button:CreateTexture(nil, "BACKGROUND")
-    icon:SetSize(20, 20)
+    icon:SetSize(22, 22)
     icon:SetPoint("CENTER", 0, 0)
-    icon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
+    icon:SetTexture("Interface\\AddOns\\ImpLoot\\Media\\ImpLootMinimap")
     self.Icon = icon
 
     local border = button:CreateTexture(nil, "OVERLAY")

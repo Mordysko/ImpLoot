@@ -180,7 +180,7 @@ end
 
 function PriorityListShareDialog:ShowImport()
 
-    local activeName = ImpLoot.LootCouncil:GetActiveListName()
+    local activeName = ImpLoot.LootCouncil:GetEditingListName()
 
     if not activeName then
         ImpLoot:Print("Create or select a list first.")
@@ -201,7 +201,7 @@ function PriorityListShareDialog:ShowImport()
     self.PrimaryButton:SetScript("OnClick", function()
 
         local text = self.EditBox:GetText()
-        local listName = ImpLoot.LootCouncil:GetActiveListName()
+        local listName = ImpLoot.LootCouncil:GetEditingListName()
 
         if not listName then
             ImpLoot:Print("Create or select a list first.")
@@ -244,7 +244,7 @@ end
 
 function PriorityListShareDialog:ShowExport()
 
-    local activeName = ImpLoot.LootCouncil:GetActiveListName()
+    local activeName = ImpLoot.LootCouncil:GetEditingListName()
 
     if not activeName then
         ImpLoot:Print("Create or select a list first.")

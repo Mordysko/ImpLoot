@@ -2,7 +2,7 @@
 -- Populate Mode Bar
 --
 -- A small, always-visible-while-active status bar for
--- the "Populate Item List" workflow: shows how many
+-- the "Add multiple items" workflow: shows how many
 -- items have been alt-clicked/staged so far, with
 -- Add-to-Priority-List and Cancel buttons. Appears
 -- independently of whatever the main window happens to

@@ -41,15 +41,15 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
-    WinnerAnnounced = {
+    RollTie = {
         Enabled = true,
-        Text = "Congratulations! {winner} wins with a roll of {roll}. ({range})",
+        Text = "Tie on {item} at {roll} between {players} -- reroll now, only you can roll. You have {seconds} seconds.",
         Channel = "Auto",
     },
 
-    EligibleClasses = {
+    WinnerAnnounced = {
         Enabled = true,
-        Text = "{item} can be used by: {classes}",
+        Text = "Congratulations! {winner} wins with a roll of {roll}. ({range})",
         Channel = "Auto",
     },
 
@@ -77,6 +77,12 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    LCRunoffCalled = {
+        Enabled = true,
+        Text = "Loot Council vote tied on {item} -- second vote between {candidates}.",
+        Channel = "Auto",
+    },
+
     FunnelAssigned = {
         Enabled = true,
         Text = "{item} assigned to {player}",
@@ -87,6 +93,12 @@ ImpLoot.Announcements.Defaults = {
         Enabled = true,
         Text = "{item} available for {players}. You have {seconds} seconds to roll.",
         Channel = "Auto",
+    },
+
+    LootDropsAnnounced = {
+        Enabled = true,
+        Text = "Loot from {boss}: {items}",
+        Channel = "AutoNoWarning",
     },
 
     PriorityAssigned = {

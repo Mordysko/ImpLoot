@@ -136,7 +136,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -151,7 +150,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -181,7 +179,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -191,12 +188,11 @@ local OS_RAID = {
                         Heroic = nil,
                     },
                     Quality = 4,
-                    Slot = "Fist Weapon",
+                    Slot = "Main Hand",
                     Token = false,
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -241,7 +237,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "10",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -420,7 +415,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -435,7 +429,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -445,12 +438,11 @@ local OS_RAID = {
                         Heroic = nil,
                     },
                     Quality = 4,
-                    Slot = "Staff",
+                    Slot = "Two-Hand",
                     Token = false,
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -480,7 +472,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -495,7 +486,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -510,7 +500,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -540,7 +529,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -585,7 +573,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -600,7 +587,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - One Drake Left",
                 },
 
                 {
@@ -615,7 +601,6 @@ local OS_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
-                    BonusLootGroup = "Bonus Loot - Two Drakes Left",
                 },
 
                 {
@@ -708,6 +693,20 @@ local OS_RAID = {
                     BonusLootGroup = "Bonus Loot - Three Drakes Left",
                 },
 
+                {
+                    Name = "Sabatons of Firmament",
+                    IDs = {
+                        Normal = 43996,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Feet",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    Difficulty = "10",
+                    BonusLootGroup = "Bonus Loot - Two Drakes Left",
+                },
             },
 
         },

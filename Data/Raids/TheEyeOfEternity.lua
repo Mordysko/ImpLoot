@@ -173,6 +173,7 @@ local EOE = {
                     Token = false,
                     Classes = nil,
                     Notes = nil,
+                    Difficulty = "25",
                 },
 
                 -------------------------------------------------

@@ -42,7 +42,7 @@ function ImpLoot.Comms:Initialize()
             return
         end
 
-        self:OnMessageReceived(message, sender)
+        self:OnMessageReceived(message, sender, channel)
 
     end)
 
@@ -136,15 +136,78 @@ local function deserializeCandidates(text)
 
 end
 
+-------------------------------------------------
+-- Vote Call: Sent To Each Council Member
+--
+-- Only the loot master has the Loot Council Members
+-- list, so a raid-wide broadcast left every other
+-- member's ImpLoot checking its own (empty) list and
+-- ignoring the vote. Instead the call is whispered to
+-- each member who's in the raid -- receiving it IS the
+-- invitation (see HandleVoteCall). The loot master, if
+-- on the council, gets theirs directly.
+-------------------------------------------------
+
+local function ShortLower(name)
+    return name and (name:match("^([^%-]+)") or name):lower() or ""
+end
+
 function ImpLoot.Comms:SendVoteCall(itemID, voteID, candidates)
 
-    self:Broadcast(joinParts(
+    local message = joinParts(
         "VOTE_CALL",
         itemID,
         voteID,
         UnitName("player"),
         serializeCandidates(candidates)
-    ))
+    )
+
+    -- Who's in the group right now (name as the game has it)
+    local present = {}
+    local numRaid = GetNumRaidMembers and GetNumRaidMembers() or 0
+
+    if numRaid > 0 then
+
+        for i = 1, numRaid do
+            local name, _, _, _, _, _, _, online = GetRaidRosterInfo(i)
+            if name and online then
+                present[ShortLower(name)] = name
+            end
+        end
+
+    else
+
+        for i = 1, (GetNumPartyMembers and GetNumPartyMembers() or 0) do
+            local name = UnitName("party" .. i)
+            if name then
+                present[ShortLower(name)] = name
+            end
+        end
+
+    end
+
+    local me = ShortLower(UnitName("player"))
+    local sent = 0
+
+    for _, member in ipairs(ImpLoot.LootCouncil:GetMembers()) do
+
+        local key = ShortLower(member)
+
+        if key == me then
+
+            self:OnMessageReceived(message, UnitName("player"), "WHISPER")
+            sent = sent + 1
+
+        elseif present[key] then
+
+            self:Whisper(message, present[key])
+            sent = sent + 1
+
+        end
+
+    end
+
+    return sent
 
 end
 
@@ -169,11 +232,39 @@ end
 -- from the loot master, still gets one this way.
 -------------------------------------------------
 
-function ImpLoot.Comms:SendResolved(itemID, winner, bossName, mode, resultLabel)
+-- The richer history fields ride on the end of the message,
+-- so an older ImpLoot (which reads only the first six parts)
+-- still understands it. "|" can't appear inside a part, so
+-- names and notes have it stripped.
+local function clean(value)
+    return (tostring(value or ""):gsub("|", "/"))
+end
 
-    self:Broadcast(joinParts(
-        "RESOLVED", itemID, winner, bossName or "", mode or "", resultLabel or ""
-    ))
+function ImpLoot.Comms:SendResolved(itemID, winner, bossName, mode, resultLabel, details)
+
+    details = details or {}
+
+    local function build(note)
+        return joinParts(
+            "RESOLVED", itemID, winner, clean(bossName), mode or "", resultLabel or "",
+            clean(details.ItemName), details.Quality or "", details.WinnerClass or "",
+            clean(details.Raid), details.Size or "", details.Heroic and "1" or "",
+            note, details.RecorderId or ""
+        )
+    end
+
+    local note = clean(details.Note):sub(1, 60)
+    local message = build(note)
+
+    -- Addon messages cap out around 250 characters: trim the
+    -- note (the least important part) if it would overflow.
+    local overflow = #message - 240
+
+    if overflow > 0 then
+        message = build(note:sub(1, math.max(0, #note - overflow)))
+    end
+
+    self:Broadcast(message)
 
 end
 
@@ -181,9 +272,20 @@ end
 -- Incoming Dispatch
 -------------------------------------------------
 
-function ImpLoot.Comms:OnMessageReceived(message, sender)
+function ImpLoot.Comms:OnMessageReceived(message, sender, channel)
 
     local msgType = message:match("^([^|]+)")
+
+    -- Loot history sync has its own handler
+    if msgType and msgType:sub(1, 3) == "HS_" then
+
+        if ImpLoot.HistorySync then
+            ImpLoot.HistorySync:OnMessage(message, sender)
+        end
+
+        return
+
+    end
 
     if msgType == "ITEM" then
 
@@ -195,7 +297,7 @@ function ImpLoot.Comms:OnMessageReceived(message, sender)
 
         local _, itemID, voteID, callerName, candidatesText = self:SplitParts(message)
 
-        self:HandleVoteCall(tonumber(itemID), voteID, callerName, deserializeCandidates(candidatesText))
+        self:HandleVoteCall(tonumber(itemID), voteID, callerName, deserializeCandidates(candidatesText), channel)
 
     elseif msgType == "VOTE_CAST" then
 
@@ -228,13 +330,36 @@ function ImpLoot.Comms:OnMessageReceived(message, sender)
             return
         end
 
-        local _, itemID, winner, bossName, mode, resultLabel = self:SplitParts(message)
+        local _, itemID, winner, bossName, mode, resultLabel,
+            itemName, quality, winnerClass, raid, size, heroic, note, recorderId = self:SplitParts(message)
+
+        local function opt(value)
+            return (value and value ~= "") and value or nil
+        end
 
         if ImpLoot.LootMaster and ImpLoot.LootMaster.LogResolution then
 
+            local details = {
+                ItemName = opt(itemName),
+                Quality = tonumber(quality),
+                WinnerClass = opt(winnerClass),
+                Raid = opt(raid),
+                Size = tonumber(size),
+                Heroic = heroic == "1",
+                Note = opt(note),
+                Recorder = sender,
+                RecorderId = tonumber(recorderId),
+                Remote = true,
+            }
+
+            -- An older sender gives no raid: use our own
+            if not details.Raid then
+                details.Heroic = nil
+            end
+
             ImpLoot.LootMaster:LogResolution(
-                tonumber(itemID), winner, (bossName ~= "" and bossName or nil),
-                (mode ~= "" and mode or nil), (resultLabel ~= "" and resultLabel or nil)
+                tonumber(itemID), winner, opt(bossName),
+                opt(mode), opt(resultLabel), details
             )
 
         end
@@ -315,9 +440,13 @@ end
 -- Handle Vote Call (Council Membership Check)
 -------------------------------------------------
 
-function ImpLoot.Comms:HandleVoteCall(itemID, voteID, callerName, candidates)
+function ImpLoot.Comms:HandleVoteCall(itemID, voteID, callerName, candidates, channel)
 
-    if not ImpLoot.LootCouncil:IsMember(UnitName("player")) then
+    -- Sent to us directly by the loot master: we're on their
+    -- council. An older loot master's ImpLoot broadcasts to
+    -- the whole raid instead -- then all we can go on is our
+    -- own members list.
+    if channel ~= "WHISPER" and not ImpLoot.LootCouncil:IsMember(UnitName("player")) then
         return
     end
 

@@ -35,6 +35,38 @@ function ImpLoot.LootCouncil:Initialize()
 
     self.DB = ImpLootDB.LootCouncil
 
+    -------------------------------------------------
+    -- Members / Disenchanters Became Per List
+    --
+    -- Before, one council and one disenchanter list
+    -- applied to everything. Each existing priority list
+    -- starts with a copy of them, so nothing is lost.
+    -------------------------------------------------
+
+    if not self.DB.PerListPeopleMigrated then
+
+        for _, list in pairs(self.DB.Lists or {}) do
+
+            if not list.Members then
+                list.Members = {}
+                for _, name in ipairs(self.DB.Members or {}) do
+                    table.insert(list.Members, name)
+                end
+            end
+
+            if not list.Disenchanters then
+                list.Disenchanters = {}
+                for _, entry in ipairs(self.DB.Disenchanters or {}) do
+                    table.insert(list.Disenchanters, { Name = entry.Name })
+                end
+            end
+
+        end
+
+        self.DB.PerListPeopleMigrated = true
+
+    end
+
     -- Populate Mode: transient, session-only staging for
     -- the "alt-click items in the main window, then commit
     -- them to a list" workflow -- deliberately not
@@ -47,39 +79,68 @@ function ImpLoot.LootCouncil:Initialize()
 end
 
 -------------------------------------------------
--- Council Members
+-- Council Members And Disenchanters (Per List)
+--
+-- Each priority list has its own Loot Council members
+-- and disenchanters, so switching the active list (Loot
+-- Master window) switches who votes and who
+-- disenchants along with the priorities. `listName`
+-- defaults to the ACTIVE list -- the one loot uses; the
+-- Loot Council / Priority window passes the list it's
+-- editing. With no active list there's no council and
+-- no disenchanter.
 -------------------------------------------------
 
-function ImpLoot.LootCouncil:AddMember(name)
+local function ShortLower(name)
+    return name and (name:match("^([^%-]+)") or name):lower() or ""
+end
 
-    if not name or name == "" then
+function ImpLoot.LootCouncil:GetListData(listName)
+
+    listName = listName or self:GetActiveListName()
+
+    local list = listName and self.DB.Lists[listName]
+
+    if list then
+        list.Members = list.Members or {}
+        list.Disenchanters = list.Disenchanters or {}
+    end
+
+    return list
+
+end
+
+function ImpLoot.LootCouncil:AddMember(name, listName)
+
+    local list = self:GetListData(listName)
+
+    if not list or not name or name == "" then
         return false
     end
 
-    for _, existing in ipairs(self.DB.Members) do
-
-        if existing == name then
-            return false
-        end
-
+    if self:IsMember(name, listName) then
+        return false
     end
 
-    table.insert(self.DB.Members, name)
+    table.insert(list.Members, name)
 
     return true
 
 end
 
-function ImpLoot.LootCouncil:RemoveMember(name)
+function ImpLoot.LootCouncil:RemoveMember(name, listName)
 
-    for i, existing in ipairs(self.DB.Members) do
+    local list = self:GetListData(listName)
 
-        if existing == name then
+    if not list then
+        return false
+    end
 
-            table.remove(self.DB.Members, i)
+    for i, existing in ipairs(list.Members) do
 
+        if ShortLower(existing) == ShortLower(name) then
+            table.remove(list.Members, i)
             return true
-
         end
 
     end
@@ -88,15 +149,19 @@ function ImpLoot.LootCouncil:RemoveMember(name)
 
 end
 
-function ImpLoot.LootCouncil:GetMembers()
-    return self.DB.Members
+function ImpLoot.LootCouncil:GetMembers(listName)
+
+    local list = self:GetListData(listName)
+
+    return list and list.Members or {}
+
 end
 
-function ImpLoot.LootCouncil:IsMember(name)
+function ImpLoot.LootCouncil:IsMember(name, listName)
 
-    for _, existing in ipairs(self.DB.Members) do
+    for _, existing in ipairs(self:GetMembers(listName)) do
 
-        if existing == name then
+        if ShortLower(existing) == ShortLower(name) then
             return true
         end
 
@@ -125,7 +190,7 @@ function ImpLoot.LootCouncil:CreateList(listName)
         return false
     end
 
-    self.DB.Lists[listName] = { Items = {} }
+    self.DB.Lists[listName] = { Items = {}, Members = {}, Disenchanters = {} }
 
     self.DB.ListState[listName] = {
         Remaining = {},
@@ -148,6 +213,11 @@ function ImpLoot.LootCouncil:DeleteList(listName)
 
     self.DB.Lists[listName] = nil
     self.DB.ListState[listName] = nil
+
+    if self.DB.LootList == listName then
+        self.DB.LootList = nil
+        ImpLoot.Events:Fire("ActivePriorityListChanged")
+    end
 
     if self.DB.ActiveList == listName then
 
@@ -180,7 +250,23 @@ function ImpLoot.LootCouncil:GetListNames()
 
 end
 
-function ImpLoot.LootCouncil:SetActiveList(listName)
+-------------------------------------------------
+-- Editing List vs Active (Loot) List
+--
+-- Two different things:
+--
+--   Editing list: the one open in the Loot Council /
+--   Priority window. Choosing it there changes nothing
+--   about loot.
+--
+--   Active list: the one loot actually uses, chosen in
+--   the Loot Master window's priority list dropdown --
+--   or none at all, so a different raid group isn't
+--   given your main team's priorities. Every loot
+--   decision asks GetActiveListName().
+-------------------------------------------------
+
+function ImpLoot.LootCouncil:SetEditingList(listName)
 
     if not self.DB.Lists[listName] then
         return false
@@ -192,8 +278,35 @@ function ImpLoot.LootCouncil:SetActiveList(listName)
 
 end
 
-function ImpLoot.LootCouncil:GetActiveListName()
+function ImpLoot.LootCouncil:GetEditingListName()
     return self.DB.ActiveList
+end
+
+-- nil = no priority list in use
+function ImpLoot.LootCouncil:SetActiveList(listName)
+
+    if listName and not self.DB.Lists[listName] then
+        return false
+    end
+
+    self.DB.LootList = listName
+
+    ImpLoot.Events:Fire("ActivePriorityListChanged")
+
+    return true
+
+end
+
+function ImpLoot.LootCouncil:GetActiveListName()
+
+    local name = self.DB.LootList
+
+    if name and self.DB.Lists[name] then
+        return name
+    end
+
+    return nil
+
 end
 
 -------------------------------------------------
@@ -494,7 +607,7 @@ end
 
 function ImpLoot.LootCouncil:ClearRaidHistory(listName)
 
-    listName = listName or self.DB.ActiveList
+    listName = listName or self:GetActiveListName()
 
     if not listName or not self.DB.Lists[listName] then
         return false
@@ -517,38 +630,103 @@ end
 -- given a roster (list of player names present).
 -------------------------------------------------
 
-function ImpLoot.LootCouncil:SetDisenchanters(names)
+function ImpLoot.LootCouncil:SetDisenchanters(names, listName)
 
-    local list = {}
+    local list = self:GetListData(listName)
+
+    if not list then
+        return false
+    end
+
+    local entries = {}
 
     for _, name in ipairs(names) do
 
         if name and name ~= "" then
-            table.insert(list, { Name = name })
+            table.insert(entries, { Name = name })
         end
 
     end
 
-    self.DB.Disenchanters = list
+    list.Disenchanters = entries
+
+    return true
 
 end
 
-function ImpLoot.LootCouncil:GetDisenchanters()
-    return self.DB.Disenchanters
+function ImpLoot.LootCouncil:GetDisenchanters(listName)
+
+    local list = self:GetListData(listName)
+
+    return list and list.Disenchanters or {}
+
 end
 
+function ImpLoot.LootCouncil:IsDisenchanter(name, listName)
+
+    for _, entry in ipairs(self:GetDisenchanters(listName)) do
+
+        if ShortLower(entry.Name) == ShortLower(name) then
+            return true
+        end
+
+    end
+
+    return false
+
+end
+
+function ImpLoot.LootCouncil:AddDisenchanter(name, listName)
+
+    local list = self:GetListData(listName)
+
+    if not list or not name or name == "" or self:IsDisenchanter(name, listName) then
+        return false
+    end
+
+    table.insert(list.Disenchanters, { Name = name })
+
+    return true
+
+end
+
+function ImpLoot.LootCouncil:RemoveDisenchanter(name, listName)
+
+    local list = self:GetListData(listName)
+
+    if not list then
+        return false
+    end
+
+    for i, entry in ipairs(list.Disenchanters) do
+
+        if ShortLower(entry.Name) == ShortLower(name) then
+            table.remove(list.Disenchanters, i)
+            return true
+        end
+
+    end
+
+    return false
+
+end
+
+-- The first of the ACTIVE list's disenchanters who's in
+-- the raid, or nil (no active list: no disenchanter)
 function ImpLoot.LootCouncil:GetActiveDisenchanter(rosterNames)
 
     local present = {}
 
     for _, name in ipairs(rosterNames or {}) do
-        present[name] = true
+        present[ShortLower(name)] = name
     end
 
-    for _, entry in ipairs(self.DB.Disenchanters) do
+    for _, entry in ipairs(self:GetDisenchanters()) do
 
-        if present[entry.Name] then
-            return entry.Name
+        local inRaid = present[ShortLower(entry.Name)]
+
+        if inRaid then
+            return inRaid
         end
 
     end
@@ -560,7 +738,7 @@ end
 -------------------------------------------------
 -- Populate Mode
 --
--- "Populate Item List" workflow: alt-click items in
+-- "Add multiple items" workflow (Add Item): alt-click items in
 -- the main window while this is active stages them
 -- here instead of adding to a wishlist; committing
 -- writes each staged item into the target list with
@@ -670,7 +848,7 @@ end
 -- Text Import / Export
 --
 -- A compact, hand-typeable/shareable alternative to
--- Populate Item List -- lets a priority list be built
+-- Add Item -- lets a priority list be built
 -- (or shared with another guild/officer) entirely
 -- outside the game. Format, one item per ";":
 --
@@ -896,7 +1074,7 @@ end
 -- Import Text To List
 --
 -- Parses and writes straight into the given list,
--- same end result as Populate Item List would have
+-- same end result as Add Item would have
 -- produced. Returns the count actually imported plus
 -- the same warnings list from ParseImportText.
 -------------------------------------------------

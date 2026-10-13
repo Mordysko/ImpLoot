@@ -495,20 +495,6 @@ local ONYXIA_RAID = {
                 },
 
                 {
-                    Name = "Reclaimed Thunderstrike",
-                    IDs = {
-                        Normal = 49301,
-                        Heroic = nil,
-                    },
-                    Quality = 4,
-                    Slot = "Two-Hand",
-                    Token = false,
-                    Classes = nil,
-                    Notes = nil,
-                    Difficulty = "10",
-                },
-
-                {
                     Name = "Keen Obsidian Edged Blade",
                     IDs = {
                         Normal = 49299,
@@ -1017,20 +1003,6 @@ local ONYXIA_RAID = {
                 },
 
                 {
-                    Name = "Reinforced Thunderstrike",
-                    IDs = {
-                        Normal = 49497,
-                        Heroic = nil,
-                    },
-                    Quality = 4,
-                    Slot = "Two-Hand",
-                    Token = false,
-                    Classes = nil,
-                    Notes = nil,
-                    Difficulty = "25",
-                },
-
-                {
                     Name = "Sharpened Obsidian Edged Blade",
                     IDs = {
                         Normal = 49498,
@@ -1070,6 +1042,29 @@ local ONYXIA_RAID = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                },
+
+
+                -------------------------------------------------
+                -- Quest Item (10 and 25 Man; Horde version listed)
+                -------------------------------------------------
+
+                {
+                    Name = "Head of Onyxia",
+                    IDs = {
+                        Normal = 49643,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Quest",
+                    Token = false,
+                    Classes = nil,
+                    Notes = "Starts the Head of Onyxia quest.",
+                    BonusLootGroup = "Quest Item",
+                    AvailableIn = {
+                        ["10"] = true,
+                        ["25"] = true,
+                    },
                 },
 
             },

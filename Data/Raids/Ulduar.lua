@@ -35,7 +35,7 @@ local ULD = {
                 {
                     Name = "Might of the Leviathan",
                     IDs = {
-                        Normal = 45385,
+                        Normal = 45285,
                         Heroic = nil,
                     },
                     Quality = 4,
@@ -3990,6 +3990,20 @@ local ULD = {
                         ["25"] = true,
                     },
                 },
+                {
+                    Name = "Constellus",
+                    IDs = {
+                        Normal = 45612,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Main Hand",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    Difficulty = "25",
+                    BonusLootGroup = "Hard Mode Loot",
+                },
             },
         },
 
@@ -6306,7 +6320,7 @@ local ULD = {
                         Heroic = nil,
                     },
                     Quality = 4,
-                    Slot = "Waist",
+                    Slot = "Wrist",
                     Token = false,
                     Classes = nil,
                     Notes = nil,
@@ -6800,6 +6814,20 @@ local ULD = {
             },
             Quality = 4,
             Slot = "Feet",
+            Token = false,
+            Classes = nil,
+            Notes = nil,
+            Difficulty = "25",
+        },
+
+        {
+            Name = "Idol of the Flourishing Life",
+            IDs = {
+                Normal = 46138,
+                Heroic = nil,
+            },
+            Quality = 4,
+            Slot = "Relic",
             Token = false,
             Classes = nil,
             Notes = nil,

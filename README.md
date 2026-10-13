@@ -1,4 +1,6 @@
-<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/955e05a9-916f-425a-ad8c-acbdad281b30" />
+<p align="center">
+  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
+</p>
 
 # ImpLoot
 
@@ -50,9 +52,11 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
-<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/0196d3d9-21a4-4ab4-a018-048f4f16b4d8" />
+Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it. Within each section, gear you can equip is listed first, then tokens and other items, then quest items, then mounts, alphabetically in each.
 
-Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it.
+Under the raid list are two buttons: raid size (**10 Man / 25 Man**) and difficulty (**Normal / Heroic**). They're in the same place for every raid; on raids with no Heroic mode the difficulty button stays greyed out on Normal. Trial of the Crusader, and Koralon in Vault of Archavon, drop different loot for each faction, so they also show a **Horde / Alliance** button beside the "Bosses" title.
+
+Trial of the Crusader covers Heroic (Trial of the Grand Crusader) as well, including the **Argent Crusade Tribute** chest, listed after Anub'arak while Heroic is selected. Items that can drop from any boss, such as Runed Orbs in Ulduar or Trophies of the Crusade in Trial, are under the **Extra Drops** button below the boss list. In Vault of Archavon each boss has a **Mount** heading with both the Alliance and Horde mammoth.
 
 ### What you can do with an item
 
@@ -66,8 +70,6 @@ These work on any item in the loot list:
 
 ### Wishlists
 
-<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/87784600-b6a1-4706-88a9-e2c57e491bf3" />
-
 Open the planning tab on the right edge of the window and choose **Wishlist**.
 
 - Make as many named wishlists as you like (for example "Ulduar - Discipline"), and rename or delete them whenever you want.
@@ -75,22 +77,15 @@ Open the planning tab on the right edge of the window and choose **Wishlist**.
 - An item added more than once shows its count (for example `x2`). `Alt`+click an item in the wishlist to remove one copy. Click an item to jump to the boss that drops it.
 - Switch between **All Items**, **By Raid** (grouped by raid and difficulty, such as "Icecrown Citadel 10 - Heroic") and **By Slot**.
 
-<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/b5151ebe-8a88-4e8b-b0ae-dc3b556691fc" />
-<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/12ce43c9-f458-4e3a-9452-686a046e9f3e" />
-
 ### Characters
 
 The **Characters** page lists every character you've logged in with ImpLoot. Pick one to view and edit its wishlists from any character, which is handy for planning an alt's gear without logging onto it. Choosing a character here only changes which wishlist you're looking at; it never affects the character you're actually playing.
 
 ### Raid Planner
 
-<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/12a95920-6e39-47dd-b479-46243a7a1351" />
-
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
 ### Compare
-
-<img width="240" height="374" alt="Compare Window" src="https://github.com/user-attachments/assets/0210051f-25c2-4127-baee-85c52695799a" />
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items side by side and shows the stat difference between them.
 
@@ -103,9 +98,6 @@ The **Compare** drawer is the tab on the left edge of the window. It holds two i
 The **Raid Notes** page keeps named, free-text notes for each character, handy for boss strategy reminders or your raid assignments. Create, rename and delete them like wishlists; the active note is edited in its own window.
 
 ### The "this one's yours" popup
-
-<img width="252" height="117" alt="This Is Yours - Wishlist" src="https://github.com/user-attachments/assets/241e5eb6-ea73-48e6-a797-9a57ea5705da" />
-<img width="244" height="116" alt="This Is Yours - Soft Reserve" src="https://github.com/user-attachments/assets/4f148bba-0ae8-4aed-87b7-641a094f5c5f" />
 
 When the Master Looter announces an item that's one of your Soft Reserves, or an open-roll item that's on one of your wishlists, a small popup appears with **Roll**, **Off-Spec Roll** and **Pass**. Roll makes a real roll for you, exactly as if you'd typed it (main spec 1-100, off spec 1-99). It only appears for items that matter to you, and several in a row wait their turn rather than stacking. The Master Looter needs to be running ImpLoot too for this to work.
 
@@ -123,6 +115,10 @@ When the Master Looter announces an item that's one of your Soft Reserves, or an
 
 Only `/roll 1-100` (main spec) and `/roll 1-99` (off spec) count toward the standings. Any other range is ignored, and main spec always outranks off spec regardless of the number rolled.
 
+**One roll at a time:** while an item is being rolled for, the **Open Roll** / **Announce** buttons on every other item are greyed out, and only that item's own **Stop** (or its timer) ends the roll. Copies of the same item rolled together count as one roll.
+
+**Ties:** if two or more players share the best roll when the roll ends (or you click Stop), nobody wins yet. ImpLoot announces the tie and the tied players, and only they, roll again with a fresh timer; the Loot Master window shows *Tie reroll: …*. Another tie rerolls again. With several copies, players who clearly won a copy keep it and only the ones tied for the last copy reroll. The message is **Roll Tie (Reroll)** in **Options → Announcements**.
+
 More detail is available in-game: each options category has its own description, and the About tab and `/il help` open the settings.
 
 ## Assigning to someone who isn't present
@@ -131,27 +127,55 @@ An item is only handed out through WoW's Master Loot system if the winner can ac
 
 ## The Summary window
 
-Open it with the **Summary** button on the Loot Master window. It opens to **Who won what**: a read-only table of Item / Winner / Roll, grouped by boss in that raid's encounter order. The Roll column shows `SR` for a Soft Reserve win, `LC` for Loot Council, or the winner's roll type (`MS` / `OS`) for an Open Roll. It fills itself in and updates as items resolve.
+Open it with the **Summary** button on the Loot Master window. It opens to **Who won what**: a read-only table of Item / Winner / Roll, grouped by boss in that raid's encounter order. The Roll column shows `SR` for a Soft Reserve win, `LC` for Loot Council, `DE` for an item nobody rolled on that went to the disenchanter, or the winner's roll type (`MS` / `OS`) for an Open Roll. It fills itself in and updates as items resolve.
+
+Winners are shown in their class colour. Hover a row for its details: how it was won (e.g. *Rolled 95 (MS)*, *Loot priority (Any Warrior)*, *Disenchant (no rolls)*), the boss, the raid with its size and difficulty (e.g. *Icecrown Citadel 25H*), the date and time, and who recorded it if that wasn't you. Entries saved before this version only have what was recorded at the time.
+
+ImpLoot also reads the raid's "receives loot" chat lines (epic and better, inside a raid; emblems, Abyss Crystals, Frozen Orbs and Shadowfrost Shards are skipped), so the list builds up in everyone's copy of ImpLoot, not just the loot master's:
+
+- An item ImpLoot assigned is marked as received once it's in the winner's bags (*Received* in the tooltip).
+- Loot that didn't go through ImpLoot (a Need/Greed win, an item handed out by hand) is added, noted *Looted directly*, under the boss that drops it. If the item drops from more than one boss, the boss just killed is used. Anything no boss drops is listed as *Trash*.
+- You only see chat lines for loot handed out near you, so a raider who was far away or disconnected can miss some.
+- Turn it off in **Options → Loot Master → Record raid loot seen in chat**.
 
 - **Post to raid** sends the list to raid chat.
-- **Clear** empties the log.
-- **Export** opens a small copyable box (`Ctrl+C`; WoW has no clipboard access) with one line per item as `Item,Winner,Roll`, ready to paste into a spreadsheet.
+- **Clear** starts a fresh *Who won what* for the next session. Nothing is lost: every entry stays in the loot history (see below).
+- **Export** opens a small copyable box (`Ctrl+C`; WoW has no clipboard access). While it's open, the button at the bottom right switches between **Text** (grouped by boss, `Item - Winner (MS)`) and **CSV** (`Boss,Item,ItemID,Winner,Result`, for a spreadsheet). **Back** returns to the list.
+- **History** turns this window into the loot history. Its **Back** button turns it back into *Who won what*.
 
-The **Soft Reserve** button on the Loot Master window opens the same window straight to the soft reserve view instead: one card per player with their class-coloured spec and reserved items. There's no Back button. That same button, or the window's close button, is the way out.
+The **Soft Reserve** button on the Loot Master window opens the same window straight to the soft reserve view instead: one card per player with their class-coloured spec and reserved items. The **By Player** / **By Boss** button next to **Import CSV** switches to one card per boss, in raid order, listing each reserved item with its reservers (class coloured, `x2` for a double reserve) underneath. A tier token appears under every boss that drops it. ImpLoot remembers which view you used last; editing always shows players. There's no Back button. That same button, or the window's close button, is the way out.
+
+### The loot history
+
+Everything ImpLoot has recorded, from every raid, not just the current session. Open it with **History** on the *Who won what* window (the window turns into the loot history, and **Back** turns it back) or `/il history`.
+
+- Columns: Date, Item, Winner (class coloured), Result (`MS` / `OS` / `SR` / `LC` / `DE`), Boss and Raid. Click a column title to sort; click it again to reverse.
+- **Search** finds an item, player, boss, raid, result or note. The two dropdowns filter by raid (e.g. *Icecrown Citadel 25H*) and period (today, last 7 or 30 days).
+- Hover a row for its details. `Shift`+click it to link the item in chat.
+- Right-click a row to change the winner, edit the note, set the Result tag, or delete it. An edited entry remembers who it was first recorded for, and when it was edited.
+- **Export**: what's shown, one line per item. While the export is open, the **Export** button switches between **Text** and **CSV** (`Date,Time,Raid,Size,Difficulty,Boss,Item,ItemID,Winner,Result,Note`), and **Back** returns to the list. `Ctrl+C` to copy.
+- **Delete...**: everything older than 30 days, or everything. It always says how many entries first and asks.
+
+#### Sync
+
+ImpLoot syncs your history with the raid by itself: it fills in loot from the last 7 days that other raiders running ImpLoot recorded and you missed (disconnected, too far away to see it, or joined late). The two raiders with the most entries send theirs.
+
+- It only runs in a raid group (never a party): shortly after you log in, `/reload` or join a raid, then every 60 minutes while you're in one, never during combat. Set the minutes (0 = off) in **Options → Loot Master → Sync loot history every**. While it runs, the history window shows its progress next to the item count.
+- Anything you already have isn't added again, even if it was recorded separately on both sides. Two copies won by the same player stay two entries.
+- If someone changed an entry (winner, note, result), the most recent change wins.
+- Entries you deleted aren't brought back (for 30 days).
+- Right-click an entry and untick **Share in sync** to keep it to yourself.
+- Only raiders on this version or newer can share history.
 
 ## Soft Reserves
-
-<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/78c5d365-0842-40f1-ac57-cd6c0d3af888" />
 
 ### Importing
 
 - Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter under the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
-- Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away.
+- Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away. With **Options → Soft Reserve → Clear Who won what when reloading after an import** ticked (off by default), **Reload Now** also starts a fresh *Who won what*, like its **Clear** button. Nothing is lost: every entry stays in the loot history.
 
 ### Editing by hand
-
-<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/7fae0700-77ef-4262-89e8-056c9cec63f8" />
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
 
@@ -186,6 +210,20 @@ Only people actually in the raid count as reservers: for the sole-reserver short
 
 ## Loot Priority lists
 
+### The Loot Council / Priority window
+
+Which list loot uses is chosen in the Loot Master window, with the button next to **Priority Lists**: pick a list, or **None** (it shows *No priority list*). With None, no item is handled by a priority list. Use that when raiding with a group your lists weren't made for. Choosing a list in the Loot Council / Priority window only picks which one you're editing; the one in use is marked *(active)* there. Items still waiting in the queue are sorted again when you change it.
+
+The list controls run across the top: pick a **List**, create a **New list**, and **Add Item** / **Import Text** / **Export Text**. Below them, the list's items are on the left (icon and item name in its quality colour, then the mode and candidates) and the editor for the selected item is on the right. The item being edited is highlighted, with its names in gold.
+
+**Add Item** opens a small panel:
+
+- Type at least 2 letters of an item's name and matching items appear underneath, the same as adding a soft reserve. Each version is its own line with its boss and size (e.g. *Mimiron  25*, *… 25H*), and items from the raid this list is for come first; ones already on the list say so. Click one to add it, or press `Enter` for the top match. It opens straight in the editor so you can set its candidates.
+- An item ID, or an item `Shift`+clicked into the box, is added with `Enter`.
+- **Add multiple items...** opens the raid browser: alt-click items to add them to the list, then confirm.
+
+Under the editor are two lists that belong to the list being edited: **Loot Council** (who gets the vote popup and can vote) and **Disenchanter** (who gets an item nobody rolled on: the first one listed who's in the raid, so they're numbered). Whichever list is active in the Loot Master window brings its own council and disenchanters with it; with no list active there's no council and no disenchanter. Each **Add** opens a small panel listing everyone in the group who isn't on that list yet, class coloured; typing narrows it down. Click a name, or press `Enter` for the top match. Someone not in the group can be added by typing their full name and pressing `Enter`. Remove someone with the ×.
+
 ### Class slots ("Any Warrior")
 
 When the next slot on a **Priority** item is a class, clicking **Assign** opens a list beside the Loot Master window of every player of that class in the raid. Click a name to give them the item.
@@ -199,11 +237,11 @@ For example, with *Any Warrior > Any Hunter* and Brad and Knightdeath as the rai
 
 ### Class spec labels
 
-A *Class* candidate in the Loot Priority editor can optionally carry a spec (e.g. "Mage - Fire"): hover the class in the dropdown for a pullout of its specs. This is descriptive only. WotLK gives addons no reliable way to know another player's spec, so it's a note for whoever is assigning.
+A *Class* candidate in the Loot Council / Priority editor can optionally carry a spec (e.g. "Mage - Fire"): hover the class in the dropdown for a pullout of its specs. This is descriptive only. WotLK gives addons no reliable way to know another player's spec, so it's a note for whoever is assigning.
 
 ### Text import / export
 
-Besides building a list in-game (**Populate Item List**), you can import one from plain text: built by hand, generated by a spreadsheet, or shared by another officer without opening the game. The Loot Priority window's **Import Text** and **Export Text** buttons work on whichever list is selected.
+Besides building a list in-game (**Add Item**), you can import one from plain text: built by hand, generated by a spreadsheet, or shared by another officer without opening the game. The Loot Council / Priority window's **Import Text** and **Export Text** buttons work on whichever list is selected.
 
 **Format**, one item per line (or all on one line), each ended with a semicolon, up to 5 candidates per item:
 
@@ -237,6 +275,14 @@ Bad entries (unknown item ID, unknown mode, more than 5 candidates) are skipped 
 
 ## Other Loot Master features
 
+### Posting the boss's loot
+
+When you open a boss's loot as Master Looter, on the corpse or in a chest, ImpLoot lists what dropped in raid chat, e.g. *Loot from Lord Marrowgar: [item] [item] [item]* (over several lines if needed). Reopening the same corpse or chest doesn't post it again. Turn it off, reword it or change its channel in **Options → Announcements → Boss Loot Posted**.
+
+Chest loot (Gunship, Dreamwalker, the Ulduar keepers...) is filed under the boss that drops it, so reopening the chest doesn't add its items to the queue twice.
+
+Walking away from a boss and reopening its loot later keeps the queue as it was, rolls in progress included, whatever you have targeted. If a roll ends while the loot is closed, the item is marked as won but not yet handed over (*open the loot to hand it over*): reopening the loot hands it to the winner (with Auto-assign on) or shows **Assign**. If you trade it instead, click **Traded**. With **Options → Loot Master → Auto-clear the queue when the next boss is looted** on, the queue is only cleared for a different boss, and never while a roll or vote is still running (it tells you so).
+
 ### Manual items: `/il <item>`
 
 `/il` followed by an item link or name adds it to the Loot Master queue by hand, for anything that didn't come through the loot window (a trade, a BoE someone wants rolled on). Shift-click the item to paste its link, which is far more reliable than typing the name. By default it waits in the queue for you to click Announce.
@@ -262,6 +308,7 @@ Legendary drops (Fragment of Val'anyr and similar) can't be undone once looted o
 | `/il` | Open or close the ImpLoot window |
 | `/il config`, `/il options`, `/il help` | Open the settings |
 | `/il <item>` | Add an item to the Loot Master queue by hand |
+| `/il history` | Open or close the loot history |
 | `/il reset` | Reset all settings to their defaults. Asks you to confirm with `/il reset confirm`. Wishlists, raid notes and the loot council roster are not affected. |
 
 ## Feedback

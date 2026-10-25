@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
-</p>
+<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/b885c9f1-1a38-49db-8c64-d1adfa6a044d" />
 
 # ImpLoot
 
@@ -52,6 +50,8 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
+<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/c2ff72a4-ce08-4e66-8b32-aa1d759cec9e" />
+
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it. Within each section, gear you can equip is listed first, then tokens and other items, then quest items, then mounts, alphabetically in each.
 
 Under the raid list are two buttons: raid size (**10 Man / 25 Man**) and difficulty (**Normal / Heroic**). They're in the same place for every raid; on raids with no Heroic mode the difficulty button stays greyed out on Normal. Trial of the Crusader, and Koralon in Vault of Archavon, drop different loot for each faction, so they also show a **Horde / Alliance** button beside the "Bosses" title.
@@ -70,6 +70,10 @@ These work on any item in the loot list:
 
 ### Wishlists
 
+<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/9e57457e-31ed-42ac-b187-5f345a7db718" />
+<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/18e8fd4e-c150-42a4-9807-9b952500e8e3" />
+<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/61c57449-b83c-45ac-9153-747bc0b36a73" />
+
 Open the planning tab on the right edge of the window and choose **Wishlist**.
 
 - Make as many named wishlists as you like (for example "Ulduar - Discipline"), and rename or delete them whenever you want.
@@ -83,9 +87,13 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 ### Raid Planner
 
+<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/5ca8d73a-78b0-472b-bd02-4ef663e78334" />
+
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
 ### Compare
+
+<img width="234" height="375" alt="Compare Window" src="https://github.com/user-attachments/assets/9f6da471-bfa6-4d46-85b4-effe8a464588" />
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items and shows the stat changes if you replace the top one (**Replace this**, slot 1) with the bottom one (**With this**, slot 2).
 
@@ -108,6 +116,9 @@ The editor's toolbar inserts raid markers, role and class icons (`{skull}`, `{ta
 New notes start unlocked: drag to move, use the corner grip to resize. Lock it with the padlock (or **Lock notes** on the Notes page, or `/il notes`) and clicks pass through it to the game; a checklist's items stay clickable. Right-click an unlocked note (or a checklist item) for background opacity, text size, edit, reset and hide. Your existing raid notes carried over as Personal notes.
 
 ### The "this one's yours" popup
+
+<img width="252" height="117" alt="This Is Yours - Wishlist" src="https://github.com/user-attachments/assets/fb5f96c9-2415-4c1d-981d-a396f639ef1a" />
+<img width="244" height="116" alt="This Is Yours - Soft Reserve" src="https://github.com/user-attachments/assets/5dc12915-47dd-4326-aba6-2d8dac5860bd" />
 
 When the Master Looter announces an item that's one of your Soft Reserves, or an open-roll item that's on one of your wishlists, a small popup appears with **Roll**, **Off-Spec Roll** and **Pass**. Roll makes a real roll for you, exactly as if you'd typed it (main spec 1-100, off spec 1-99). It only appears for items that matter to you, and several in a row wait their turn rather than stacking. The Master Looter needs to be running ImpLoot too for this to work.
 
@@ -184,11 +195,15 @@ ImpLoot syncs your history with the raid by itself: it fills in loot from the la
 
 ### Importing
 
+<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/22b3df44-0b99-4542-8ead-a166a96faac2" />
+
 - Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter under the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away. With **Options → Soft Reserve → Clear Who won what when reloading after an import** ticked (off by default), **Reload Now** also starts a fresh *Who won what*, like its **Clear** button. Nothing is lost: every entry stays in the loot history.
 
 ### Editing by hand
+
+<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/23333c70-93d7-479f-88e5-14b5ca779328" />
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
 

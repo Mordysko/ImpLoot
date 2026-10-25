@@ -821,210 +821,252 @@ function PlanningDrawer:Refresh()
     end
 
     -------------------------------------------------
-    -- Raid Notes Manager
+    -- Notes Manager
     --
-    -- Exact mirror of the Wishlist Manager above --
-    -- Create/Rename/Delete buttons plus a list of
-    -- saved note names. Selecting a note makes it
-    -- active and opens the text-editing popup
-    -- directly (no in-window text area).
+    -- Create Note, Rename / Delete for the selected note,
+    -- then Personal / Checklist / Raid to pick which kind
+    -- of note the list shows. The list scrolls (there's
+    -- no limit on notes). Each row: the note's name
+    -- (click to select and edit) and Show / Hide to put it
+    -- on screen. Lock notes sits at the bottom.
     -------------------------------------------------
 
     if page.Id == "RaidNotes" then
 
         local character = ImpLoot.Character:GetViewed()
+        local isOwn = (character ~= nil and character == ImpLoot.Character:GetCurrent())
 
-        local noteCount = 0
-
-        if character and character.RaidNotes then
-            noteCount = #character.RaidNotes
-        end
+        self.NotesFilter = self.NotesFilter or "Personal"
 
         -------------------------------------------------
         -- Create Note
         -------------------------------------------------
 
-        local createNoteButton =
-            ImpLoot.Theme:CreateMenuButton(self.Content)
-
+        local createNoteButton = ImpLoot.Theme:CreateMenuButton(self.Content)
         createNoteButton:SetSize(120, 22)
-
-        createNoteButton:SetPoint(
-            "TOP",
-            previous,
-            "BOTTOM",
-            0,
-            -16
-        )
-
+        createNoteButton:SetPoint("TOP", previous, "BOTTOM", 0, -16)
         createNoteButton:SetText("Create Note")
 
-        if noteCount >= 7 then
-            createNoteButton:Disable()
-        else
-            createNoteButton:Enable()
-        end
-
         createNoteButton:SetScript("OnClick", function()
-
+            ImpLoot.UI.RaidNotesPopup:Close()
             ImpLoot.UI.RaidNoteDialog:Configure("Create")
             ImpLoot.UI.RaidNoteDialog:Show()
-
         end)
 
         table.insert(self.GeneratedWidgets, createNoteButton)
 
         -------------------------------------------------
-        -- Rename
+        -- Rename / Delete (selected note)
         -------------------------------------------------
 
-        local renameNoteButton =
-            ImpLoot.Theme:CreateMenuButton(self.Content)
-
+        local renameNoteButton = ImpLoot.Theme:CreateMenuButton(self.Content)
         renameNoteButton:SetSize(55, 22)
-
-        renameNoteButton:SetPoint(
-            "TOPLEFT",
-            createNoteButton,
-            "BOTTOMLEFT",
-            0,
-            -6
-        )
-
+        renameNoteButton:SetPoint("TOPLEFT", createNoteButton, "BOTTOMLEFT", 0, -6)
         renameNoteButton:SetText("Rename")
 
         renameNoteButton:SetScript("OnClick", function()
-
-            local character = ImpLoot.Character:GetViewed()
-            local active = ImpLoot.RaidNotes:GetActive(character)
-
-            if not active then
-                return
-            end
-
+            local active = ImpLoot.RaidNotes:GetActive(ImpLoot.Character:GetViewed())
+            if not active then return end
+            ImpLoot.UI.RaidNotesPopup:Close()
             ImpLoot.UI.RaidNoteDialog:Configure("Rename", active)
             ImpLoot.UI.RaidNoteDialog:Show()
-
         end)
 
         table.insert(self.GeneratedWidgets, renameNoteButton)
 
-        -------------------------------------------------
-        -- Delete
-        -------------------------------------------------
-
-        local deleteNoteButton =
-            ImpLoot.Theme:CreateMenuButton(self.Content)
-
+        local deleteNoteButton = ImpLoot.Theme:CreateMenuButton(self.Content)
         deleteNoteButton:SetSize(55, 22)
-
-        deleteNoteButton:SetPoint(
-            "LEFT",
-            renameNoteButton,
-            "RIGHT",
-            10,
-            0
-        )
-
+        deleteNoteButton:SetPoint("LEFT", renameNoteButton, "RIGHT", 10, 0)
         deleteNoteButton:SetText("Delete")
 
         deleteNoteButton:SetScript("OnClick", function()
-
-            local character = ImpLoot.Character:GetViewed()
-            local active = ImpLoot.RaidNotes:GetActive(character)
-
-            if not active then
-                return
-            end
-
+            local active = ImpLoot.RaidNotes:GetActive(ImpLoot.Character:GetViewed())
+            if not active then return end
+            ImpLoot.UI.RaidNotesPopup:Close()
             ImpLoot.UI.RaidNoteDialog:Configure("Delete", active)
             ImpLoot.UI.RaidNoteDialog:Show()
-
         end)
 
         table.insert(self.GeneratedWidgets, deleteNoteButton)
 
-        -------------------------------------------------
-        -- Show / Hide Rename + Delete
-        -------------------------------------------------
-
-        local activeNote = nil
-
-        if character then
-            activeNote = ImpLoot.RaidNotes:GetActive(character)
-        end
+        local activeNote = character and ImpLoot.RaidNotes:GetActive(character)
 
         if activeNote then
-            renameNoteButton:Show()
-            deleteNoteButton:Show()
+            renameNoteButton:Enable()
+            deleteNoteButton:Enable()
         else
-            renameNoteButton:Hide()
-            deleteNoteButton:Hide()
+            renameNoteButton:Disable()
+            deleteNoteButton:Disable()
         end
 
         -------------------------------------------------
-        -- Note List
+        -- Type Filter: Personal / Checklist / Raid
         -------------------------------------------------
 
-        local notePrevious = createNoteButton
+        local TYPE_COLOURS = { Personal = "ffffff", Checklist = "60ff60", Raid = "ff9933" }
+        local filterButtons = {}
+        local filterPrevious
 
-        if character and character.RaidNotes then
+        for index, noteType in ipairs(ImpLoot.RaidNotes.TYPES) do
 
-            for index, note in ipairs(character.RaidNotes) do
+            local filterButton = ImpLoot.Theme:CreateMenuButton(self.Content)
+            filterButton:SetSize(64, 20)
 
-                local noteButton =
-                    ImpLoot.Theme:CreateMenuButton(self.Content)
+            if index == 1 then
+                -- three across, centred under Rename / Delete
+                -- (Create Note is 120 wide, so Rename's left edge is
+                -- 40 in from the drawer's)
+                filterButton:SetPoint("TOPLEFT", renameNoteButton, "BOTTOMLEFT", -38, -12)
+            else
+                filterButton:SetPoint("LEFT", filterPrevious, "RIGHT", 2, 0)
+            end
 
-                noteButton:SetSize(120, 22)
+            if self.NotesFilter == noteType then
+                filterButton:SetText("|cff" .. TYPE_COLOURS[noteType] .. noteType .. "|r")
+                filterButton:LockHighlight()
+            else
+                filterButton:SetText(noteType)
+                filterButton:UnlockHighlight()
+            end
 
-                if index == 1 then
+            filterButton:SetScript("OnClick", function()
+                self.NotesFilter = noteType
+                self:Refresh()
+            end)
 
-                    noteButton:SetPoint(
-                        "TOP",
-                        notePrevious,
-                        "BOTTOM",
-                        0,
-                        -38
-                    )
+            table.insert(self.GeneratedWidgets, filterButton)
+            filterButtons[index] = filterButton
+            filterPrevious = filterButton
 
-                else
+        end
 
-                    noteButton:SetPoint(
-                        "TOP",
-                        notePrevious,
-                        "BOTTOM",
-                        0,
-                        -2
-                    )
+        -------------------------------------------------
+        -- Lock Notes (bottom of the drawer)
+        -------------------------------------------------
 
-                end
+        local lockAllButton = ImpLoot.Theme:CreateMenuButton(self.Content)
+        lockAllButton:SetSize(120, 22)
+        lockAllButton:SetPoint("BOTTOM", self.Content, "BOTTOM", 0, 6)
+        lockAllButton:SetText(ImpLoot.UI.NoteFrames:AnyUnlocked() and "Lock notes" or "Unlock notes")
+
+        lockAllButton:SetScript("OnClick", function()
+            ImpLoot.UI.NoteFrames:SetAllLocked(ImpLoot.UI.NoteFrames:AnyUnlocked())
+            self:Refresh()
+        end)
+
+        lockAllButton:SetScript("OnEnter", function(button)
+            GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Lock / unlock notes on screen")
+            GameTooltip:AddLine("Unlocked notes can be moved and resized. Right-click a note for more options.", 1, 1, 1, true)
+            GameTooltip:Show()
+        end)
+        lockAllButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+        table.insert(self.GeneratedWidgets, lockAllButton)
+
+        -------------------------------------------------
+        -- Note List (scrolls)
+        -------------------------------------------------
+
+        -- A holder frame owns the scroll frame and its arrows, so
+        -- hiding it on the next Refresh takes all of them away.
+        local listHolder = CreateFrame("Frame", nil, self.Content)
+        listHolder:SetPoint("TOPLEFT", filterButtons[1], "BOTTOMLEFT", -2, -14)
+        -- down to just above Lock notes (6 + 22 + 14)
+        listHolder:SetPoint("BOTTOMRIGHT", self.Content, "BOTTOMRIGHT", 0, 42)
+
+        table.insert(self.GeneratedWidgets, listHolder)
+
+        local listScroll = CreateFrame("ScrollFrame", nil, listHolder)
+        listScroll:SetAllPoints()
+
+        local listChild = CreateFrame("Frame", nil, listScroll)
+        listChild:SetSize(200, 1)
+        listScroll:SetScrollChild(listChild)
+
+        local ROW = 24
+        local y = 0
+        local shownCount = 0
+
+        for _, note in ipairs(ImpLoot.RaidNotes:GetNotes(character)) do
+
+            if note.Type == self.NotesFilter then
+
+                shownCount = shownCount + 1
+
+                local noteButton = ImpLoot.Theme:CreateMenuButton(listChild)
+                noteButton:SetSize(140, 22)
+                noteButton:SetPoint("TOPLEFT", listChild, "TOPLEFT", 4, -y)
 
                 local label = note.Name
 
-                if ImpLoot.RaidNotes:GetActive(character) == note then
-                    label = "> " .. label
+                if activeNote == note then
+                    label = "|cffffffff> " .. label .. "|r"
                 end
 
                 noteButton:SetText(label)
 
                 noteButton:SetScript("OnClick", function()
-
-                    local character = ImpLoot.Character:GetViewed()
-
-                    ImpLoot.RaidNotes:SetActive(character, note)
-
-                    ImpLoot.UI.RaidNotesPopup:Show()
-
+                    ImpLoot.RaidNotes:SetActive(ImpLoot.Character:GetViewed(), note)
+                    ImpLoot.UI.RaidNotesPopup:ShowNote(note)
                     self:Refresh()
-
                 end)
 
-                table.insert(self.GeneratedWidgets, noteButton)
+                noteButton:SetScript("OnEnter", function(button)
+                    GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+                    GameTooltip:SetText(note.Name)
+                    GameTooltip:AddLine(note.Type .. (note.Type == "Checklist" and (" (resets " .. (note.Reset or "Daily"):lower() .. ")") or ""), 1, 1, 1)
+                    GameTooltip:AddLine("Click to edit.", 0.7, 0.7, 0.7)
+                    GameTooltip:Show()
+                end)
+                noteButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-                notePrevious = noteButton
+                local showButton = ImpLoot.Theme:CreateMenuButton(listChild)
+                showButton:SetSize(48, 22)
+                showButton:SetPoint("LEFT", noteButton, "RIGHT", 4, 0)
+                showButton:SetText(ImpLoot.UI.NoteFrames:IsShown(note) and "Hide" or "Show")
+
+                if isOwn then
+                    showButton:Enable()
+                else
+                    showButton:Disable()
+                end
+
+                showButton:SetScript("OnClick", function()
+                    ImpLoot.UI.NoteFrames:Toggle(note)
+                    self:Refresh()
+                end)
+
+                y = y + ROW
 
             end
 
+        end
+
+        if shownCount == 0 then
+
+            local empty = listChild:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+            empty:SetPoint("TOP", listChild, "TOP", 0, -6)
+            empty:SetWidth(180)
+            empty:SetText("No " .. self.NotesFilter:lower() .. " notes yet.")
+
+            y = 20
+
+        end
+
+        listChild:SetHeight(math.max(1, y))
+
+        ImpLoot.Theme:ApplyDrawerStyleScrollIndicators(listScroll)
+
+        listScroll:EnableMouseWheel(true)
+        listScroll:SetScript("OnMouseWheel", function(sf, delta)
+            local maximum = math.max(0, listChild:GetHeight() - sf:GetHeight())
+            sf:SetVerticalScroll(math.max(0, math.min(maximum, sf:GetVerticalScroll() - delta * ROW)))
+            if sf.UpdateScrollIndicators then sf:UpdateScrollIndicators() end
+        end)
+
+        if listScroll.UpdateScrollIndicators then
+            listScroll:UpdateScrollIndicators()
         end
 
     end

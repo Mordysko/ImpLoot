@@ -394,6 +394,7 @@ function HistorySync:Merge(remote, sender, alreadyMatched)
 
     remote.Id = id
     remote.Synced = sender
+    remote.Owner = UnitName("player")
 
     local position = #log + 1
 

@@ -157,7 +157,14 @@ end
 -- Filtering And Sorting
 -------------------------------------------------
 
+local UNKNOWN_CHARACTER = "Unknown character"
+
 function HistoryWindow:MatchesFilters(logEntry)
+
+    if self.CharacterFilter
+    and (logEntry.Owner or UNKNOWN_CHARACTER) ~= self.CharacterFilter then
+        return false
+    end
 
     if self.RaidFilter
     and ImpLoot.LootMaster:FormatRaidLabel(logEntry) ~= self.RaidFilter then
@@ -696,6 +703,98 @@ end
 -- Dropdowns
 -------------------------------------------------
 
+-------------------------------------------------
+-- Character Dropdown
+--
+-- Which of your characters' history to show: the one
+-- that logged or received each entry (its Owner). Opens
+-- on the character you're playing; "All characters"
+-- shows everything.
+-------------------------------------------------
+
+local function ClassColouredName(name)
+
+    for _, character in ipairs(ImpLoot.Character and ImpLootDB.Players and ImpLoot.Character:GetAllCharacters() or {}) do
+
+        if character.Name == name and character.Class then
+
+            local token = character.Class.Token or (character.Class.Name and character.Class.Name:upper():gsub(" ", ""))
+            local colour = token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+
+            if colour then
+                return string.format("|cff%02x%02x%02x%s|r", colour.r * 255, colour.g * 255, colour.b * 255, name)
+            end
+
+        end
+
+    end
+
+    return name
+
+end
+
+function HistoryWindow:CharacterLabel()
+    return self.CharacterFilter or "All characters"
+end
+
+function HistoryWindow:InitializeCharacterDropdown()
+
+    local dropdown = self.CharacterDropdown
+
+    UIDropDownMenu_Initialize(dropdown, function(_, level)
+
+        local names, seen, unknown = {}, {}, false
+
+        for _, logEntry in ipairs(ImpLoot.LootMaster:GetLog()) do
+
+            if logEntry.Owner then
+
+                if not seen[logEntry.Owner] then
+                    seen[logEntry.Owner] = true
+                    table.insert(names, logEntry.Owner)
+                end
+
+            else
+                unknown = true
+            end
+
+        end
+
+        local me = UnitName("player")
+
+        if me and not seen[me] then
+            table.insert(names, me)
+        end
+
+        table.sort(names)
+        table.insert(names, 1, false)
+
+        if unknown then
+            table.insert(names, UNKNOWN_CHARACTER)
+        end
+
+        for _, name in ipairs(names) do
+
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = name and (name == UNKNOWN_CHARACTER and name or ClassColouredName(name)) or "All characters"
+            info.checked = (self.CharacterFilter == (name or nil))
+
+            info.func = function()
+                self.CharacterFilter = name or nil
+                UIDropDownMenu_SetText(dropdown, self:CharacterLabel())
+                self:Refresh()
+            end
+
+            UIDropDownMenu_AddButton(info, level)
+
+        end
+
+    end)
+
+    UIDropDownMenu_SetText(dropdown, self:CharacterLabel())
+
+end
+
 function HistoryWindow:InitializeRaidDropdown()
 
     local dropdown = self.RaidDropdown
@@ -833,14 +932,14 @@ function HistoryWindow:Initialize()
     -------------------------------------------------
 
     local searchBox = CreateFrame("EditBox", "ImpLootHistorySearchBox", frame, "InputBoxTemplate")
-    searchBox:SetSize(170, 20)
+    searchBox:SetSize(150, 20)
     searchBox:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 10, -6)
     searchBox:SetAutoFocus(false)
     self.SearchBox = searchBox
 
     local searchHint = searchBox:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     searchHint:SetPoint("LEFT", 2, 0)
-    searchHint:SetText("Search item, player, boss...")
+    searchHint:SetText("Search item, player...")
 
     searchBox:SetScript("OnTextChanged", function(box)
 
@@ -858,9 +957,15 @@ function HistoryWindow:Initialize()
     searchBox:SetScript("OnEscapePressed", function(box) box:ClearFocus() end)
     searchBox:SetScript("OnEnterPressed", function(box) box:ClearFocus() end)
 
+    -- Character, Raid, Time -- left to right
+    local characterDropdown = CreateFrame("Frame", "ImpLootHistoryCharacterDropdown", frame, "UIDropDownMenuTemplate")
+    characterDropdown:SetPoint("LEFT", searchBox, "RIGHT", -6, -2)
+    UIDropDownMenu_SetWidth(characterDropdown, 110)
+    self.CharacterDropdown = characterDropdown
+
     local raidDropdown = CreateFrame("Frame", "ImpLootHistoryRaidDropdown", frame, "UIDropDownMenuTemplate")
-    raidDropdown:SetPoint("LEFT", searchBox, "RIGHT", -6, -2)
-    UIDropDownMenu_SetWidth(raidDropdown, 150)
+    raidDropdown:SetPoint("LEFT", characterDropdown, "RIGHT", -24, 0)
+    UIDropDownMenu_SetWidth(raidDropdown, 130)
     self.RaidDropdown = raidDropdown
 
     local periodDropdown = CreateFrame("Frame", "ImpLootHistoryPeriodDropdown", frame, "UIDropDownMenuTemplate")
@@ -868,6 +973,9 @@ function HistoryWindow:Initialize()
     UIDropDownMenu_SetWidth(periodDropdown, 100)
     self.PeriodDropdown = periodDropdown
 
+    self.CharacterFilter = UnitName("player")
+
+    self:InitializeCharacterDropdown()
     self:InitializeRaidDropdown()
     self:InitializePeriodDropdown()
 

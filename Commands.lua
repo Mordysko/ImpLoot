@@ -51,6 +51,17 @@ SlashCmdList["IMPLOOT"] = function(msg)
 
     end
 
+    if command == "notes" then
+
+        -- Lock / unlock every note on screen
+        local unlock = not ImpLoot.UI.NoteFrames:AnyUnlocked()
+        ImpLoot.UI.NoteFrames:SetAllLocked(not unlock)
+        ImpLoot:Print(unlock and "Notes unlocked: drag to move, corner grip to resize, right-click for options."
+            or "Notes locked.")
+        return
+
+    end
+
     if command == "history" then
 
         if ImpLoot.UI and ImpLoot.UI.HistoryWindow and ImpLoot.UI.HistoryWindow.Frame then

@@ -136,6 +136,7 @@ function ImpLoot:Initialize()
     ImpLoot.UI.VotePopup:Initialize()
     ImpLoot.UI.LootPriorityWindow:Initialize()
     ImpLoot.UI.PopulateModeBar:Initialize()
+    ImpLoot.UI.NoteFrames:Initialize()
 
     ImpLoot.WindowLayering:ApplyAll()
 

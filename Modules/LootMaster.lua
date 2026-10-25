@@ -281,6 +281,7 @@ function ImpLoot.LootMaster:Initialize()
             self:OnLootOpened()
         elseif event == "LOOT_CLOSED" then
             self:OnLootClosed()
+
         elseif event == "CHAT_MSG_SYSTEM" then
             self:OnChatMsgSystem(msg)
         end
@@ -596,6 +597,9 @@ function ImpLoot.LootMaster:OnLootOpened()
     end
 
     self.CurrentCorpseGUID = corpseGUID
+    self.LootOpen = true
+
+    self:CheckDeliveriesOnOpen(corpseGUID, numItems)
 
     -------------------------------------------------
     -- Track which existing queue entries get matched
@@ -723,6 +727,8 @@ end
 -------------------------------------------------
 
 function ImpLoot.LootMaster:OnLootClosed()
+
+    self.LootOpen = false
 
     for _, entry in ipairs(self.Queue) do
 
@@ -1725,6 +1731,8 @@ function ImpLoot.LootMaster:OnTimerTick()
     -- stay in sync -- including hiding a stale number once
     -- a roll ends, not just updating it while one's active.
     ImpLoot.Events:Fire("LootTimerTick")
+
+    self:CheckPendingDeliveries()
 
     local queueID = self.ActiveRollQueueID
 
@@ -2911,6 +2919,7 @@ function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName, mode, re
                 logEntry.Mode = mode
                 logEntry.ResultLabel = resultLabel
                 logEntry.Note = details.Note or logEntry.Note
+                logEntry.RunnersUp = details.RunnersUp or logEntry.RunnersUp
                 logEntry.BossName = bossName or logEntry.BossName
                 logEntry.WinnerClass = details.WinnerClass or logEntry.WinnerClass
                 logEntry.Recorder = details.Recorder or logEntry.Recorder
@@ -2998,8 +3007,12 @@ function ImpLoot.LootMaster:LogResolution(itemID, winnerName, bossName, mode, re
         Mode = mode,
         ResultLabel = resultLabel,
         Note = details.Note,
+        RunnersUp = details.RunnersUp,
         Recorder = recorder,
         RecorderId = recorderId,
+        -- The character on this account that logged or received
+        -- it (the History window's Character filter). Never synced.
+        Owner = UnitName and UnitName("player"),
         Source = details.Source,
         Received = details.Received,
         Timestamp = now,
@@ -3166,6 +3179,45 @@ end
 -- vote", "Disenchant (no rolls)" and so on.
 -------------------------------------------------
 
+-------------------------------------------------
+-- Runners-Up
+--
+-- The next two best rolls after the winner's (one per
+-- player), kept with the history entry so its tooltip
+-- can show who came 2nd and 3rd.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:GetRunnersUp(entry, winnerName)
+
+    local list, seen = {}, {}
+
+    seen[winnerName or ""] = true
+
+    for _, roll in ipairs(entry.Rolls or {}) do
+
+        if not seen[roll.Player] then
+
+            seen[roll.Player] = true
+
+            table.insert(list, {
+                Player = roll.Player,
+                Roll = roll.Roll,
+                Type = roll.Type,
+                Class = self:GetClassForPlayer(roll.Player),
+            })
+
+            if #list == 2 then
+                break
+            end
+
+        end
+
+    end
+
+    return (#list > 0) and list or nil
+
+end
+
 function ImpLoot.LootMaster:DescribeWin(entry, winnerName, classSlot)
 
     if entry.AssignNote then
@@ -3262,6 +3314,192 @@ function ImpLoot.LootMaster:ClearLog()
 end
 
 -------------------------------------------------
+-- Delivery Check
+--
+-- GiveMasterLoot only asks the server to hand an item
+-- over; it can refuse (winner's bags full, out of range,
+-- just went offline) and only the loot master sees the
+-- error. The chat "receives loot" line can't be relied
+-- on to confirm it either, so ImpLoot looks at the loot
+-- itself:
+--
+--   Loot still open  DELIVERY_CHECK seconds after the
+--                    hand-off, it checks that slot. Item
+--                    gone: delivered. Still there: failed.
+--   Loot closed      it checks when that loot is next
+--                    opened: more copies of the item still
+--                    there than ImpLoot is waiting to hand
+--                    out means the hand-off failed.
+--
+-- With the loot open, a hand-off that didn't go through is
+-- retried a few times first. One that still fails goes back
+-- to "won, not handed over" (Assign in the Loot Master
+-- window) with a warning.
+-------------------------------------------------
+
+local DELIVERY_CHECK = 2.5
+
+function ImpLoot.LootMaster:ExpectDelivery(entry, winnerName)
+
+    self.PendingDeliveries = self.PendingDeliveries or {}
+
+    table.insert(self.PendingDeliveries, {
+        Entry = entry,
+        Winner = winnerName,
+        ItemID = entry.ItemID,
+        Slot = entry.LootSlot,
+        CorpseGUID = entry.CorpseGUID,
+        CheckAt = GetTime() + DELIVERY_CHECK,
+    })
+
+end
+
+function ImpLoot.LootMaster:DeliveryFailed(pending)
+
+    local entry = pending.Entry
+
+    -- Only if nothing else has happened to it since
+    if not entry or entry.State ~= "Resolved" then
+        return
+    end
+
+    entry.State = "Awarded"
+    entry.Winner = entry.Winner or pending.Winner
+
+    ImpLoot:Print("|cffff4040" .. (entry.ItemLink or "An item") .. " didn't reach "
+        .. (pending.Winner or "the winner")
+        .. (pending.GaveUp and (" after " .. (pending.Attempts or 1) .. " tries") or "")
+        .. " (bags full, out of range or offline?). "
+        .. "It's still in the loot: use Assign in the Loot Master window to try again, or trade it.|r")
+
+    ImpLoot.Events:Fire("LootQueueChanged")
+
+end
+
+-- Loot still open: look at the slot each item was given
+-- from. Still there means the hand-off didn't go through,
+-- so it's tried again (DELIVERY_ATTEMPTS in all, the winner
+-- looked up afresh each time in case they've come back in
+-- range); only after the last one is it given up on.
+local DELIVERY_ATTEMPTS = 4
+
+function ImpLoot.LootMaster:CheckPendingDeliveries()
+
+    local pendingList = self.PendingDeliveries
+
+    if not pendingList or #pendingList == 0 then
+        return
+    end
+
+    local now = GetTime()
+
+    for i = #pendingList, 1, -1 do
+
+        local pending = pendingList[i]
+
+        if now >= pending.CheckAt
+        and self.LootOpen
+        and pending.CorpseGUID == self.CurrentCorpseGUID
+        and pending.Slot then
+
+            local link = GetLootSlotLink and GetLootSlotLink(pending.Slot)
+            local stillThere = link and self:ExtractItemID(link) == pending.ItemID
+            local entry = pending.Entry
+
+            if not stillThere or not entry or entry.State ~= "Resolved" then
+
+                -- delivered (or something else has happened to it)
+                table.remove(pendingList, i)
+
+            elseif (pending.Attempts or 1) < DELIVERY_ATTEMPTS then
+
+                pending.Attempts = (pending.Attempts or 1) + 1
+                pending.CheckAt = now + DELIVERY_CHECK
+
+                local candidateIndex = self:FindCandidateIndex(pending.Winner)
+
+                if candidateIndex then
+                    GiveMasterLoot(pending.Slot, candidateIndex)
+                end
+
+                ImpLoot:Print("|cffffd100" .. (entry.ItemLink or "Item") .. " hasn't reached "
+                    .. (pending.Winner or "the winner") .. " yet -- trying again ("
+                    .. pending.Attempts .. "/" .. DELIVERY_ATTEMPTS .. ").|r")
+
+            else
+
+                table.remove(pendingList, i)
+                pending.GaveUp = true
+                self:DeliveryFailed(pending)
+
+            end
+
+        end
+
+    end
+
+end
+
+-- Loot (re)opened: settle anything handed out while it was
+-- closed too quickly to check. Runs before the queue is
+-- matched against the loot, so a failed item is matched
+-- to its own entry rather than listed again.
+function ImpLoot.LootMaster:CheckDeliveriesOnOpen(corpseGUID, numItems)
+
+    local pendingList = self.PendingDeliveries
+
+    if not pendingList or #pendingList == 0 then
+        return
+    end
+
+    -- What's lying in the loot now, per item
+    local present = {}
+
+    for slot = 1, numItems do
+
+        if LootSlotIsItem(slot) then
+            local itemID = self:ExtractItemID(GetLootSlotLink(slot))
+            if itemID then
+                present[itemID] = (present[itemID] or 0) + 1
+            end
+        end
+
+    end
+
+    -- Copies ImpLoot still expects to be there (not handed out)
+    local waiting = {}
+
+    for _, entry in ipairs(self.Queue) do
+        if entry.CorpseGUID == corpseGUID and entry.State ~= "Resolved" then
+            waiting[entry.ItemID] = (waiting[entry.ItemID] or 0) + 1
+        end
+    end
+
+    for i = #pendingList, 1, -1 do
+
+        local pending = pendingList[i]
+
+        if pending.CorpseGUID == corpseGUID then
+
+            table.remove(pendingList, i)
+
+            local itemID = pending.ItemID
+
+            if (present[itemID] or 0) > (waiting[itemID] or 0) then
+
+                -- one more copy here than there should be
+                waiting[itemID] = (waiting[itemID] or 0) + 1
+                self:DeliveryFailed(pending)
+
+            end
+
+        end
+
+    end
+
+end
+
+-------------------------------------------------
 -- Give Awarded / Mark Traded
 --
 -- For an item already won but not yet handed over
@@ -3300,6 +3538,7 @@ function ImpLoot.LootMaster:GiveAwarded(queueID, quiet)
 
     end
 
+    self:ExpectDelivery(entry, entry.Winner)
     GiveMasterLoot(entry.LootSlot, candidateIndex)
 
     entry.State = "Resolved"
@@ -3375,6 +3614,7 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
 
         if candidateIndex then
 
+            self:ExpectDelivery(entry, winnerName)
             GiveMasterLoot(entry.LootSlot, candidateIndex)
 
             entry.Winner = winnerName
@@ -3507,6 +3747,7 @@ function ImpLoot.LootMaster:Assign(queueID, winnerName, classSlot)
         Heroic = heroic,
         Note = self:DescribeWin(entry, winnerName, classSlot),
         Recorder = UnitName("player"),
+        RunnersUp = self:GetRunnersUp(entry, winnerName),
     }
 
     entry.AssignNote = nil

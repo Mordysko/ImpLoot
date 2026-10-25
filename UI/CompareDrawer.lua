@@ -364,8 +364,26 @@ function CompareDrawer:Initialize(parent)
 
     local diffArea = CreateFrame("Frame", nil, content)
 
-    diffArea:SetPoint("TOP", self.Slots[1], "BOTTOM", 0, 0)
-    diffArea:SetPoint("BOTTOM", self.Slots[2], "TOP", 0, 0)
+    -------------------------------------------------
+    -- "Replace this" / "With this"
+    --
+    -- Small labels so it's clear which way the stat
+    -- changes go: Slot 1's item being swapped for
+    -- Slot 2's.
+    -------------------------------------------------
+
+    local replaceLabel = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    replaceLabel:SetPoint("TOPLEFT", self.Slots[1], "BOTTOMLEFT", 2, -3)
+    replaceLabel:SetText("Replace this")
+    self.ReplaceLabel = replaceLabel
+
+    local withLabel = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    withLabel:SetPoint("BOTTOMLEFT", self.Slots[2], "TOPLEFT", 2, 3)
+    withLabel:SetText("With this")
+    self.WithLabel = withLabel
+
+    diffArea:SetPoint("TOP", replaceLabel, "BOTTOM", 0, 0)
+    diffArea:SetPoint("BOTTOM", withLabel, "TOP", 0, 0)
     diffArea:SetPoint("LEFT", content, "LEFT", 0, 0)
     diffArea:SetPoint("RIGHT", content, "RIGHT", 0, 0)
 

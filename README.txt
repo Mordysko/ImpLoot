@@ -147,7 +147,8 @@ Compare
 ~~~~~~~
 
 The Compare drawer is the tab on the left edge of the window. It holds
-two items side by side and shows the stat difference between them.
+two items and shows the stat changes if you replace the top one ("Replace
+this", slot 1) with the bottom one ("With this", slot 2).
 
 - While the drawer is open, Alt+click on an item in the loot list fills
   slot 1, and Alt+right-click fills slot 2. (This replaces Alt+click
@@ -158,13 +159,42 @@ two items side by side and shows the stat difference between them.
 - Items have to fit the same slot to be compared. Main-hand, one-hand
   and two-hand weapons can be compared with each other.
 
-Raid Notes
-~~~~~~~~~~
+Notes
+~~~~~
 
-The Raid Notes page keeps named, free-text notes for each character,
-handy for boss strategy reminders or your raid assignments. Create,
-rename and delete them like wishlists; the active note is edited in its
-own window.
+The Notes page keeps named notes for each character, shown as windows on
+your screen (several can be up at once). Create Note asks for a name and
+a type:
+
+- Personal: free text, e.g. reminders or your assignments.
+- Checklist: one item per line, e.g. your dailies. Click an item on
+  screen to tick it (it greys out with a check mark); when everything is
+  ticked, an "All done - Close" button appears. Each checklist resets
+  Daily (server daily reset), Weekly (raid reset, Wednesdays) or only by
+  hand (Manual), and always has a Reset button.
+- Raid: notes for a fight, like a cooldown rotation. For now you show it
+  by hand; linking it to a boss so it appears on its own comes next.
+
+Personal / Checklist / Raid under Rename and Delete choose which kind of
+note the list shows (it scrolls; there's no limit on notes). Click a
+note's name to edit it; Show / Hide puts it on screen or takes it away.
+Lock notes at the bottom locks or unlocks every note on screen.
+
+The editor's toolbar inserts raid markers, role and class icons
+({skull}, {tank}, {mage} ...), which show as real icons on screen at the
+same size as the text. The palette sets the colour you type in: it stays
+until you pick another (white for normal text) and is outlined in the
+palette. Highlight some text first and picking a colour recolours just
+that text. Opening Create Note, Rename or Delete closes the editor
+(saving it first). The Text size and Background sliders under the text change
+that note straight away.
+
+New notes start unlocked: drag to move, use the corner grip to resize.
+Lock it with the padlock (or Lock notes on the Notes page, or /il
+notes) and clicks pass through it to the game; a checklist's items stay
+clickable. Right-click an unlocked note (or a checklist item) for
+background opacity, text size, edit, reset and hide. Your existing raid
+notes carried over as Personal notes.
 
 The "this one's yours" popup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -208,12 +238,25 @@ loot as Master Looter.
 
 Only /roll 1-100 (main spec) and /roll 1-99 (off spec) count toward the
 standings. Any other range is ignored, and main spec always outranks off
-spec regardless of the number rolled.
+spec regardless of the number rolled. An item's row in the Loot Master
+window grows to fit its standings (up to 10 names, then "... and N
+more"), so the items below move down rather than covering them.
 
 One roll at a time: while an item is being rolled for, the Open Roll /
 Announce buttons on every other item are greyed out, and only that
 item's own Stop (or its timer) ends the roll. Copies of the same item
 rolled together count as one roll.
+
+Delivery check: handing an item over only asks the server to give it,
+and the server can refuse (winner's bags full, out of range, just went
+offline). So ImpLoot checks the loot itself: a couple of seconds after
+handing an item out it looks at that loot slot, or, if you'd already
+closed the loot, it checks when you next open it. With the loot open, an
+item that's still there is handed over again (up to 4 tries, about 10
+seconds, with a yellow note in chat each time), so a winner who just
+made bag space or stepped back in range still gets it. If it's still
+there after that, you get a red warning in chat and it goes back to
+Assign in the Loot Master window, so you can try again or trade it.
 
 Ties: if two or more players share the best roll when the roll ends
 (or you click Stop), nobody wins yet. ImpLoot announces the tie and the
@@ -248,7 +291,8 @@ Open Roll. It fills itself in and updates as items resolve.
 
 Winners are shown in their class colour. Hover a row for its details:
 how it was won (e.g. "Rolled 95 (MS)", "Loot priority (Any Warrior)",
-"Disenchant (no rolls)"), the boss, the raid with its size and
+"Disenchant (no rolls)"), who rolled 2nd and 3rd, the boss, the raid
+with its size and
 difficulty (e.g. Icecrown Citadel 25H), the date and time, and who
 recorded it if that wasn't you. Entries saved before this version only
 have what was recorded at the time.
@@ -300,9 +344,14 @@ turns into the loot history, and Back turns it back) or /il history.
 - Columns: Date, Item, Winner (class coloured), Result (MS / OS / SR /
   LC / DE), Boss and Raid. Click a column title to sort; click it
   again to reverse.
-- Search finds an item, player, boss, raid, result or note. The two
-  dropdowns filter by raid (e.g. Icecrown Citadel 25H) and period
-  (today, last 7 or 30 days).
+- Search finds an item, player, boss, raid, result or note. The three
+  dropdowns filter by character, raid (e.g. Icecrown Citadel 25H) and
+  period (today, last 7 or 30 days).
+- Character shows the history of one of your characters: everything it
+  recorded or received while you played it. It opens on the character
+  you're on; "All characters" shows everything. Entries logged before
+  this filter existed are matched to your characters where possible;
+  any that can't be are under "Unknown character".
 - Hover a row for its details. Shift-click it to link the item in
   chat.
 - Right-click a row to change the winner, edit the note, set the
@@ -652,8 +701,11 @@ SLASH COMMANDS
     Open or close the loot history
 /il reset
     Reset all settings to their defaults. Asks you to confirm with /il
-    reset confirm. Wishlists, raid notes and the loot council roster are
+    reset confirm. Wishlists, notes and the loot council roster are
     not affected.
+
+/il notes
+    Lock or unlock every note on screen
 
 FEEDBACK
 --------

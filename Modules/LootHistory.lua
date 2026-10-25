@@ -391,6 +391,72 @@ end
 -- Initialize
 -------------------------------------------------
 
+-------------------------------------------------
+-- Assign Owners (older entries)
+--
+-- Entries logged before the Character filter existed
+-- have no Owner. One recorded by a character on this
+-- account belongs to that character. One synced from
+-- someone else belongs to whichever of your characters
+-- logged something in the same raid within 4 hours
+-- (that was the raid it came from). Anything still
+-- unclear is left without an owner and shows under
+-- "Unknown character". Runs once per entry.
+-------------------------------------------------
+
+local SAME_RAID_WINDOW = 4 * 3600
+
+function LootHistory:AssignOwners()
+
+    local log = ImpLoot.LootMaster and ImpLoot.LootMaster:GetLog()
+
+    if not log then
+        return
+    end
+
+    local mine = {}
+
+    if ImpLoot.Character and ImpLootDB.Players then
+        for _, character in ipairs(ImpLoot.Character:GetAllCharacters()) do
+            if character.Name then
+                mine[character.Name] = true
+            end
+        end
+    end
+
+    if UnitName then
+        mine[UnitName("player")] = true
+    end
+
+    for _, e in ipairs(log) do
+        if not e.Owner and e.Recorder and mine[e.Recorder] then
+            e.Owner = e.Recorder
+        end
+    end
+
+    for _, e in ipairs(log) do
+
+        if not e.Owner and e.Raid then
+
+            local label = ImpLoot.LootMaster:FormatRaidLabel(e)
+
+            for _, other in ipairs(log) do
+
+                if other.Owner
+                and math.abs((other.Timestamp or 0) - (e.Timestamp or 0)) <= SAME_RAID_WINDOW
+                and ImpLoot.LootMaster:FormatRaidLabel(other) == label then
+                    e.Owner = other.Owner
+                    break
+                end
+
+            end
+
+        end
+
+    end
+
+end
+
 function LootHistory:Initialize()
 
     ImpLootDB.LootHistorySettings = ImpLootDB.LootHistorySettings or {}
@@ -429,6 +495,8 @@ function LootHistory:Initialize()
 
     ImpLootDB.LootHistoryDeleted = ImpLootDB.LootHistoryDeleted or {}
     self:PruneDeleted()
+
+    self:AssignOwners()
 
     self:BuildPatterns()
 
@@ -644,6 +712,19 @@ function LootHistory:AddTooltipLines(logEntry)
 
     if logEntry.Note then
         GameTooltip:AddDoubleLine("How", logEntry.Note, label, label, label, 1, 1, 1)
+    end
+
+    -- Who came 2nd and 3rd on the roll
+    for index, runner in ipairs(logEntry.RunnersUp or {}) do
+
+        local rr, rg, rb = ImpLoot.Theme:GetClassColor(runner.Class)
+
+        GameTooltip:AddDoubleLine(
+            index == 1 and "2nd" or "3rd",
+            string.format("%s  |cffffffff%s%s|r", runner.Player or "?", tostring(runner.Roll or "?"),
+                runner.Type and (" (" .. runner.Type .. ")") or ""),
+            label, label, label, rr, rg, rb)
+
     end
 
     if logEntry.BossName then

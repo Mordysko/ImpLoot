@@ -21,7 +21,7 @@ Navigation.Pages = {
             { Text = "Wishlist",     Page = "Wishlist" },
             { Text = "Characters",   Page = "Characters" },
             { Text = "Raid Planner", Page = "RaidPlanner" },
-            { Text = "Raid Notes",   Page = "RaidNotes" },
+            { Text = "Notes",        Page = "RaidNotes" },
             { Text = "Settings",     Page = "Settings" },
         },
 
@@ -41,7 +41,7 @@ Navigation.Pages = {
     RaidNotes = {
 
         Id = "RaidNotes",
-        Title = "Raid Notes",
+        Title = "Notes",
 
         Entries = {
             { Text = "< Back", Page = "Root" },

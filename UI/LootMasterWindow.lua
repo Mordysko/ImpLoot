@@ -459,6 +459,10 @@ end
 -- already in descending order from the module.
 -------------------------------------------------
 
+-- The row grows to fit these lines (see Refresh); past
+-- MAX_STANDINGS_LINES the rest are summed up in one line.
+local MAX_STANDINGS_LINES = 10
+
 function LootMasterWindow:FormatStandings(entry)
 
     if #entry.Rolls == 0 then
@@ -469,6 +473,11 @@ function LootMasterWindow:FormatStandings(entry)
 
     for i, roll in ipairs(entry.Rolls) do
 
+        if i > MAX_STANDINGS_LINES then
+            table.insert(lines, string.format("... and %d more", #entry.Rolls - MAX_STANDINGS_LINES))
+            break
+        end
+
         table.insert(lines, string.format(
             "#%d %s -- %d %s",
             i, roll.Player, roll.Roll, roll.Type
@@ -477,6 +486,32 @@ function LootMasterWindow:FormatStandings(entry)
     end
 
     return table.concat(lines, "\n")
+
+end
+
+-------------------------------------------------
+-- Row Height
+--
+-- Tall enough for the item name and every line under
+-- it (e.g. a roll's standings), so the rows below move
+-- down instead of covering them. Never shorter than
+-- the normal row.
+-------------------------------------------------
+
+function LootMasterWindow:FitRowHeight(row)
+
+    local info = row.InfoText
+    local textHeight = (info:IsShown() and info:GetText() and info:GetText() ~= "") and info:GetStringHeight() or 0
+
+    -- The normal row already fits one line under the name;
+    -- grow by however much more the text needs
+    local _, fontSize = info:GetFont()
+    local oneLine = (fontSize or 10) + 2
+
+    local height = ROW_HEIGHT + math.max(0, math.ceil(textHeight - oneLine))
+    row:SetHeight(height)
+
+    return height
 
 end
 
@@ -1652,7 +1687,7 @@ function LootMasterWindow:Refresh()
 
             self:PopulateRow(row, entry)
 
-            y = y + ROW_HEIGHT + ROW_GAP
+            y = y + self:FitRowHeight(row) + ROW_GAP
 
         end
 

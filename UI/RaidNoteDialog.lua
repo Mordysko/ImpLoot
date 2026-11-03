@@ -284,7 +284,7 @@ end
 local TYPE_HELP = {
     Personal = "Free text, shown on screen.",
     Checklist = "One item per line. Click an item on screen to tick it.",
-    Raid = "Notes for a fight. Linking it to a boss comes next build.",
+    Raid = "Notes for a fight. Link it to a boss in the editor and it shows by itself.",
 }
 
 function RaidNoteDialog:SetCreateWidgetsShown(shown)

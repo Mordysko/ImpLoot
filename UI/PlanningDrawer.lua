@@ -1016,6 +1016,12 @@ function PlanningDrawer:Refresh()
                     GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
                     GameTooltip:SetText(note.Name)
                     GameTooltip:AddLine(note.Type .. (note.Type == "Checklist" and (" (resets " .. (note.Reset or "Daily"):lower() .. ")") or ""), 1, 1, 1)
+                    if ImpLoot.RaidNotes:IsLinked(note) then
+                        GameTooltip:AddLine("Shows when you target: " .. ImpLoot.RaidNotes:DescribeLink(note), 1, 0.6, 0.2, true)
+                    end
+                    if note.SharedBy then
+                        GameTooltip:AddLine("From " .. note.SharedBy, 0.6, 0.8, 1)
+                    end
                     GameTooltip:AddLine("Click to edit.", 0.7, 0.7, 0.7)
                     GameTooltip:Show()
                 end)

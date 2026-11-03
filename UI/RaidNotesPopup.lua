@@ -10,6 +10,17 @@
 -- What you type shows the icons as {skull}, {mage}
 -- etc.; the on-screen note shows the real icons.
 --
+-- Spell icons: type a spell ID (or a Wowhead address,
+-- or a spell you know by name) next to the class icons
+-- and press Add, or shift-click a spell in your
+-- spellbook while typing in the note. Goes in as
+-- {spell:ID} followed by the spell's name.
+--
+-- Raid notes get a Boss row: link the note to a boss
+-- and it shows by itself when you target it (see
+-- UI/NoteFrames.lua). Send puts the note in the raid's
+-- (or a player's) Notes.
+--
 -- (Kept under its old name, RaidNotesPopup, since the
 -- rest of the addon already refers to it.)
 -------------------------------------------------
@@ -20,7 +31,8 @@ local Editor = ImpLoot.UI.RaidNotesPopup
 
 local Notes = ImpLoot.RaidNotes
 
-local WIDTH, HEIGHT = 520, 470
+local WIDTH, HEIGHT = 580, 470
+local LINK_ROW = 30
 local ICON = 20
 
 local MARKERS = { "star", "circle", "diamond", "triangle", "moon", "square", "cross", "skull" }
@@ -138,6 +150,50 @@ function Editor:Initialize()
     end
 
     -------------------------------------------------
+    -- Spell Icon: ID / name box + Add
+    -------------------------------------------------
+
+    local spellIcon = window:CreateTexture(nil, "ARTWORK")
+    spellIcon:SetSize(ICON, ICON)
+    spellIcon:SetPoint("TOPLEFT", row2, "TOPLEFT", x + 14, 0)
+    spellIcon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+    spellIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    self.SpellIcon = spellIcon
+
+    local spellBox = CreateFrame("EditBox", "ImpLootNoteEditorSpell", window, "InputBoxTemplate")
+    spellBox:SetSize(120, 20)
+    spellBox:SetPoint("LEFT", spellIcon, "RIGHT", 10, 0)
+    spellBox:SetAutoFocus(false)
+    spellBox:SetMaxLetters(120)
+    spellBox:SetScript("OnEnterPressed", function() self:AddSpell() end)
+    spellBox:SetScript("OnEscapePressed", function(box) box:ClearFocus() end)
+    spellBox:SetScript("OnTextChanged", function(box)
+        -- shows the spell's icon while you type its ID
+        local id = Notes:FindSpell(box:GetText())
+        spellIcon:SetTexture(id and Notes:SpellIcon(id) or "Interface\\Icons\\INV_Misc_Book_09")
+    end)
+    self.SpellBox = spellBox
+
+    local spellButton = ImpLoot.Theme:CreateMenuButton(window)
+    spellButton:SetSize(70, 20)
+    spellButton:SetPoint("LEFT", spellBox, "RIGHT", 4, 0)
+    spellButton:SetText("Add spell")
+    spellButton:SetScript("OnClick", function() self:AddSpell() end)
+
+    local function SpellTooltip(owner)
+        GameTooltip:SetOwner(owner, "ANCHOR_TOP")
+        GameTooltip:SetText("Spell icon")
+        GameTooltip:AddLine("Type a spell ID (Wowhead: ...spell=12345), or the name of a spell you know, then Add. Boss abilities work by ID.", 1, 1, 1, true)
+        GameTooltip:AddLine("Or shift-click a spell in your spellbook while typing in the note.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end
+
+    spellButton:SetScript("OnEnter", SpellTooltip)
+    spellButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    spellBox:SetScript("OnEnter", SpellTooltip)
+    spellBox:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    -------------------------------------------------
     -- Colour Palette
     -------------------------------------------------
 
@@ -191,10 +247,66 @@ function Editor:Initialize()
     -- Text
     -------------------------------------------------
 
+    -------------------------------------------------
+    -- Boss Link (Raid notes only)
+    -------------------------------------------------
+
+    local linkRow = CreateFrame("Frame", nil, window)
+    linkRow:SetPoint("TOPLEFT", paletteLabel, "BOTTOMLEFT", 0, -4 - 2 * (swatchSize + 3) - 4)
+    linkRow:SetPoint("RIGHT", window, "RIGHT", -10, 0)
+    linkRow:SetHeight(LINK_ROW - 6)
+    self.LinkRow = linkRow
+
+    local bossLabel = linkRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    bossLabel:SetPoint("LEFT", 0, 0)
+    bossLabel:SetText("Boss:")
+
+    local bossButton = ImpLoot.Theme:CreateMenuButton(linkRow)
+    bossButton:SetSize(230, 20)
+    bossButton:SetPoint("LEFT", bossLabel, "RIGHT", 6, 0)
+    bossButton:SetScript("OnClick", function() self:ShowBossMenu() end)
+    bossButton:SetScript("OnEnter", function(button)
+        GameTooltip:SetOwner(button, "ANCHOR_TOP")
+        GameTooltip:SetText("Link to a boss")
+        GameTooltip:AddLine("The note then shows by itself when, in that raid, the boss is alive and you target it (or it's your focus, under your mouse, or in the boss frames).", 1, 1, 1, true)
+        GameTooltip:AddLine("It hides again when the boss dies or you leave the raid. Close it by hand and it stays away until the fight's over.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    bossButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    self.BossButton = bossButton
+
+    local targetsLabel = linkRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    targetsLabel:SetPoint("LEFT", bossButton, "RIGHT", 10, 0)
+    targetsLabel:SetText("Targets:")
+    self.TargetsLabel = targetsLabel
+
+    local targetsBox = CreateFrame("EditBox", "ImpLootNoteEditorTargets", linkRow, "InputBoxTemplate")
+    targetsBox:SetHeight(20)
+    targetsBox:SetPoint("LEFT", targetsLabel, "RIGHT", 8, 0)
+    targetsBox:SetPoint("RIGHT", linkRow, "RIGHT", -4, 0)
+    targetsBox:SetAutoFocus(false)
+    targetsBox:SetMaxLetters(250)
+    targetsBox:SetScript("OnEnterPressed", function(box) box:ClearFocus() end)
+    targetsBox:SetScript("OnEscapePressed", function(box) box:ClearFocus() end)
+    targetsBox:SetScript("OnEditFocusLost", function() self:SaveTargets() end)
+    targetsBox:SetScript("OnEnter", function(box)
+        GameTooltip:SetOwner(box, "ANCHOR_TOP")
+        GameTooltip:SetText("Who shows this note")
+        GameTooltip:AddLine("Names, separated by commas. Filled in when you pick the boss; change them if you like.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    targetsBox:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    self.TargetsBox = targetsBox
+
+    self.BossMenu = CreateFrame("Frame", "ImpLootNoteEditorBossMenu", window, "UIDropDownMenuTemplate")
+
     local textArea = CreateFrame("Frame", nil, window)
-    textArea:SetPoint("TOPLEFT", paletteLabel, "BOTTOMLEFT", -2, -4 - 2 * (swatchSize + 3) - 6)
     textArea:SetPoint("BOTTOMRIGHT", window, "BOTTOMRIGHT", -10, 46)
     ImpLoot.Theme:ApplySolidPanelStyle(textArea)
+    self.TextArea = textArea
+    self.TextTop = -4 - 2 * (swatchSize + 3) - 6
+    self.PaletteLabel = paletteLabel
+    self:PlaceTextArea(false)
 
     local scroll = CreateFrame("ScrollFrame", "ImpLootNoteEditorScroll", textArea, "UIPanelScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", 6, -6)
@@ -209,6 +321,8 @@ function Editor:Initialize()
     editBox:SetHeight(200)
     editBox:SetTextInsets(2, 2, 2, 2)
     editBox:SetScript("OnEscapePressed", function() window:Hide() end)
+    editBox:SetScript("OnEditFocusGained", function() self.Typing = true end)
+    editBox:SetScript("OnEditFocusLost", function() self.Typing = false end)
     editBox:SetScript("OnCursorChanged", function(_, _, y, _, height)
         -- keep the cursor in view while typing
         local top = scroll:GetVerticalScroll()
@@ -328,6 +442,186 @@ function Editor:Initialize()
         end
     end)
     self.ShowButton = showButton
+
+    local sendButton = ImpLoot.Theme:CreateMenuButton(window)
+    sendButton:SetSize(60, 22)
+    sendButton:SetPoint("RIGHT", showButton, "LEFT", -6, 0)
+    sendButton:SetText("Send")
+    sendButton:SetScript("OnClick", function()
+        if self.Note then
+            ImpLoot.UI.NoteFrames:ShowSendMenu(self.Note, function() self:Save() end)
+        end
+    end)
+    sendButton:SetScript("OnEnter", function(button)
+        GameTooltip:SetOwner(button, "ANCHOR_TOP")
+        GameTooltip:SetText("Send this note")
+        GameTooltip:AddLine("To the raid (or party), your target or a player you name. Anyone with ImpLoot is asked whether to save it; sending it again later updates their copy.", 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    sendButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    self.SendButton = sendButton
+
+    -- Shift-clicking a spell (spellbook, chat link) while
+    -- typing in the note puts it in the note
+    if ChatEdit_InsertLink and hooksecurefunc then
+        hooksecurefunc("ChatEdit_InsertLink", function(link)
+            if self.Typing and window:IsShown() and link then
+                self:InsertLink(link)
+            end
+        end)
+    end
+
+end
+
+-------------------------------------------------
+-- Text Area Position (lower for Raid notes, which have
+-- the Boss row above it)
+-------------------------------------------------
+
+function Editor:PlaceTextArea(withLinkRow)
+
+    self.TextArea:ClearAllPoints()
+    self.TextArea:SetPoint("TOPLEFT", self.PaletteLabel, "BOTTOMLEFT", -2, self.TextTop - (withLinkRow and LINK_ROW or 0))
+    self.TextArea:SetPoint("BOTTOMRIGHT", self.Window, "BOTTOMRIGHT", -10, 46)
+
+end
+
+-------------------------------------------------
+-- Spells
+-------------------------------------------------
+
+function Editor:InsertSpell(id, name)
+    self:Insert("{spell:" .. id .. "} " .. (name or ""))
+end
+
+function Editor:AddSpell()
+
+    local id, name = Notes:FindSpell(self.SpellBox:GetText())
+
+    if not id then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffffd200ImpLoot:|r No spell found for \"" .. (self.SpellBox:GetText() or "") .. "\". Use its ID, or the name of a spell you know.")
+        return
+    end
+
+    self.SpellBox:SetText("")
+    self.SpellBox:ClearFocus()
+    self:InsertSpell(id, name)
+
+end
+
+function Editor:InsertLink(link)
+
+    local id = tonumber(link:match("|Hspell:(%d+)") or link:match("|Henchant:(%d+)"))
+    local name = id and GetSpellInfo(id)
+
+    if name then
+        self:InsertSpell(id, name)
+        return
+    end
+
+    -- anything else (an item, a quest...): its name
+    local text = link:match("|h%[(.-)%]|h")
+
+    if text then
+        self:Insert("[" .. text .. "]")
+    end
+
+end
+
+-------------------------------------------------
+-- Boss Link
+-------------------------------------------------
+
+function Editor:UpdateBossRow()
+
+    local note = self.Note
+    local isRaid = note and note.Type == "Raid"
+
+    SetShown(self.LinkRow, isRaid)
+    self:PlaceTextArea(isRaid)
+
+    if not isRaid then
+        return
+    end
+
+    if Notes:IsLinked(note) then
+        self.BossButton:SetText("|cffffffff" .. Notes:DescribeLink(note) .. "|r")
+    else
+        self.BossButton:SetText("None (shown by hand)")
+    end
+
+    self.TargetsBox:SetText(note.Targets or "")
+    self.TargetsBox:SetCursorPosition(0)
+
+    -- the names only matter once it's linked
+    SetShown(self.TargetsBox, Notes:IsLinked(note))
+    SetShown(self.TargetsLabel, Notes:IsLinked(note))
+
+    self.Hint:SetText(Notes:IsLinked(note) and ("Shows when you target " .. note.Boss .. ".") or "Link it to a boss to show it by itself.")
+
+end
+
+function Editor:SaveTargets()
+
+    if self.Note and Notes:IsLinked(self.Note) and self.TargetsBox then
+        self.Note.Targets = self.TargetsBox:GetText()
+    end
+
+end
+
+function Editor:ShowBossMenu()
+
+    local note = self.Note
+
+    if not note then
+        return
+    end
+
+    local function Pick(raidName, bossName)
+        self:SaveTargets()
+        Notes:SetBossLink(note, raidName, bossName)
+        self:UpdateBossRow()
+        ImpLoot.UI.NoteFrames:Refresh(note)
+        CloseDropDownMenus()
+    end
+
+    local menu = {
+        { text = "Link to a boss", isTitle = true, notCheckable = true },
+        {
+            text = "None (shown by hand)",
+            checked = not Notes:IsLinked(note),
+            func = function() Pick(nil, nil) end,
+        },
+    }
+
+    for _, raid in ipairs(ImpLoot.Database:GetRaidsInReleaseOrder()) do
+
+        local bosses = {}
+
+        for _, boss in ipairs(raid.Bosses or {}) do
+
+            if not Notes.NOT_A_TARGET[boss.Name] then
+                table.insert(bosses, {
+                    text = boss.Name,
+                    checked = note.Raid == raid.Name and note.Boss == boss.Name,
+                    func = function() Pick(raid.Name, boss.Name) end,
+                })
+            end
+
+        end
+
+        table.insert(menu, {
+            text = raid.Name,
+            hasArrow = true,
+            notCheckable = true,
+            menuList = bosses,
+        })
+
+    end
+
+    table.insert(menu, { text = "Cancel", notCheckable = true, func = function() end })
+
+    EasyMenu(menu, self.BossMenu, "cursor", 0, 0, "MENU")
 
 end
 
@@ -628,7 +922,7 @@ function Editor:ShowNote(note)
     if note.Type == "Checklist" then
         self.Hint:SetText("One item per line. Resets: " .. (note.Reset or "Daily") .. ".")
     elseif note.Type == "Raid" then
-        self.Hint:SetText("Linking to a boss comes next build.")
+        self.Hint:SetText(Notes:IsLinked(note) and ("Shows when you target " .. note.Boss .. ".") or "Link it to a boss to show it by itself.")
     else
         self.Hint:SetText("")
     end
@@ -639,6 +933,7 @@ function Editor:ShowNote(note)
     self.Loading = false
 
     self:UpdateShowButton()
+    self:UpdateBossRow()
 
     self.PenColour = nil
     self.PendingChar = nil
@@ -669,6 +964,7 @@ end
 function Editor:Save()
 
     if self.Note and self.EditBox then
+        self:SaveTargets()
         ImpLoot.RaidNotes:SetText(self.Note, self.EditBox:GetText())
     end
 

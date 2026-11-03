@@ -11,9 +11,13 @@
 --             items, which stay clickable
 --
 -- Right-click menu: Lock / Unlock, Edit, Background
--- opacity, Text size, Reset (checklists), Hide.
+-- opacity, Text size, Reset (checklists), Send, Hide.
 -- Position, size, opacity, text size and lock state
 -- are saved per note.
+--
+-- Raid notes linked to a boss (see Boss Watch below)
+-- show by themselves and hide again when the boss dies
+-- or you leave the raid.
 -------------------------------------------------
 
 ImpLoot.UI = ImpLoot.UI or {}
@@ -44,6 +48,7 @@ end
 function NoteFrames:Initialize()
 
     self.Frames = {}
+    self.HiddenByHand = {}
     self.Menu = CreateFrame("Frame", "ImpLootNoteMenu", UIParent, "UIDropDownMenuTemplate")
 
     local character = CurrentCharacter()
@@ -59,6 +64,8 @@ function NoteFrames:Initialize()
         end
 
     end
+
+    self:InitBossWatch()
 
     -- Checklist resets while you're logged in (checked once a minute)
     local ticker = CreateFrame("Frame")
@@ -103,15 +110,7 @@ function NoteFrames:Toggle(note)
 
 end
 
-function NoteFrames:Hide(note)
-
-    note.Shown = false
-
-    local frame = self.Frames and self.Frames[note]
-
-    if frame then
-        frame:Hide()
-    end
+local function RefreshDrawer()
 
     if ImpLoot.UI.PlanningDrawer and ImpLoot.UI.PlanningDrawer.Refresh then
         ImpLoot.UI.PlanningDrawer:Refresh()
@@ -119,18 +118,231 @@ function NoteFrames:Hide(note)
 
 end
 
-function NoteFrames:Show(note)
+-- Hidden by you (close button, menu, Hide in the drawer).
+-- A boss-linked note hidden like that doesn't come back by
+-- itself until the fight's over, the boss dies or you
+-- leave the raid.
+function NoteFrames:Hide(note)
+
+    note.Shown = false
+
+    local frame = self.Frames and self.Frames[note]
+
+    if frame then
+
+        if frame:IsShown() and Notes:IsLinked(note) then
+            self.HiddenByHand[note] = true
+        end
+
+        frame.AutoShown = false
+        frame:Hide()
+
+    end
+
+    RefreshDrawer()
+
+end
+
+-- auto: shown because its boss was targeted. That isn't
+-- saved (after a /reload it shows again when you target
+-- the boss), and it hides by itself when the boss dies or
+-- you leave. Shown by hand, it stays until you hide it.
+function NoteFrames:Show(note, auto)
 
     Notes:Upgrade(note)
-    note.Shown = true
 
     local frame = self.Frames[note] or self:CreateFrame(note)
     self.Frames[note] = frame
 
+    if auto then
+        if frame:IsShown() then
+            return
+        end
+        frame.AutoShown = true
+    else
+        note.Shown = true
+        frame.AutoShown = false
+        self.HiddenByHand[note] = nil
+    end
+
     self:ApplyLayout(frame)
+    frame:Show()
     self:Refresh(note)
 
-    frame:Show()
+    if auto then
+        RefreshDrawer()
+    end
+
+end
+
+-- Taken away by the boss watch (only if it put it there)
+function NoteFrames:AutoHide(note)
+
+    local frame = self.Frames and self.Frames[note]
+
+    if frame and frame:IsShown() and frame.AutoShown then
+        frame.AutoShown = false
+        frame:Hide()
+        RefreshDrawer()
+    end
+
+end
+
+-------------------------------------------------
+-- Boss Watch
+--
+-- Shows a linked Raid note when, inside its raid, the
+-- boss is alive and is your target, your focus, under
+-- your mouse or in the boss frames. (Healers rarely
+-- target the boss, so it isn't only your target.)
+--
+-- Hides it again (only if it showed itself) when:
+--   - the boss dies. For an encounter with several
+--     names (the Four Horsemen, a council), when the
+--     fight ends after one of them died.
+--   - you leave the raid.
+-- You can always close it by hand; it then stays away
+-- until the fight's over, the boss dies or you leave.
+-------------------------------------------------
+
+local BOSS_UNITS = { "boss1", "boss2", "boss3", "boss4" }
+
+function NoteFrames:InitBossWatch()
+
+    self.HiddenByHand = self.HiddenByHand or {}
+    self.DiedThisFight = {}
+
+    local watch = CreateFrame("Frame")
+
+    for _, event in ipairs({
+        "PLAYER_TARGET_CHANGED", "PLAYER_FOCUS_CHANGED", "UPDATE_MOUSEOVER_UNIT",
+        "INSTANCE_ENCOUNTER_ENGAGE_UNIT", "ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD",
+        "COMBAT_LOG_EVENT_UNFILTERED", "PLAYER_REGEN_ENABLED",
+    }) do
+        watch:RegisterEvent(event)
+    end
+
+    watch:SetScript("OnEvent", function(_, event, ...)
+        self:OnBossEvent(event, ...)
+    end)
+
+    self.BossWatch = watch
+
+end
+
+function NoteFrames:LinkedNotes()
+
+    local linked = {}
+    local character = CurrentCharacter()
+
+    for _, note in ipairs(character and Notes:GetNotes(character) or {}) do
+        if Notes:IsLinked(note) then
+            table.insert(linked, note)
+        end
+    end
+
+    return linked
+
+end
+
+function NoteFrames:CheckUnit(unit)
+
+    if not UnitExists(unit) or UnitIsDead(unit) or UnitIsPlayer(unit) then
+        return
+    end
+
+    local name = (UnitName(unit) or ""):lower()
+
+    if name == "" then
+        return
+    end
+
+    for _, note in ipairs(self:LinkedNotes()) do
+
+        if not self.HiddenByHand[note] and Notes:GetTargets(note)[name] and Notes:InNoteZone(note) then
+            self:Show(note, true)
+        end
+
+    end
+
+end
+
+function NoteFrames:OnBossEvent(event, ...)
+
+    if event == "PLAYER_TARGET_CHANGED" then
+
+        self:CheckUnit("target")
+
+    elseif event == "PLAYER_FOCUS_CHANGED" then
+
+        self:CheckUnit("focus")
+
+    elseif event == "UPDATE_MOUSEOVER_UNIT" then
+
+        self:CheckUnit("mouseover")
+
+    elseif event == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
+
+        for _, unit in ipairs(BOSS_UNITS) do
+            self:CheckUnit(unit)
+        end
+
+    elseif event == "ZONE_CHANGED_NEW_AREA" or event == "PLAYER_ENTERING_WORLD" then
+
+        -- a new place: everything starts fresh
+        self.HiddenByHand = {}
+        self.DiedThisFight = {}
+
+        for _, note in ipairs(self:LinkedNotes()) do
+            if not Notes:InNoteZone(note) then
+                self:AutoHide(note)
+            end
+        end
+
+    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then
+
+        local _, subEvent, _, _, _, _, destName = ...
+
+        if subEvent ~= "UNIT_DIED" or not destName then
+            return
+        end
+
+        destName = destName:lower()
+
+        for _, note in ipairs(self:LinkedNotes()) do
+
+            local targets, count = Notes:GetTargets(note)
+
+            if targets[destName] then
+
+                if count <= 1 then
+                    self:BossDown(note)
+                else
+                    self.DiedThisFight[note] = true
+                end
+
+            end
+
+        end
+
+    elseif event == "PLAYER_REGEN_ENABLED" then
+
+        -- the fight's over (won or wiped)
+        for note in pairs(self.DiedThisFight) do
+            self:BossDown(note)
+        end
+
+        self.DiedThisFight = {}
+        self.HiddenByHand = {}
+
+    end
+
+end
+
+function NoteFrames:BossDown(note)
+
+    self.HiddenByHand[note] = nil
+    self:AutoHide(note)
 
 end
 
@@ -388,7 +600,7 @@ function NoteFrames:Refresh(note)
 
     local frame = self.Frames and self.Frames[note]
 
-    if not frame or not frame:IsShown() and not note.Shown then
+    if not frame or not frame:IsShown() then
         return
     end
 
@@ -405,7 +617,7 @@ function NoteFrames:Refresh(note)
     SetShown(frame.LockButton, unlocked)
     SetShown(frame.Grip, unlocked)
 
-    frame.Title:SetText(note.Name .. (note.Type ~= "Personal" and ("  |cff999999" .. note.Type .. "|r") or ""))
+    frame.Title:SetText(note.Name .. (note.Type ~= "Personal" and ("  |cff999999" .. (note.Boss or note.Type) .. "|r") or ""))
 
     -- Locked notes let clicks through; checklist rows and
     -- buttons keep their own mouse handling
@@ -606,9 +818,110 @@ function NoteFrames:ShowMenu(frame)
         })
     end
 
+    table.insert(menu, {
+        text = "Send to...",
+        hasArrow = true,
+        notCheckable = true,
+        menuList = self:SendMenuItems(note),
+    })
+
     table.insert(menu, { text = "Hide", notCheckable = true, func = function() self:Hide(note) end })
     table.insert(menu, { text = "Cancel", notCheckable = true, func = function() end })
 
     EasyMenu(menu, self.Menu, "cursor", 0, 0, "MENU")
 
 end
+
+-------------------------------------------------
+-- Send Menu (here and in the editor)
+--
+-- The raid (or party), your target if it's a player,
+-- or a player you type in.
+-------------------------------------------------
+
+function NoteFrames:SendMenuItems(note, beforeSend)
+
+    local function Send(channel, target)
+        if beforeSend then beforeSend() end
+        Notes:SendNote(note, channel, target)
+        CloseDropDownMenus()
+    end
+
+    local items = {}
+    local group = Notes:GroupChannel()
+
+    table.insert(items, {
+        text = (group == "PARTY") and "Your party" or "The raid",
+        notCheckable = true,
+        disabled = not group,
+        func = function() Send("GROUP") end,
+    })
+
+    local target = UnitName("target")
+
+    if target and UnitIsPlayer("target") and not UnitIsUnit("target", "player") then
+        table.insert(items, {
+            text = "Your target: " .. target,
+            notCheckable = true,
+            func = function() Send("WHISPER", target) end,
+        })
+    end
+
+    table.insert(items, {
+        text = "A player...",
+        notCheckable = true,
+        func = function()
+            if beforeSend then beforeSend() end
+            CloseDropDownMenus()
+            local dialog = StaticPopup_Show("IMPLOOT_SEND_NOTE_TO", note.Name, nil, note)
+            if dialog then
+                dialog:SetFrameStrata("TOOLTIP")
+            end
+        end,
+    })
+
+    return items
+
+end
+
+function NoteFrames:ShowSendMenu(note, beforeSend)
+
+    local items = self:SendMenuItems(note, beforeSend)
+    table.insert(items, 1, { text = "Send \"" .. note.Name .. "\" to", isTitle = true, notCheckable = true })
+    table.insert(items, { text = "Cancel", notCheckable = true, func = function() end })
+
+    EasyMenu(items, self.Menu, "cursor", 0, 0, "MENU")
+
+end
+
+StaticPopupDialogs["IMPLOOT_SEND_NOTE_TO"] = {
+    text = "Send \"%s\" to which player?",
+    button1 = "Send",
+    button2 = "Cancel",
+    hasEditBox = 1,
+    maxLetters = 40,
+    OnAccept = function(dialog, note)
+        local name = _G[dialog:GetName() .. "EditBox"]:GetText()
+        if note and name and name ~= "" then
+            ImpLoot.RaidNotes:SendNote(note, "WHISPER", name)
+        end
+    end,
+    EditBoxOnEnterPressed = function(editBox)
+        local dialog = editBox:GetParent()
+        StaticPopupDialogs["IMPLOOT_SEND_NOTE_TO"].OnAccept(dialog, dialog.data)
+        dialog:Hide()
+    end,
+    EditBoxOnEscapePressed = function(editBox)
+        editBox:GetParent():Hide()
+    end,
+    OnShow = function(dialog)
+        _G[dialog:GetName() .. "EditBox"]:SetText("")
+        _G[dialog:GetName() .. "EditBox"]:SetFocus()
+    end,
+    OnHide = function(dialog)
+        dialog:SetFrameStrata("DIALOG")
+    end,
+    timeout = 0,
+    whileDead = 1,
+    hideOnEscape = 1,
+}

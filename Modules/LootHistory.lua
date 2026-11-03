@@ -753,6 +753,54 @@ function LootHistory:AddTooltipLines(logEntry)
         GameTooltip:AddDoubleLine("Edited", date("%Y-%m-%d %H:%M", logEntry.Edited), label, label, label, 0.7, 0.7, 0.7)
     end
 
+    -- How many times this item has dropped for you
+    local seen, first = self:CountSeen(logEntry)
+
+    if seen > 0 then
+
+        local text = seen .. (seen == 1 and " time" or " times")
+
+        if seen > 1 and first then
+            text = text .. " (first " .. date("%Y-%m-%d", first) .. ")"
+        end
+
+        GameTooltip:AddDoubleLine("Seen", text, label, label, label, 1, 0.82, 0)
+
+    end
+
+end
+
+-------------------------------------------------
+-- Count Seen
+--
+-- How many times an item is in the loot history for the
+-- same character as the entry being looked at (every
+-- copy that dropped counts), and when the first one was.
+-- Entries with no character count for everyone.
+-------------------------------------------------
+
+function LootHistory:CountSeen(logEntry)
+
+    local count, first = 0, nil
+    local owner = logEntry.Owner
+
+    for _, e in ipairs(ImpLoot.LootMaster:GetLog() or {}) do
+
+        if e.ItemID == logEntry.ItemID
+        and (not owner or not e.Owner or e.Owner == owner) then
+
+            count = count + 1
+
+            if e.Timestamp and e.Timestamp > 0 and (not first or e.Timestamp < first) then
+                first = e.Timestamp
+            end
+
+        end
+
+    end
+
+    return count, first
+
 end
 
 -------------------------------------------------

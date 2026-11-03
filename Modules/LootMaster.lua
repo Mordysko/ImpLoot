@@ -1715,6 +1715,48 @@ function ImpLoot.LootMaster:IsPlayerPresent(playerName)
 end
 
 -------------------------------------------------
+-- Priority List: Who's Here
+--
+-- A Priority item goes to the first candidate on the
+-- list who's in the raid: a player in the roster
+-- (offline still counts, as above), or a class slot
+-- ("Any Warrior") with at least one of that class in
+-- the group. Anyone above them who isn't here is
+-- skipped but keeps their place for the next drop.
+-------------------------------------------------
+
+function ImpLoot.LootMaster:IsCandidatePresent(candidate)
+
+    if not candidate then
+        return false
+    end
+
+    if candidate.Type == "Class" then
+        return #self:GetGroupMembersOfClass(candidate.Value) > 0
+    end
+
+    return self:IsPlayerPresent(candidate.Value)
+
+end
+
+-- Returns the candidate and its position, or nil
+function ImpLoot.LootMaster:GetFirstPresentCandidate(listName, itemID)
+
+    local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, itemID)
+
+    for index, candidate in ipairs(remaining) do
+
+        if self:IsCandidatePresent(candidate) then
+            return candidate, index
+        end
+
+    end
+
+    return nil
+
+end
+
+-------------------------------------------------
 -- On Timer Tick
 --
 -- Handles the periodic "N seconds left" announcements,

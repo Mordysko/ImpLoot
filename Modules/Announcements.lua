@@ -113,6 +113,13 @@ ImpLoot.Announcements.Defaults = {
         Channel = "Auto",
     },
 
+    -- Announce roll in the class popup ("Any Warrior")
+    ClassSlotAnnounced = {
+        Enabled = true,
+        Text = "{item} goes to a {class}: {players} -- roll now, highest roll wins.",
+        Channel = "Auto",
+    },
+
 }
 
 -------------------------------------------------

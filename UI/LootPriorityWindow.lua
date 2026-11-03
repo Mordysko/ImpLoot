@@ -39,7 +39,9 @@ local MODE_EXPLANATIONS = {
 
     Priority = "Candidates are tried in the listed order. " ..
         "Once someone wins the item, they're removed from " ..
-        "the list -- the next drop goes to whoever's now first.",
+        "the list -- the next drop goes to whoever's now first. " ..
+        "Anyone not in the raid is skipped (greyed out, \"not " ..
+        "here\") and keeps their place for the next drop.",
 
     Vote = "The loot council votes on who should receive each " ..
         "drop. The loot master assigns it based on the live tally " ..

@@ -5,9 +5,6 @@ A raid loot management addon for World of Warcraft: Wrath of the Lich
 King (3.3.5a): loot planning, wishlists and priority lists, Loot Master
 rolls, and built-in Soft Reserve support.
 
-NOTE: This is a beta. Expect rough edges. See Feedback for where to
-      report problems.
-
 CONTENTS
 --------
 
@@ -170,10 +167,12 @@ a type:
 - Checklist: one item per line, e.g. your dailies. Click an item on
   screen to tick it (it greys out with a check mark); when everything is
   ticked, an "All done - Close" button appears. Each checklist resets
-  Daily (server daily reset), Weekly (raid reset, Wednesdays) or only by
-  hand (Manual), and always has a Reset button.
-- Raid: notes for a fight, like a cooldown rotation. For now you show it
-  by hand; linking it to a boss so it appears on its own comes next.
+  Daily (server daily reset), Weekly (raid reset) or only by hand
+  (Manual), and always has a Reset button. The weekly reset is learned
+  from your raid lockouts, so it's right for your server once you've
+  been saved to any raid; until then it's taken as Wednesday.
+- Raid: notes for a fight, like a cooldown rotation. Show it by hand, or
+  link it to a boss (see below).
 
 Personal / Checklist / Raid under Rename and Delete choose which kind of
 note the list shows (it scrolls; there's no limit on notes). Click a
@@ -189,11 +188,34 @@ that text. Opening Create Note, Rename or Delete closes the editor
 (saving it first). The Text size and Background sliders under the text change
 that note straight away.
 
+Spell icons: next to the class icons, type a spell ID (a Wowhead address
+like ...spell=69845 works too, or the name of a spell you know) and click
+Add spell. Or shift-click a spell in your spellbook while typing in the
+note. It goes in as {spell:69845} followed by the spell's name; the
+on-screen note shows the spell's icon. Boss abilities work by ID.
+
+Boss link (Raid notes): the editor has a Boss button. Pick the raid and
+boss, and the note shows by itself when, inside that raid, the boss is
+alive and is your target, your focus, under your mouse or in the boss
+frames. Targets lists the names that count (filled in for you, including
+encounters like the Four Horsemen or the Blood Prince Council; Faction
+Champions you type yourself). The note hides again when the boss dies
+(for a several-boss encounter, when the fight ends after a kill) or when
+you leave the raid. Close it by hand and it stays away until the fight's
+over. A note you show by hand stays until you hide it.
+
+Send: the editor's Send button (or Send to... when you right-click a
+note on screen) sends the note to the raid (or party), your target, or a
+player you name. Anyone with ImpLoot is asked whether to save it (Options
+can save notes from the raid leader and assistants without asking).
+Sending it again updates their copy, keeping where they put it. A note
+with the same name from someone else is saved as "Name (Sender)".
+
 New notes start unlocked: drag to move, use the corner grip to resize.
 Lock it with the padlock (or Lock notes on the Notes page, or /il
 notes) and clicks pass through it to the game; a checklist's items stay
 clickable. Right-click an unlocked note (or a checklist item) for
-background opacity, text size, edit, reset and hide. Your existing raid
+background opacity, text size, edit, reset, send and hide. Your existing raid
 notes carried over as Personal notes.
 
 The "this one's yours" popup
@@ -291,8 +313,9 @@ Open Roll. It fills itself in and updates as items resolve.
 
 Winners are shown in their class colour. Hover a row for its details:
 how it was won (e.g. "Rolled 95 (MS)", "Loot priority (Any Warrior)",
-"Disenchant (no rolls)"), who rolled 2nd and 3rd, the boss, the raid
-with its size and
+"Disenchant (no rolls)"), who rolled 2nd and 3rd, how many times you've
+seen that item drop (and when first), the boss, the raid with its size
+and
 difficulty (e.g. Icecrown Citadel 25H), the date and time, and who
 recorded it if that wasn't you. Entries saved before this version only
 have what was recorded at the time.
@@ -545,9 +568,22 @@ name and pressing Enter. Remove someone with the x.
 Class slots ("Any Warrior")
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+A Priority item goes to the first one on its list who's in the raid.
+Anyone above them who isn't is shown greyed out, "(not here)", and
+skipped, but keeps their place for the next drop. A class slot counts
+as here if anyone of that class is in the group. If no one on the list
+is in the raid, the Loot Master window says so; assign it by hand.
+
 When the next slot on a Priority item is a class, clicking Assign opens
 a list beside the Loot Master window of every player of that class in
 the raid. Click a name to give them the item.
+
+- Announce roll tells the raid who of that class can roll (online, and
+  not already given one). Their /rolls then show next to their names,
+  highest first and marked "(highest)"; click the winner. Only each
+  player's first 1-100 roll counts. Announce again starts afresh. The
+  text and channel are in Options -> Announcements (Class Slot Roll
+  Announced).
 
 - The class stays at the top until every one of them has the item, so
   the next copy goes to another Warrior. Anyone who already has one is
@@ -710,8 +746,8 @@ SLASH COMMANDS
 FEEDBACK
 --------
 
-This is a beta. If something breaks, behaves oddly, or you have a
-suggestion, please report it here:
+If something breaks, behaves oddly, or you have a suggestion, please
+report it here:
 
 implootCC@gmail.com
 

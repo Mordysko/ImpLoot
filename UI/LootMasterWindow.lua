@@ -839,9 +839,11 @@ function LootMasterWindow:PopulateRow(row, entry)
             -- No voting involved -- the list's own order
             -- already decides who's next. Show that order
             -- and let the loot master assign straight to
-            -- the top remaining candidate, same one-click
-            -- pattern as the Vote mode's own Assign button
-            -- once a winner's decided.
+            -- the first remaining candidate who's in the
+            -- raid (anyone above them who isn't is greyed
+            -- out, "not here", and keeps their place), same
+            -- one-click pattern as the Vote mode's own Assign
+            -- button once a winner's decided.
             -------------------------------------------------
 
             local remaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
@@ -885,35 +887,57 @@ function LootMasterWindow:PopulateRow(row, entry)
 
                     end
 
+                    if not ImpLoot.LootMaster:IsCandidatePresent(candidate) then
+                        label = "|cff808080" .. label .. " (not here)|r"
+                    end
+
                     table.insert(names, label)
 
                 end
 
-                row.InfoText:SetText("Priority: " .. table.concat(names, " > "))
+                local nextUp = ImpLoot.LootMaster:GetFirstPresentCandidate(listName, entry.ItemID)
 
-                row.ActionButton:SetText("Assign")
-                row.ActionButton:Show()
+                if not nextUp then
 
-                row.ActionButton:SetScript("OnClick", function()
+                    row.InfoText:SetText("Priority: " .. table.concat(names, " > ")
+                        .. "\nNo one on the list is in the raid -- assign manually via /il or trade.")
+                    row.ActionButton:Hide()
 
-                    local currentRemaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
+                else
 
-                    if #currentRemaining == 0 then
-                        ImpLoot:Print("Priority list exhausted for " .. displayName .. ".")
-                        return
-                    end
+                    row.InfoText:SetText("Priority: " .. table.concat(names, " > "))
 
-                    local top = currentRemaining[1]
+                    row.ActionButton:SetText("Assign")
+                    row.ActionButton:Show()
 
-                    -- "Any Warrior": pick which Warrior from a list
-                    if top.Type == "Class" then
-                        self:ToggleClassPicker(row, entry, listName, top)
-                        return
-                    end
+                    row.ActionButton:SetScript("OnClick", function()
 
-                    ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Value)
+                        local currentRemaining = ImpLoot.LootCouncil:GetRemainingCandidates(listName, entry.ItemID)
 
-                end)
+                        if #currentRemaining == 0 then
+                            ImpLoot:Print("Priority list exhausted for " .. displayName .. ".")
+                            return
+                        end
+
+                        -- the first one on the list who's here
+                        local top = ImpLoot.LootMaster:GetFirstPresentCandidate(listName, entry.ItemID)
+
+                        if not top then
+                            ImpLoot:Print("No one on the priority list for " .. displayName .. " is in the raid.")
+                            return
+                        end
+
+                        -- "Any Warrior": pick which Warrior from a list
+                        if top.Type == "Class" then
+                            self:ToggleClassPicker(row, entry, listName, top)
+                            return
+                        end
+
+                        ImpLoot.LootMaster:RequestAssign(entry.QueueID, top.Value)
+
+                    end)
+
+                end
 
             end
 
@@ -1330,6 +1354,107 @@ local PICKER_WIDTH = 170
 local PICKER_ROW_HEIGHT = 18
 local PICKER_ROW_GAP = 2
 
+-------------------------------------------------
+-- Class Slot Rolls
+--
+-- Announce roll (in the class popup) posts who of that
+-- class can roll -- everyone in the raid and online
+-- who hasn't had one yet. From then on their /rolls
+-- (1-100, first roll each) show next to their names,
+-- the highest marked, so you can click the winner.
+-- Kept per item; announcing again starts afresh.
+-------------------------------------------------
+
+local CLASS_ROLL_PATTERN = "^(.+) rolls (%d+) %((%d+)%-(%d+)%)$"
+
+LootMasterWindow.ClassRolls = LootMasterWindow.ClassRolls or {}
+
+function LootMasterWindow:ClassSlotRollers(entry, listName, className)
+
+    local winners = ImpLoot.LootCouncil:GetWinners(listName, entry.ItemID)
+    local names = {}
+
+    for _, member in ipairs(ImpLoot.LootMaster:GetGroupMembersOfClass(className)) do
+        if member.Online and not winners[member.Name] then
+            table.insert(names, member.Name)
+        end
+    end
+
+    return names
+
+end
+
+function LootMasterWindow:AnnounceClassSlot(entry, listName, className)
+
+    local names = self:ClassSlotRollers(entry, listName, className)
+
+    if #names == 0 then
+        ImpLoot:Print("No " .. className .. " who can roll is online.")
+        return
+    end
+
+    local eligible = {}
+
+    for _, name in ipairs(names) do
+        eligible[name] = true
+    end
+
+    self.ClassRolls[entry.QueueID] = { Eligible = eligible, Rolls = {} }
+
+    local sent = ImpLoot.Announcements:Announce("ClassSlotAnnounced", {
+        item = entry.ItemLink or ("item " .. tostring(entry.ItemID)),
+        class = className,
+        players = ImpLoot.LootMaster:JoinWithAmpersand(names),
+    })
+
+    if not sent then
+        ImpLoot:Print("The \"Class Slot Roll Announced\" announcement is turned off (Options -> Announcements). Rolls are still tracked here.")
+    end
+
+    self:EnsureClassRollWatch()
+
+end
+
+function LootMasterWindow:EnsureClassRollWatch()
+
+    if self.ClassRollWatch then
+        return
+    end
+
+    local watch = CreateFrame("Frame")
+    watch:RegisterEvent("CHAT_MSG_SYSTEM")
+
+    watch:SetScript("OnEvent", function(_, _, message)
+
+        local name, roll, low, high = (message or ""):match(CLASS_ROLL_PATTERN)
+
+        if not name or tonumber(low) ~= 1 or tonumber(high) ~= 100 then
+            return
+        end
+
+        local changed = false
+
+        for _, tracked in pairs(self.ClassRolls) do
+
+            if tracked.Eligible[name] and not tracked.Rolls[name] then
+                tracked.Rolls[name] = tonumber(roll)
+                changed = true
+            end
+
+        end
+
+        local picker = self.ClassPicker
+
+        if changed and picker and picker:IsShown() then
+            self:RefreshClassPicker()
+        end
+
+    end)
+
+    self.ClassRollWatch = watch
+
+end
+
 function LootMasterWindow:GetClassPicker()
 
     if self.ClassPicker then
@@ -1359,6 +1484,19 @@ function LootMasterWindow:GetClassPicker()
     emptyText:SetJustifyH("LEFT")
     emptyText:SetWidth(PICKER_WIDTH - 16)
     picker.EmptyText = emptyText
+
+    local announceButton = ImpLoot.Theme:CreateMenuButton(picker)
+    announceButton:SetSize(PICKER_WIDTH - 16, 20)
+    announceButton:SetText("Announce roll")
+    announceButton:SetScript("OnEnter", function(button)
+        GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Announce roll")
+        GameTooltip:AddLine("Tells the raid who of this class can roll (online, and not already given one). Their rolls then show here, highest marked: click the winner to give it to them.", 1, 1, 1, true)
+        GameTooltip:AddLine("Text and channel: Options -> Announcements -> Class Slot Roll Announced.", 0.7, 0.7, 0.7, true)
+        GameTooltip:Show()
+    end)
+    announceButton:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    picker.AnnounceButton = announceButton
 
     local skipButton = ImpLoot.Theme:CreateMenuButton(picker)
     skipButton:SetSize(PICKER_WIDTH - 16, 20)
@@ -1410,6 +1548,32 @@ function LootMasterWindow:ShowClassPicker(row, entry, listName, candidate)
     local members = ImpLoot.LootMaster:GetGroupMembersOfClass(className)
     local winners = ImpLoot.LootCouncil:GetWinners(listName, entry.ItemID)
 
+    -- rolls since Announce roll: highest first, then the rest
+    local tracked = self.ClassRolls[entry.QueueID]
+    local rolls = tracked and tracked.Rolls or {}
+    local best
+
+    for name, roll in pairs(rolls) do
+        if not winners[name] and (not best or roll > rolls[best]) then
+            best = name
+        end
+    end
+
+    if tracked then
+
+        local sorted = {}
+        for _, member in ipairs(members) do table.insert(sorted, member) end
+
+        table.sort(sorted, function(a, b)
+            local ra, rb = rolls[a.Name] or -1, rolls[b.Name] or -1
+            if ra ~= rb then return ra > rb end
+            return a.Name < b.Name
+        end)
+
+        members = sorted
+
+    end
+
     for _, button in ipairs(picker.NameButtons) do
         button:Hide()
     end
@@ -1434,8 +1598,12 @@ function LootMasterWindow:ShowClassPicker(row, entry, listName, candidate)
 
         if hasOne then
             text = text .. " (has one)"
+        elseif rolls[member.Name] then
+            text = text .. " - " .. rolls[member.Name] .. (member.Name == best and "  |cffffd200(highest)|r" or "")
         elseif not member.Online then
             text = text .. " (offline)"
+        elseif tracked and tracked.Eligible[member.Name] then
+            text = text .. " |cff808080(no roll yet)|r"
         end
 
         button:SetText(text)
@@ -1506,6 +1674,23 @@ function LootMasterWindow:ShowClassPicker(row, entry, listName, candidate)
 
     y = y + 4
 
+    picker.AnnounceButton:ClearAllPoints()
+    picker.AnnounceButton:SetPoint("TOPLEFT", 8, -y)
+    picker.AnnounceButton:SetText(tracked and "Announce again" or "Announce roll")
+
+    picker.AnnounceButton:SetScript("OnClick", function()
+        self:AnnounceClassSlot(entry, listName, className)
+        self:ShowClassPicker(row, entry, listName, candidate)
+    end)
+
+    if #self:ClassSlotRollers(entry, listName, className) > 0 then
+        picker.AnnounceButton:Enable()
+    else
+        picker.AnnounceButton:Disable()
+    end
+
+    y = y + 20 + 4
+
     picker.SkipButton:ClearAllPoints()
     picker.SkipButton:SetPoint("TOPLEFT", 8, -y)
     picker.SkipButton:SetText("Skip " .. className .. "s")
@@ -1551,7 +1736,7 @@ function LootMasterWindow:RefreshClassPicker()
         return
     end
 
-    local top = ImpLoot.LootCouncil:GetRemainingCandidates(picker.ListName, entry.ItemID)[1]
+    local top = ImpLoot.LootMaster:GetFirstPresentCandidate(picker.ListName, entry.ItemID)
 
     if not top or top.Type ~= "Class" or top.Value ~= picker.ClassName then
         picker:Hide()

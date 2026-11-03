@@ -429,6 +429,26 @@ function OptionsPanel:BuildMainPanel()
 
     table.insert(panel.Widgets, minimapWidget)
 
+    -- Notes sent to you (Notes page -> Send)
+    local notesWidget = CreateFrame("CheckButton", nil, panel, "UICheckButtonTemplate")
+    notesWidget:SetPoint("TOPLEFT", minimapWidget, "BOTTOMLEFT", 0, -4)
+    notesWidget:SetSize(24, 24)
+
+    local notesLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    notesLabel:SetPoint("LEFT", notesWidget, "RIGHT", 4, 0)
+    notesLabel:SetText("Save notes from the raid leader or an assistant without asking")
+
+    notesWidget:SetScript("OnClick", function(self_)
+        ImpLootDB.NoteSharing = ImpLootDB.NoteSharing or {}
+        ImpLootDB.NoteSharing.AcceptFromLeader = self_:GetChecked() and true or false
+    end)
+
+    notesWidget.RefreshFn = function()
+        notesWidget:SetChecked(ImpLootDB.NoteSharing and ImpLootDB.NoteSharing.AcceptFromLeader or false)
+    end
+
+    table.insert(panel.Widgets, notesWidget)
+
     self.MainPanel = panel
 
     return panel
@@ -649,12 +669,13 @@ local ANNOUNCEMENT_LABELS = {
     PriorityAssigned = "Loot Priority Assigned",
     LootDropsAnnounced = "Boss Loot Posted",
     VoteAssigned = "Loot Council Vote Assigned",
+    ClassSlotAnnounced = "Class Slot Roll Announced",
 }
 
 local ANNOUNCEMENT_ORDER = {
     "LootDropsAnnounced", "OpenRollAnnounced", "SoftReserveAnnounced", "SoleReserverAssigned", "MultiCopyDirectAssigned", "WinnerAnnounced", "RollTie",
     "NoRollsDisenchant", "RollTimeRemaining", "RollCountdown", "LCVoteCalled", "LCRunoffCalled",
-    "FunnelAssigned", "PreselectedAnnounced", "PriorityAssigned", "VoteAssigned",
+    "FunnelAssigned", "PreselectedAnnounced", "PriorityAssigned", "ClassSlotAnnounced", "VoteAssigned",
 }
 
 function OptionsPanel:BuildAnnouncementsPanel()

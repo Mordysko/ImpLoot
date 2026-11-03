@@ -287,6 +287,17 @@ function ImpLoot.Comms:OnMessageReceived(message, sender, channel)
 
     end
 
+    -- Shared notes
+    if msgType and msgType:sub(1, 3) == "NS_" then
+
+        if ImpLoot.RaidNotes and ImpLoot.RaidNotes.OnShareMessage then
+            ImpLoot.RaidNotes:OnShareMessage(message, sender)
+        end
+
+        return
+
+    end
+
     if msgType == "ITEM" then
 
         local _, itemID, modeCode, namesCSV = self:SplitParts(message)

@@ -5551,20 +5551,6 @@ local ULD = {
                 },
 
                 {
-                    Name = "Vanquished Clutches of Yogg-Saron",
-                    IDs = {
-                        Normal = 46312,
-                        Heroic = nil,
-                    },
-                    Quality = 4,
-                    Slot = "Trinket",
-                    Token = false,
-                    Classes = nil,
-                    Notes = nil,
-                    Difficulty = "10",
-                },
-
-                {
                     Name = "Devotion",
                     IDs = {
                         Normal = 46025,
@@ -5812,6 +5798,25 @@ local ULD = {
                     Classes = nil,
                     Notes = nil,
                     Difficulty = "25",
+                },
+
+                -------------------------------------------------
+                -- 10 Zero Lights
+                -------------------------------------------------
+
+                {
+                    Name = "Vanquished Clutches of Yogg-Saron",
+                    IDs = {
+                        Normal = 46312,
+                        Heroic = nil,
+                    },
+                    Quality = 4,
+                    Slot = "Trinket",
+                    Token = false,
+                    Classes = nil,
+                    Notes = nil,
+                    Difficulty = "10",
+                    BonusLootGroup = "Zero Lights",
                 },
 
                 -------------------------------------------------

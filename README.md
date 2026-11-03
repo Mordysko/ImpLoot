@@ -1,10 +1,10 @@
-<img width="1672" height="941" alt="ChatGPT Image Oct 5, 2026, 06_08_18 PM" src="https://github.com/user-attachments/assets/b885c9f1-1a38-49db-8c64-d1adfa6a044d" />
+<p align="center">
+  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
+</p>
 
 # ImpLoot
 
 A raid loot management addon for **World of Warcraft: Wrath of the Lich King (3.3.5a)**: loot planning, wishlists and priority lists, Loot Master rolls, and built-in Soft Reserve support.
-
-> **This is a beta.** Expect rough edges. See [Feedback](#feedback) for where to report problems.
 
 ## Contents
 
@@ -50,8 +50,6 @@ You don't need to be the Master Looter to use ImpLoot. Everything in this sectio
 
 ### Browsing loot
 
-<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/c2ff72a4-ce08-4e66-8b32-aa1d759cec9e" />
-
 Open ImpLoot with `/il` (or left-click the minimap button). Pick a raid, then a difficulty (10, 25, 10 Heroic or 25 Heroic) and a boss to see everything it drops. The search box finds an item by name across every raid; click a result to jump straight to the boss that drops it. Within each section, gear you can equip is listed first, then tokens and other items, then quest items, then mounts, alphabetically in each.
 
 Under the raid list are two buttons: raid size (**10 Man / 25 Man**) and difficulty (**Normal / Heroic**). They're in the same place for every raid; on raids with no Heroic mode the difficulty button stays greyed out on Normal. Trial of the Crusader, and Koralon in Vault of Archavon, drop different loot for each faction, so they also show a **Horde / Alliance** button beside the "Bosses" title.
@@ -70,10 +68,6 @@ These work on any item in the loot list:
 
 ### Wishlists
 
-<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/9e57457e-31ed-42ac-b187-5f345a7db718" />
-<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/18e8fd4e-c150-42a4-9807-9b952500e8e3" />
-<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/61c57449-b83c-45ac-9153-747bc0b36a73" />
-
 Open the planning tab on the right edge of the window and choose **Wishlist**.
 
 - Make as many named wishlists as you like (for example "Ulduar - Discipline"), and rename or delete them whenever you want.
@@ -87,13 +81,9 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 ### Raid Planner
 
-<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/5ca8d73a-78b0-472b-bd02-4ef663e78334" />
-
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
 ### Compare
-
-<img width="234" height="375" alt="Compare Window" src="https://github.com/user-attachments/assets/9f6da471-bfa6-4d46-85b4-effe8a464588" />
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items and shows the stat changes if you replace the top one (**Replace this**, slot 1) with the bottom one (**With this**, slot 2).
 
@@ -106,19 +96,22 @@ The **Compare** drawer is the tab on the left edge of the window. It holds two i
 The **Notes** page keeps named notes for each character, shown as windows on your screen (several can be up at once). **Create Note** asks for a name and a type:
 
 - **Personal**: free text, e.g. reminders or your assignments.
-- **Checklist**: one item per line, e.g. your dailies. Click an item on screen to tick it (it greys out with a check mark); when everything is ticked, an **All done - Close** button appears. Each checklist resets **Daily** (server daily reset), **Weekly** (raid reset, Wednesdays) or only by hand (**Manual**), and always has a **Reset** button.
-- **Raid**: notes for a fight, like a cooldown rotation. For now you show it by hand; linking it to a boss so it appears on its own comes next.
+- **Checklist**: one item per line, e.g. your dailies. Click an item on screen to tick it (it greys out with a check mark); when everything is ticked, an **All done - Close** button appears. Each checklist resets **Daily** (server daily reset), **Weekly** (raid reset) or only by hand (**Manual**), and always has a **Reset** button. The weekly reset is learned from your raid lockouts, so it's right for your server once you've been saved to any raid; until then it's taken as Wednesday.
+- **Raid**: notes for a fight, like a cooldown rotation. Show it by hand, or link it to a boss (see below).
 
 **Personal** / **Checklist** / **Raid** under Rename and Delete choose which kind of note the list shows (it scrolls; there's no limit on notes). Click a note's name to edit it; **Show** / **Hide** puts it on screen or takes it away. **Lock notes** at the bottom locks or unlocks every note on screen.
 
 The editor's toolbar inserts raid markers, role and class icons (`{skull}`, `{tank}`, `{mage}` ...), which show as real icons on screen at the same size as the text. The palette sets the colour you type in: it stays until you pick another (white for normal text) and is outlined in the palette. Highlight some text first and picking a colour recolours just that text. Opening **Create Note**, **Rename** or **Delete** closes the editor (saving it first). The **Text size** and **Background** sliders under the text change that note straight away.
 
-New notes start unlocked: drag to move, use the corner grip to resize. Lock it with the padlock (or **Lock notes** on the Notes page, or `/il notes`) and clicks pass through it to the game; a checklist's items stay clickable. Right-click an unlocked note (or a checklist item) for background opacity, text size, edit, reset and hide. Your existing raid notes carried over as Personal notes.
+**Spell icons:** next to the class icons, type a spell ID (a Wowhead address like `...spell=69845` works too, or the name of a spell you know) and click **Add spell**. Or shift-click a spell in your spellbook while typing in the note. It goes in as `{spell:69845}` followed by the spell's name; the on-screen note shows the spell's icon. Boss abilities work by ID.
+
+**Boss link** (Raid notes): the editor has a **Boss** button. Pick the raid and boss, and the note shows by itself when, inside that raid, the boss is alive and is your target, your focus, under your mouse or in the boss frames. **Targets** lists the names that count (filled in for you, including encounters like the Four Horsemen or the Blood Prince Council; Faction Champions you type yourself). The note hides again when the boss dies (for a several-boss encounter, when the fight ends after a kill) or when you leave the raid. Close it by hand and it stays away until the fight's over. A note you show by hand stays until you hide it.
+
+**Send:** the editor's **Send** button (or **Send to...** when you right-click a note on screen) sends the note to the raid (or party), your target, or a player you name. Anyone with ImpLoot is asked whether to save it (Options can save notes from the raid leader and assistants without asking). Sending it again updates their copy, keeping where they put it. A note with the same name from someone else is saved as *Name (Sender)*.
+
+New notes start unlocked: drag to move, use the corner grip to resize. Lock it with the padlock (or **Lock notes** on the Notes page, or `/il notes`) and clicks pass through it to the game; a checklist's items stay clickable. Right-click an unlocked note (or a checklist item) for background opacity, text size, edit, reset, send and hide. Your existing raid notes carried over as Personal notes.
 
 ### The "this one's yours" popup
-
-<img width="252" height="117" alt="This Is Yours - Wishlist" src="https://github.com/user-attachments/assets/fb5f96c9-2415-4c1d-981d-a396f639ef1a" />
-<img width="244" height="116" alt="This Is Yours - Soft Reserve" src="https://github.com/user-attachments/assets/5dc12915-47dd-4326-aba6-2d8dac5860bd" />
 
 When the Master Looter announces an item that's one of your Soft Reserves, or an open-roll item that's on one of your wishlists, a small popup appears with **Roll**, **Off-Spec Roll** and **Pass**. Roll makes a real roll for you, exactly as if you'd typed it (main spec 1-100, off spec 1-99). It only appears for items that matter to you, and several in a row wait their turn rather than stacking. The Master Looter needs to be running ImpLoot too for this to work.
 
@@ -152,7 +145,7 @@ An item is only handed out through WoW's Master Loot system if the winner can ac
 
 Open it with the **Summary** button on the Loot Master window. It opens to **Who won what**: a read-only table of Item / Winner / Roll, grouped by boss in that raid's encounter order. The Roll column shows `SR` for a Soft Reserve win, `LC` for Loot Council, `DE` for an item nobody rolled on that went to the disenchanter, or the winner's roll type (`MS` / `OS`) for an Open Roll. It fills itself in and updates as items resolve.
 
-Winners are shown in their class colour. Hover a row for its details: how it was won (e.g. *Rolled 95 (MS)*, *Loot priority (Any Warrior)*, *Disenchant (no rolls)*), who rolled 2nd and 3rd, the boss, the raid with its size and difficulty (e.g. *Icecrown Citadel 25H*), the date and time, and who recorded it if that wasn't you. Entries saved before this version only have what was recorded at the time.
+Winners are shown in their class colour. Hover a row for its details: how it was won (e.g. *Rolled 95 (MS)*, *Loot priority (Any Warrior)*, *Disenchant (no rolls)*), who rolled 2nd and 3rd, how many times you've seen that item drop (and when first), the boss, the raid with its size and difficulty (e.g. *Icecrown Citadel 25H*), the date and time, and who recorded it if that wasn't you. Entries saved before this version only have what was recorded at the time.
 
 ImpLoot also reads the raid's "receives loot" chat lines (epic and better, inside a raid; emblems, Abyss Crystals, Frozen Orbs and Shadowfrost Shards are skipped), so the list builds up in everyone's copy of ImpLoot, not just the loot master's:
 
@@ -195,15 +188,11 @@ ImpLoot syncs your history with the raid by itself: it fills in loot from the la
 
 ### Importing
 
-<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/22b3df44-0b99-4542-8ead-a166a96faac2" />
-
 - Open the Soft Reserve window and click **Import CSV** (top left; it is hidden while you are editing) and paste your SoftRes.it export. A counter under the button shows how many reserves are loaded and the date of the last import (the date you imported it in-game, not anything from the file). If you edit the list afterwards, the counter also shows the date of the last edit.
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away. With **Options → Soft Reserve → Clear Who won what when reloading after an import** ticked (off by default), **Reload Now** also starts a fresh *Who won what*, like its **Clear** button. Nothing is lost: every entry stays in the loot history.
 
 ### Editing by hand
-
-<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/23333c70-93d7-479f-88e5-14b5ca779328" />
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
 
@@ -254,7 +243,11 @@ Under the editor are two lists that belong to the list being edited: **Loot Coun
 
 ### Class slots ("Any Warrior")
 
+A **Priority** item goes to the first one on its list who's in the raid. Anyone above them who isn't is shown greyed out, *(not here)*, and skipped, but keeps their place for the next drop. A class slot counts as here if anyone of that class is in the group. If no one on the list is in the raid, the Loot Master window says so; assign it by hand.
+
 When the next slot on a **Priority** item is a class, clicking **Assign** opens a list beside the Loot Master window of every player of that class in the raid. Click a name to give them the item.
+
+- **Announce roll** tells the raid who of that class can roll (online, and not already given one). Their `/roll`s then show next to their names, highest first and marked *(highest)*; click the winner. Only each player's first 1-100 roll counts. **Announce again** starts afresh. The text and channel are in Options → Announcements (*Class Slot Roll Announced*).
 
 - The class stays at the top until every one of them has the item, so the next copy goes to another Warrior. Anyone who already has one is greyed out.
 - Once every Warrior in the raid has one, Warrior is removed from that item's list and the next slot (e.g. *Any Hunter*) moves up.
@@ -342,7 +335,7 @@ Legendary drops (Fragment of Val'anyr and similar) can't be undone once looted o
 
 ## Feedback
 
-This is a beta. If something breaks, behaves oddly, or you have a suggestion, please report it here:
+If something breaks, behaves oddly, or you have a suggestion, please report it here:
 
 **implootCC@gmail.com**
 

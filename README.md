@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="images/imploot-header.png" alt="ImpLoot - Loot Planning &amp; Loot Master Rolls for Wrath of the Lich King raids" width="100%">
-</p>
+<img width="1672" height="941" alt="ImpLoot Header" src="https://github.com/user-attachments/assets/e0ef8ec5-bf95-4d5e-8fbf-b8c76fdfe003" />
 
 # ImpLoot
 
@@ -56,6 +54,8 @@ Under the raid list are two buttons: raid size (**10 Man / 25 Man**) and difficu
 
 Trial of the Crusader covers Heroic (Trial of the Grand Crusader) as well, including the **Argent Crusade Tribute** chest, listed after Anub'arak while Heroic is selected. Items that can drop from any boss, such as Runed Orbs in Ulduar or Trophies of the Crusade in Trial, are under the **Extra Drops** button below the boss list. In Vault of Archavon each boss has a **Mount** heading with both the Alliance and Horde mammoth.
 
+<img width="828" height="543" alt="Main Browsing Window" src="https://github.com/user-attachments/assets/2edfba7c-ff18-4438-af17-4a99ba87b757" />
+
 ### What you can do with an item
 
 These work on any item in the loot list:
@@ -75,6 +75,10 @@ Open the planning tab on the right edge of the window and choose **Wishlist**.
 - An item added more than once shows its count (for example `x2`). `Alt`+click an item in the wishlist to remove one copy. Click an item to jump to the boss that drops it.
 - Switch between **All Items**, **By Raid** (grouped by raid and difficulty, such as "Icecrown Citadel 10 - Heroic") and **By Slot**.
 
+<img width="227" height="373" alt="Wishlist Creation" src="https://github.com/user-attachments/assets/d5dd3f4d-b82c-458d-913f-ca76920f7a05" />
+<img width="617" height="243" alt="Wishlist 1" src="https://github.com/user-attachments/assets/4cccb961-7bd4-443a-822b-72b2c4ca3211" />
+<img width="617" height="243" alt="Wishlist 2" src="https://github.com/user-attachments/assets/f236d1d9-b03e-40d7-a237-166138d60738" />
+
 ### Characters
 
 The **Characters** page lists every character you've logged in with ImpLoot. Pick one to view and edit its wishlists from any character, which is handy for planning an alt's gear without logging onto it. Choosing a character here only changes which wishlist you're looking at; it never affects the character you're actually playing.
@@ -83,6 +87,8 @@ The **Characters** page lists every character you've logged in with ImpLoot. Pic
 
 The **Raid Planner** page answers "which raids do I still need to run?". It's a read-only list of everything you're after across **all** of the selected character's wishlists, grouped by raid (in release order), then difficulty, then boss in the order you fight them, with Trash and Extra Drops last. It doesn't use lockout data, so it shows everything you want rather than what you've already cleared this week.
 
+<img width="572" height="235" alt="Raid Planner" src="https://github.com/user-attachments/assets/20913fd7-974b-4ba6-80ed-e980b82c6fb5" />
+
 ### Compare
 
 The **Compare** drawer is the tab on the left edge of the window. It holds two items and shows the stat changes if you replace the top one (**Replace this**, slot 1) with the bottom one (**With this**, slot 2).
@@ -90,6 +96,8 @@ The **Compare** drawer is the tab on the left edge of the window. It holds two i
 - While the drawer is open, `Alt`+click on an item in the loot list fills **slot 1**, and `Alt`+right-click fills **slot 2**. (This replaces `Alt`+click adding to your wishlist for as long as the drawer is open.)
 - Click a slot to **lock** it so it isn't replaced, and click again to unlock. Right-click a slot to remove its item (a locked slot has to be unlocked first). `Ctrl`+click a slot to try the item on.
 - Items have to fit the same slot to be compared. Main-hand, one-hand and two-hand weapons can be compared with each other.
+
+<img width="234" height="375" alt="Compare Window" src="https://github.com/user-attachments/assets/c4cd2ba0-2a34-4913-bb28-68b164994c18" />
 
 ### Notes
 
@@ -114,6 +122,9 @@ New notes start unlocked: drag to move, use the corner grip to resize. Lock it w
 ### The "this one's yours" popup
 
 When the Master Looter announces an item that's one of your Soft Reserves, or an open-roll item that's on one of your wishlists, a small popup appears with **Roll**, **Off-Spec Roll** and **Pass**. Roll makes a real roll for you, exactly as if you'd typed it (main spec 1-100, off spec 1-99). It only appears for items that matter to you, and several in a row wait their turn rather than stacking. The Master Looter needs to be running ImpLoot too for this to work.
+
+<img width="252" height="117" alt="This Is Yours - Wishlist" src="https://github.com/user-attachments/assets/97154edb-633e-47b4-964e-324b27f6fc00" />
+<img width="244" height="116" alt="This Is Yours - Soft Reserve" src="https://github.com/user-attachments/assets/4664b73a-0d49-4ac9-bbf5-ebe1b2eee0a9" />
 
 ## A typical raid night
 
@@ -192,6 +203,8 @@ ImpLoot syncs your history with the raid by itself: it fills in loot from the la
 - The imported list is saved across reloads and logouts. Re-importing replaces it, while the session's win history is kept.
 - Right after a successful import, ImpLoot offers to reload so the list is written to disk straight away. With **Options → Soft Reserve → Clear Who won what when reloading after an import** ticked (off by default), **Reload Now** also starts a fresh *Who won what*, like its **Clear** button. Nothing is lost: every entry stays in the loot history.
 
+<img width="399" height="419" alt="Soft Reserves" src="https://github.com/user-attachments/assets/d7ca9165-7430-4f05-8a26-a78195d0b559" />
+
 ### Editing by hand
 
 The loot master can add, change and remove reserves without a new import: a late joiner, a wrong item, a change of mind. Open the Soft Reserve window and click **Edit Soft Reserves**.
@@ -204,6 +217,8 @@ The loot master can add, change and remove reserves without a new import: a late
 - Unsaved changes are lost if you close the window; it warns you first. Importing a new CSV also discards unsaved edits, since they'd be based on the list it replaced.
 
 The maximum number of items per player is a setting (**Options → Soft Reserve → Max reserves per player**, default 3, or *No limit*) because it differs from guild to guild. Match whatever your SoftRes.it page was set up with. It only applies to manual edits; an imported CSV is never checked against it. **Allow multiple reserves per item** is respected too: with it off, the form won't take the same item twice for one player.
+
+<img width="399" height="419" alt="Edit Soft Reserves" src="https://github.com/user-attachments/assets/1792638c-c85f-4f32-b672-8d72ae13e547" />
 
 ### Sole reserver shortcut
 
@@ -232,6 +247,8 @@ Only people actually in the raid count as reservers: for the sole-reserver short
 Which list loot uses is chosen in the Loot Master window, with the button next to **Priority Lists**: pick a list, or **None** (it shows *No priority list*). With None, no item is handled by a priority list. Use that when raiding with a group your lists weren't made for. Choosing a list in the Loot Council / Priority window only picks which one you're editing; the one in use is marked *(active)* there. Items still waiting in the queue are sorted again when you change it.
 
 The list controls run across the top: pick a **List**, create a **New list**, and **Add Item** / **Import Text** / **Export Text**. Below them, the list's items are on the left (icon and item name in its quality colour, then the mode and candidates) and the editor for the selected item is on the right. The item being edited is highlighted, with its names in gold.
+
+<img width="798" height="562" alt="Loot Priority" src="https://github.com/user-attachments/assets/8f414a18-2bc5-4425-a803-5d6a4523cf33" />
 
 **Add Item** opens a small panel:
 
